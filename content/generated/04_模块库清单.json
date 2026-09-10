@@ -1,72 +1,45 @@
 {
-  "source": "github:git/trees/main?recursive=1",
+  "source": "local-walk",
   "kind": "index",
-  "generated_note": "主仓库无独立「04_模块库清单」文件，改为目录投影。",
   "entries": [
     {
-      "path": "04_模块库/世界类/M08_季节天气.md",
-      "sha": "0fdd9390f8d8ec5899865b3ded2870e7288a90bd",
-      "size": 2267
+      "path": "04_模块库/世界类/M08_季节天气.md"
     },
     {
-      "path": "04_模块库/事件类/M06_任务剧情.md",
-      "sha": "b1d6cad7a8451b2f2b4643924f8d9833369a2f7c",
-      "size": 2645
+      "path": "04_模块库/事件类/M06_任务剧情.md"
     },
     {
-      "path": "04_模块库/事件类/M12_NPC对话.md",
-      "sha": "033c2f3a2fe45c6b6c682b4ca8ee2cd8681e75ee",
-      "size": 2243
+      "path": "04_模块库/事件类/M12_NPC对话.md"
     },
     {
-      "path": "04_模块库/事件类/M13_NPC交互.md",
-      "sha": "8f0329bd7a0fda89c57b853d10a2c78693ae6ee4",
-      "size": 2507
+      "path": "04_模块库/事件类/M13_NPC交互.md"
     },
     {
-      "path": "04_模块库/事件类/M20_世界知识库.md",
-      "sha": "30c5af9f845efc8da90b87f42154eba1248cdefe",
-      "size": 2449
+      "path": "04_模块库/事件类/M20_世界知识库.md"
     },
     {
-      "path": "04_模块库/事件类/M22_事件叙事.md",
-      "sha": "682fc1ae4da07c25c542a69a1536081aa59c4ec9",
-      "size": 2804
+      "path": "04_模块库/事件类/M22_事件叙事.md"
     },
     {
-      "path": "04_模块库/技术文档类/M90_技术文档结构.md",
-      "sha": "72372dc377a07d5c2670ce8a1a5e900ec5e1aaf2",
-      "size": 3773
+      "path": "04_模块库/技术文档类/M90_技术文档结构.md"
     },
     {
-      "path": "04_模块库/通用类/M00_数据结构.md",
-      "sha": "869bb97f0043d634793b80ea8c84afb4e055d896",
-      "size": 4556
+      "path": "04_模块库/通用类/M00_数据结构.md"
     },
     {
-      "path": "04_模块库/通用类/M10_时间推进.md",
-      "sha": "a19ff6fd2c28eb5aaf74985b37db974baed1c7b8",
-      "size": 2663
+      "path": "04_模块库/通用类/M10_时间推进.md"
     },
     {
-      "path": "04_模块库/通用类/M23_认知边界.md",
-      "sha": "06beb67ce4b3103e00fc5270be1088d1fb22535b",
-      "size": 1809
+      "path": "04_模块库/通用类/M23_认知边界.md"
     },
     {
-      "path": "04_模块库/通用类/M24_组合规则.md",
-      "sha": "db563a3583710d9c07af845518952ef684ad9f8a",
-      "size": 2011
+      "path": "04_模块库/通用类/M24_组合规则.md"
     },
     {
-      "path": "04_模块库/通用类/M50_主循环.md",
-      "sha": "a872d9a1cc4e9470ea4c1066d6c6b7fb3e8eb9ef",
-      "size": 6144
+      "path": "04_模块库/通用类/M50_主循环.md"
     },
     {
-      "path": "04_模块库/通用类/M80_输出生成器.md",
-      "sha": "9e59ded67a5b54584bc347fe9ad531188b9710de",
-      "size": 4233
+      "path": "04_模块库/通用类/M80_输出生成器.md"
     }
   ]
 }

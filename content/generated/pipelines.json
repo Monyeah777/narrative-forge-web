@@ -1,0 +1,378 @@
+{
+  "official_count": 3,
+  "community_count": 5,
+  "items": [
+    {
+      "id": "P00",
+      "slug": "p-core-p00",
+      "kind": "pipeline",
+      "name": "通用文档生成管线",
+      "category": "官方管线",
+      "summary": "- 本管线是**派生模板**：default/allowed 为空表示不锁死挂载（01 §2：`allowed_modules` 为空 = 不限）；派生时按领域填写实际模块。",
+      "path": "03_管线库/P00_通用文档生成管线.md",
+      "source": "官方核心",
+      "layers": [
+        {
+          "id": "P00",
+          "name": "装载"
+        },
+        {
+          "id": "P10",
+          "name": "语境推进"
+        },
+        {
+          "id": "P20",
+          "name": "实体状态"
+        },
+        {
+          "id": "P30",
+          "name": "内容生产"
+        },
+        {
+          "id": "P40",
+          "name": "决策"
+        },
+        {
+          "id": "P50",
+          "name": "装配"
+        },
+        {
+          "id": "P60",
+          "name": "一致性"
+        },
+        {
+          "id": "P70",
+          "name": "素材"
+        },
+        {
+          "id": "P80",
+          "name": "输出"
+        }
+      ],
+      "tool_face": null
+    },
+    {
+      "id": "P01",
+      "slug": "p-core-p01",
+      "kind": "pipeline",
+      "name": "标准管线（官方核心装配）",
+      "category": "官方管线",
+      "summary": "- 每回合由 M50 主循环按注册表 execution_order 依序调度各层默认模块；空层（P40/P60 核心装配下）直接跳过，不阻塞回合。 - optional=true 的层（P40/P60/P70）缺模块时跳过；题材模块由社区包装配后写入对应层。",
+      "path": "03_管线库/P01_标准管线.md",
+      "source": "官方核心",
+      "layers": [
+        {
+          "id": "P00",
+          "name": "数据基座"
+        },
+        {
+          "id": "P10",
+          "name": "世界推进"
+        },
+        {
+          "id": "P20",
+          "name": "角色状态"
+        },
+        {
+          "id": "P30",
+          "name": "事件生产"
+        },
+        {
+          "id": "P40",
+          "name": "行为决策"
+        },
+        {
+          "id": "P50",
+          "name": "交互执行"
+        },
+        {
+          "id": "P60",
+          "name": "长期演变"
+        },
+        {
+          "id": "P70",
+          "name": "叙事素材"
+        },
+        {
+          "id": "P80",
+          "name": "输出呈现"
+        }
+      ],
+      "tool_face": null
+    },
+    {
+      "id": "P90",
+      "slug": "p-core-p90",
+      "kind": "pipeline",
+      "name": "技术文档生成管线",
+      "category": "官方管线",
+      "summary": "- M50 主循环：调度 P90 各层执行与回卷（读取 02 §7 登记，禁止硬编码顺序）。 - M00 数据结构：数据槽总线（DocState 承载于其槽位）。 - 本管线 = P00 骨架按 01 §2 派生：层名/挂载为技术文档特化；新增领域只需再复制 P00 → 改 id/name/层名/挂载 → 02 登记，引擎不改。",
+      "path": "03_管线库/P90_技术文档生成管线.md",
+      "source": "官方核心",
+      "layers": [
+        {
+          "id": "P00",
+          "name": "文档装载"
+        },
+        {
+          "id": "P10",
+          "name": "语境推进"
+        },
+        {
+          "id": "P20",
+          "name": "章节状态"
+        },
+        {
+          "id": "P30",
+          "name": "片段生产"
+        },
+        {
+          "id": "P40",
+          "name": "结构决策"
+        },
+        {
+          "id": "P50",
+          "name": "章节装配"
+        },
+        {
+          "id": "P60",
+          "name": "一致性"
+        },
+        {
+          "id": "P70",
+          "name": "规范素材"
+        },
+        {
+          "id": "P80",
+          "name": "文档输出"
+        }
+      ],
+      "tool_face": null
+    },
+    {
+      "id": "P06",
+      "slug": "p-techdoc-p06",
+      "kind": "pipeline",
+      "name": "技术文档题材装配流",
+      "category": "技术文档域包",
+      "summary": "",
+      "path": "community/技术文档域包/pipelines/P06_技术文档题材装配流管线.md",
+      "source": "社区",
+      "layers": [
+        {
+          "id": "P00",
+          "name": "数据基座"
+        },
+        {
+          "id": "P40",
+          "name": "行为决策"
+        },
+        {
+          "id": "P60",
+          "name": "长期演变"
+        },
+        {
+          "id": "P80",
+          "name": "输出呈现"
+        }
+      ],
+      "tool_face": null
+    },
+    {
+      "id": "P02",
+      "slug": "p-campus-p02",
+      "kind": "pipeline",
+      "name": "校园情感流管线",
+      "category": "校园情感领域包",
+      "summary": "- 三冲动仅驱动 NPC；主角行为自由（情感:M22 主角豁免）。 - 每回合互动后检查 INTERACTION_DEPTH：频率提升认知、质量提升下限线、破坏可能击穿下限线触发关系事件。",
+      "path": "community/校园情感领域包/pipelines/P02_校园情感流管线.md",
+      "source": "社区",
+      "layers": [
+        {
+          "id": "P00",
+          "name": "数据基座"
+        },
+        {
+          "id": "P10",
+          "name": "世界推进"
+        },
+        {
+          "id": "P20",
+          "name": "角色状态"
+        },
+        {
+          "id": "P30",
+          "name": "事件生产"
+        },
+        {
+          "id": "P40",
+          "name": "关系决策"
+        },
+        {
+          "id": "P50",
+          "name": "交互执行"
+        },
+        {
+          "id": "P60",
+          "name": "长期演变"
+        },
+        {
+          "id": "P70",
+          "name": "叙事素材"
+        },
+        {
+          "id": "P80",
+          "name": "输出呈现"
+        }
+      ],
+      "tool_face": null
+    },
+    {
+      "id": "P04",
+      "slug": "p-mix-p04",
+      "kind": "pipeline",
+      "name": "轻混装配流管线",
+      "category": "校园西幻轻混组合包",
+      "summary": "- 轻混装配只叠加、不搬移：M55/M17 本体驻源包 default；组合包通过 references 订阅其事件、asset_readonly 借阅其资产（02 §8.4 登记判定四规则）。",
+      "path": "community/校园西幻轻混组合包/pipelines/P04_轻混装配流管线.md",
+      "source": "社区",
+      "layers": [
+        {
+          "id": "P00",
+          "name": "数据基座"
+        },
+        {
+          "id": "P10",
+          "name": "世界推进"
+        },
+        {
+          "id": "P20",
+          "name": "角色状态"
+        },
+        {
+          "id": "P30",
+          "name": "事件生产"
+        },
+        {
+          "id": "P40",
+          "name": "行为决策"
+        },
+        {
+          "id": "P50",
+          "name": "交互执行"
+        },
+        {
+          "id": "P60",
+          "name": "长期演变"
+        },
+        {
+          "id": "P70",
+          "name": "叙事素材"
+        },
+        {
+          "id": "P80",
+          "name": "输出呈现"
+        }
+      ],
+      "tool_face": null
+    },
+    {
+      "id": "P03",
+      "slug": "p-survival-p03",
+      "kind": "pipeline",
+      "name": "西幻生存流管线",
+      "category": "西幻生存领域包",
+      "summary": "- 生存结算以分钟为单位：health/hunger/thirst/fatigue/temperature/insanity 六项状态由 M01 统一结算。 - 混沌事件可能直接调用生存:M10 死亡判定；死亡不结束游戏，进入重生流程（死亡祝福/遗物继承）。",
+      "path": "community/西幻生存领域包/pipelines/P03_西幻生存流管线.md",
+      "source": "社区",
+      "layers": [
+        {
+          "id": "P00",
+          "name": "数据基座"
+        },
+        {
+          "id": "P10",
+          "name": "世界推进"
+        },
+        {
+          "id": "P20",
+          "name": "角色状态"
+        },
+        {
+          "id": "P30",
+          "name": "事件生产"
+        },
+        {
+          "id": "P40",
+          "name": "行为决策"
+        },
+        {
+          "id": "P50",
+          "name": "交互执行"
+        },
+        {
+          "id": "P60",
+          "name": "世界演变"
+        },
+        {
+          "id": "P70",
+          "name": "叙事素材"
+        },
+        {
+          "id": "P80",
+          "name": "输出呈现"
+        }
+      ],
+      "tool_face": null
+    },
+    {
+      "id": "P05",
+      "slug": "p-base-p05",
+      "kind": "pipeline",
+      "name": "核心基础流管线",
+      "category": "通用核心基础包",
+      "summary": "- 通用增强只叠加、不搬移：官方核心 12 件（M00 / 通用:M10 / M08 / M23 / 事件:M22 / M06 / M12 / M13 / M20 / M24 / M50 / M80）本体驻官方核心层位；本包以 core_only 依赖引用 + 事件订阅协作，**禁止**复制官方模块文件入本包 modules/ 或写入官方层 default ",
+      "path": "community/通用核心基础包/pipelines/P05_核心基础流管线.md",
+      "source": "社区",
+      "layers": [
+        {
+          "id": "P00",
+          "name": "数据基座"
+        },
+        {
+          "id": "P10",
+          "name": "世界推进"
+        },
+        {
+          "id": "P20",
+          "name": "角色状态"
+        },
+        {
+          "id": "P30",
+          "name": "事件生产"
+        },
+        {
+          "id": "P40",
+          "name": "行为决策"
+        },
+        {
+          "id": "P50",
+          "name": "交互执行"
+        },
+        {
+          "id": "P60",
+          "name": "长期演变"
+        },
+        {
+          "id": "P70",
+          "name": "叙事素材"
+        },
+        {
+          "id": "P80",
+          "name": "输出呈现"
+        }
+      ],
+      "tool_face": null
+    }
+  ]
+}

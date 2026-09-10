@@ -1,0 +1,508 @@
+{
+  "official_count": 13,
+  "community_count": 31,
+  "items": [
+    {
+      "id": "M08",
+      "slug": "m-core-m08",
+      "kind": "module",
+      "name": "季节天气",
+      "category": "世界",
+      "summary": "管理**季节循环、天气系统与环境效果**：按世界历推进季节，按季节权重每日生成天气，维护各区域当前环境状态并广播给依赖方。（season_system / environment / location_seasonal_descriptions 结构；资产数据随社区题材包经 asset_get 寻址）。是所有\"环境依赖型\"模块的天气真相来源。",
+      "path": "04_模块库/世界类/M08_季节天气.md",
+      "source": "官方核心",
+      "tool_face": null
+    },
+    {
+      "id": "M06",
+      "slug": "m-core-m06",
+      "kind": "module",
+      "name": "任务剧情",
+      "category": "事件",
+      "summary": "管理**任务生成、剧情叙事与任务链规则**：基于任务叙事模板生成任务，维护任务状态机与链式梯度，按玩家进度发布任务状态。（共享任务机制：quest_narratives 8 任务 / 任务生成规则 / 任务链与奖励梯度）。任务结构生成方——文本措辞与 NPC 演出交 M12/M13；战斗结算类环节在装配社区西幻生存包时走 M04（随包，可选）。",
+      "path": "04_模块库/事件类/M06_任务剧情.md",
+      "source": "官方核心",
+      "tool_face": null
+    },
+    {
+      "id": "M12",
+      "slug": "m-core-m12",
+      "kind": "module",
+      "name": "NPC 对话",
+      "category": "事件",
+      "summary": "管理**NPC 对话模板与交互行为素材**：维护 13+ NPC 的对话模板体系（闲聊/任务线索/好感回应/秘密情报），按触发条件供给可选项与台词。（npc_dialogue_templates 13+NPC / 对话类别与触发规则，模板内容随社区题材包扩展）。是\"台词库\"，与 M13 状态机构成模板-状态互查的双向耦合。",
+      "path": "04_模块库/事件类/M12_NPC对话.md",
+      "source": "官方核心",
+      "tool_face": null
+    },
+    {
+      "id": "M13",
+      "slug": "m-core-m13",
+      "kind": "module",
+      "name": "NPC 交互",
+      "category": "事件",
+      "summary": "管理 **NPC 运行时状态机、记忆、日程、目标与好感函数**：实例化 NPC 个体，维护其与玩家的好感数值与交互历史，把每次交互结算为 interaction_update 广播给关系/声望/叙事模块。（NPCInstance 状态机 / NPC记忆 / 日程行为 / 目标系统 / 死亡继承 / 好感度函数）。**NPC 个体真相来源**（群体声望归 M1",
+      "path": "04_模块库/事件类/M13_NPC交互.md",
+      "source": "官方核心",
+      "tool_face": null
+    },
+    {
+      "id": "M20",
+      "slug": "m-core-m20",
+      "kind": "module",
+      "name": "世界知识库",
+      "category": "事件",
+      "summary": "管理**世界观常识库**：物理法则、地理、魔法理论、社会结构、种族知识、历史与时间季节、原罪碎片设定，按需供给各模块作为\"常识上下文\"，防止角色做出违反世界观的行为。（world_knowledge 知识域：8 种族 + 地理 + 物理 + 魔法 + 社会 + 生物 + 物品 + 常识 + 时间季节 + 原罪碎片；条目内容随题材资产包）。**只读知识库，不含",
+      "path": "04_模块库/事件类/M20_世界知识库.md",
+      "source": "官方核心",
+      "tool_face": null
+    },
+    {
+      "id": "事件:M22",
+      "slug": "m-core-m22",
+      "kind": "module",
+      "name": "事件叙事",
+      "category": "事件",
+      "summary": "管理**叙事事件生成、时间线推进与故事驱动**：汇聚各源模块发布的零散事件（任务/混沌/关系/遗憾/死亡/市场），校验因果一致性后组织为按序的 narrative_event 流，驱动连贯叙事时间线。（事件生成机制 / 事件类型体系 / 事件触发条件与流程 / 事件与叙事联动）。是**叙事编排者**——不做数值结算，只做因果编排。",
+      "path": "04_模块库/事件类/M22_事件叙事.md",
+      "source": "官方核心",
+      "tool_face": null
+    },
+    {
+      "id": "M90",
+      "slug": "m-core-m90",
+      "kind": "module",
+      "name": "技术文档结构",
+      "category": "技术文档",
+      "summary": "把「自然语言意图（如：写一份 API 迁移说明）」解析为技术文档的结构化要素：标题层级、章节骨架、术语表、表格 / 代码块引用、修订记录；按资产键 `TECH_TEMPLATES` 选择章节模板、`TECH_RULES` 过规范一致性校验。是 P90 技术文档生成管线（P00 骨架在非叙事领域的实例装配）的领域装载模块。",
+      "path": "04_模块库/技术文档类/M90_技术文档结构.md",
+      "source": "官方核心",
+      "tool_face": null
+    },
+    {
+      "id": "M00",
+      "slug": "m-core-m00",
+      "kind": "module",
+      "name": "数据结构",
+      "category": "通用",
+      "summary": "定义全系统的**数据槽总线**与四类核心实体的字段契约，是所有模块读写的唯一数据通道。数据隔离（I4）与通信契约（I3）在此落地：模块之间不得直接互访内部状态，只能通过数据槽与事件交换。",
+      "path": "04_模块库/通用类/M00_数据结构.md",
+      "source": "官方核心",
+      "tool_face": null
+    },
+    {
+      "id": "通用:M10",
+      "slug": "m-core-m10",
+      "kind": "module",
+      "name": "时间推进",
+      "category": "通用",
+      "summary": "驱动系统时间轴，维护 `tick / day / season` 三轨时钟，并广播回合推进事件。所有\"每日/每回合\"结算的模块（M01、M19、M08、M09、M40）均以本模块的推进信号为节拍。",
+      "path": "04_模块库/通用类/M10_时间推进.md",
+      "source": "官方核心",
+      "tool_face": [
+        {
+          "purpose": "回合/日/分钟三轨时间换算与跨日判定",
+          "candidates": [
+            {
+              "repo": "https://github.com/arrow-py/arrow",
+              "ref": "1.3.0",
+              "license": "BSD-2-Clause",
+              "note": "成熟时间库，仅作实现参考；引用不等于背书，AI 可自造等价能力"
+            }
+          ],
+          "guidance": {
+            "要算什么": "从 tick 折算 day、minute、is_new_day 与 season_ctx",
+            "输出形状": "整数 tick/day/minute；布尔 is_new_day；字符串 season_ctx",
+            "对接字段": "outputs=[tick, day, season]，事件 payload 见第 4 节",
+            "常见坑": "分钟制只在 P03 启用；跨日只发布一次 tick_day；禁止模块自行推进时间"
+          }
+        }
+      ]
+    },
+    {
+      "id": "M23",
+      "slug": "m-core-m23",
+      "kind": "module",
+      "name": "认知边界",
+      "category": "通用",
+      "summary": "执行**视角裁剪**：叙事只能呈现\"主角当前可知\"的信息。任何角色内心、墙后对话、未感知事件一律不得进入输出素材——这是视角纪律（主角可知原则）的系统侧保障。",
+      "path": "04_模块库/通用类/M23_认知边界.md",
+      "source": "官方核心",
+      "tool_face": null
+    },
+    {
+      "id": "M24",
+      "slug": "m-core-m24",
+      "kind": "module",
+      "name": "组合规则",
+      "category": "通用",
+      "summary": "系统**组合/扩展规则**的唯一结算入口：技能融合、元素组合、词条合成等\"两物合出新物\"的逻辑统一在此登记与判定，防止各模块各自为政产生规则冲突。",
+      "path": "04_模块库/通用类/M24_组合规则.md",
+      "source": "官方核心",
+      "tool_face": null
+    },
+    {
+      "id": "M50",
+      "slug": "m-core-m50",
+      "kind": "module",
+      "name": "主循环",
+      "category": "通用",
+      "summary": "回合调度器。按注册表 §6 执行顺序（官方核心装配 10 步，真相源见 02 §6）依序驱动各层模块；装配社区领域包后按包索引动态合并（R3）。回合结束回卷并进入下一回合。主循环决定\"谁先跑、谁后跑、何时结算\"。",
+      "path": "04_模块库/通用类/M50_主循环.md",
+      "source": "官方核心",
+      "tool_face": null
+    },
+    {
+      "id": "M80",
+      "slug": "m-core-m80",
+      "kind": "module",
+      "name": "输出生成器",
+      "category": "通用",
+      "summary": "将 P70 叙事素材渲染为最终可读文本。这是质检门的**执行器**：输出先过结构门（硬 · 全域通用），再按档位加载风格门（软 · 档位 DNA；档位未配置 DNA 时仅过结构门），质量分档后放行、自纠或重写。",
+      "path": "04_模块库/通用类/M80_输出生成器.md",
+      "source": "官方核心",
+      "tool_face": null
+    },
+    {
+      "id": "M97",
+      "slug": "m-techdoc-m97",
+      "kind": "module",
+      "name": "术语管理",
+      "category": "技术文档",
+      "summary": "维护技术文档的术语表一致性：从 DocState.terms 读取术语条目（M90 结构生产时登记），做首次使用章节标注与定义补全；检测同一术语多定义/首用未定义等冲突（term_conflict_detected）；发布 term_synced 供 M80 质检参考。是本包（技术文档题材增强）相对官方 M90 的增值位——M90 负责骨架，M97 负责术语",
+      "path": "community/技术文档域包/modules/M97_术语管理.md",
+      "source": "社区",
+      "tool_face": null
+    },
+    {
+      "id": "M98",
+      "slug": "m-techdoc-m98",
+      "kind": "module",
+      "name": "修订记录",
+      "category": "技术文档",
+      "summary": "维护技术文档的修订历史：M90 每产出结构增量（doc_delta）或正文变更（doc_delta_committed）时，M98 追加修订条目（版本号递增/变更摘要/日期/作者），维护可回溯的变更日志（revision_log）；供 M80 渲染「修订记录」章节与读者追溯。是本包相对官方 M90 的增值位。",
+      "path": "community/技术文档域包/modules/M98_修订记录.md",
+      "source": "社区",
+      "tool_face": null
+    },
+    {
+      "id": "M22",
+      "slug": "m-campus-m22",
+      "kind": "module",
+      "name": "M22",
+      "category": "校园情感领域包",
+      "summary": "将 NPC 的大五人格（Big Five）映射为**三冲动**（escape 逃避 / sexual 靠近 / mischief 挑衅），驱动 NPC 的自主行为决策。核心约束：**三冲动仅驱动 NPC，主角豁免**——主角行为由玩家/剧情决定，不由本模块越权代劳。",
+      "path": "community/校园情感领域包/modules/M22_三冲动驱动.md",
+      "source": "社区",
+      "tool_face": null
+    },
+    {
+      "id": "M40",
+      "slug": "m-campus-m40",
+      "kind": "module",
+      "name": "M40",
+      "category": "校园情感领域包",
+      "summary": "维护主角与每个 NPC 的**关系深度**（INTERACTION_DEPTH 模型），是情感系统的地基。所有关系数值由本模块唯一结算，其他模块只读或请求变更。",
+      "path": "community/校园情感领域包/modules/M40_关系深度.md",
+      "source": "社区",
+      "tool_face": null
+    },
+    {
+      "id": "M41",
+      "slug": "m-campus-m41",
+      "kind": "module",
+      "name": "M41",
+      "category": "校园情感领域包",
+      "summary": "在 M40 关系深度的基础上管理**恋爱阶段**的推进与回退：阶段门槛、告白判定、心意确认与恋爱状态机。",
+      "path": "community/校园情感领域包/modules/M41_恋爱进阶.md",
+      "source": "社区",
+      "tool_face": null
+    },
+    {
+      "id": "M43",
+      "slug": "m-campus-m43",
+      "kind": "module",
+      "name": "M43",
+      "category": "校园情感领域包",
+      "summary": "为恋爱线注入**竞争张力**：生成情敌 NPC、推进情敌行为、触发告白竞争事件，让暧昧/恋爱阶段出现波动与选择压力。",
+      "path": "community/校园情感领域包/modules/M43_情敌系统.md",
+      "source": "社区",
+      "tool_face": null
+    },
+    {
+      "id": "M55",
+      "slug": "m-campus-m55",
+      "kind": "module",
+      "name": "匿名情书",
+      "category": "情感",
+      "summary": "承载校园经典的**匿名情书**事件链：写→投→收→（误）→回。情书的匿名性天然制造认知偏差与误会空间，是 M23 认知边界的经典应用场景。",
+      "path": "community/校园情感领域包/modules/M55_匿名情书.md",
+      "source": "社区",
+      "tool_face": null
+    },
+    {
+      "id": "M57",
+      "slug": "m-campus-m57",
+      "kind": "module",
+      "name": "M57",
+      "category": "校园情感领域包",
+      "summary": "承载校园社交的**朋友圈动态流**（资产 SOCIAL_FEED / FORUM_POSTS）：回合内扫描各 NPC 的动态/论坛帖，按主角与该 NPC 的好感度（M40）决定可见性，推入 `player.social.feed_visible`。动态可作三类用途：①叙事素材（交事件:M22 编排）；②事件触发点（`feed.trigger_event` →",
+      "path": "community/校园情感领域包/modules/M57_朋友圈动态.md",
+      "source": "社区",
+      "tool_face": null
+    },
+    {
+      "id": "M58",
+      "slug": "m-campus-m58",
+      "kind": "module",
+      "name": "M58",
+      "category": "校园情感领域包",
+      "summary": "承载校园社交的**电话通讯流**（资产 PHONE_CALL）：回合内按好感度（M40）概率生成 NPC 来电（`affinity_probability` 随好感升高），写入 `player.social.phone_log`。来电是夜间/放学窗口的深度互动通道：接听 → 好感度正向结算（M40）并可能触发事件；拒接/未接 → 沉淀 ghost 素材（M6",
+      "path": "community/校园情感领域包/modules/M58_电话通讯.md",
+      "source": "社区",
+      "tool_face": null
+    },
+    {
+      "id": "M59",
+      "slug": "m-campus-m59",
+      "kind": "module",
+      "name": "M59",
+      "category": "校园情感领域包",
+      "summary": "承载校园社交的**群聊消息流**（资产 GROUP_CHAT，素材池 GOSSIP_TOPICS）：回合内扫描活跃群组，以 `GOSSIP_TOPICS` 为话题素材生成群消息，写入 `player.social.group_chat`。群聊是课间/夜间低强度社交的背景层：消息可触发事件（`trigger_event` → 事件 pending 队列）、影响",
+      "path": "community/校园情感领域包/modules/M59_群聊系统.md",
+      "source": "社区",
+      "tool_face": null
+    },
+    {
+      "id": "M65",
+      "slug": "m-campus-m65",
+      "kind": "module",
+      "name": "M65",
+      "category": "校园情感领域包",
+      "summary": "管理**遗憾系统**（REGRET_LIBRARY）：把未完成的告白、错过的回应、没说出口的话沉淀为\"幽灵\"，在剧情窗口期显形，成为长线情感叙事的暗流。遗憾只在事件:M22 允许的窗口内显形。",
+      "path": "community/校园情感领域包/modules/M65_幽灵遗憾.md",
+      "source": "社区",
+      "tool_face": null
+    },
+    {
+      "id": "M91",
+      "slug": "m-mix-m91",
+      "kind": "module",
+      "name": "异界身份桥",
+      "category": "轻混",
+      "summary": "轻混决策层（P40）装配模块：在「校园情感表达通道」与「西幻身份秘密」两条语境之间架桥。角色以异界身份生活在校园，情感表达（M55 情书链）与异界身份暴露风险（西幻面 npc_action / 生产痕迹）互相牵制——本模块把冲突转译为**校园语境可执行的馈赠意图** `campus_gift_intent`，交 P50 执行层 M92 装配落地。",
+      "path": "community/校园西幻轻混组合包/modules/M91_异界身份桥.md",
+      "source": "社区",
+      "tool_face": null
+    },
+    {
+      "id": "M92",
+      "slug": "m-mix-m92",
+      "kind": "module",
+      "name": "轻混装配执行",
+      "category": "轻混",
+      "summary": "轻混执行层（P50）装配模块：把西幻侧生产输出（M17 `production_output`）与校园侧馈赠意图（M91 `campus_gift_intent`）**跨语境再包装**为校园可落地的匿名礼物动作 `campus_anonymous_gift`。它是轻混装配的「最后一段管道」——订阅源包事件、装配为本包事件，不搬移 M17 本体（M17 仍驻西",
+      "path": "community/校园西幻轻混组合包/modules/M92_轻混装配执行.md",
+      "source": "社区",
+      "tool_face": null
+    },
+    {
+      "id": "M01",
+      "slug": "m-survival-m01",
+      "kind": "module",
+      "name": "M01",
+      "category": "西幻生存领域包",
+      "summary": "管理角色**基础属性、等级经验与生存状态**：从角色创建到职业成长的主属性通道。本模块是西幻流的数值地基（对应骨架 M01，18 职业完整数据见资产库）。",
+      "path": "community/西幻生存领域包/modules/M01_职业成长.md",
+      "source": "社区",
+      "tool_face": null
+    },
+    {
+      "id": "M02",
+      "slug": "m-survival-m02",
+      "kind": "module",
+      "name": "M02",
+      "category": "西幻生存领域包",
+      "summary": "管理**八大种族**的身份、属性修正与天赋树，以及亚种/杂交规则（对应骨架 M02）。",
+      "path": "community/西幻生存领域包/modules/M02_种族天赋.md",
+      "source": "社区",
+      "tool_face": null
+    },
+    {
+      "id": "M03",
+      "slug": "m-survival-m03",
+      "kind": "module",
+      "name": "M03",
+      "category": "西幻生存领域包",
+      "summary": "管理**技能习得、融合、分解与继承**，以及多轴技能（SOV）流派构筑（对应骨架 M03）。",
+      "path": "community/西幻生存领域包/modules/M03_技能融合.md",
+      "source": "社区",
+      "tool_face": null
+    },
+    {
+      "id": "M04",
+      "slug": "m-survival-m04",
+      "kind": "module",
+      "name": "M04",
+      "category": "西幻生存领域包",
+      "summary": "**回合制战斗结算中枢**：伤害计算、命中/部位、连击、姿态、破防、元素反应、士气与遭遇（对应骨架 M04）。",
+      "path": "community/西幻生存领域包/modules/M04_战斗系统.md",
+      "source": "社区",
+      "tool_face": null
+    },
+    {
+      "id": "M07",
+      "slug": "m-survival-m07",
+      "kind": "module",
+      "name": "M07",
+      "category": "西幻生存领域包",
+      "summary": "管理世界**区域拓扑、旅行规则与地点刷新**：定义 11 大区域（regions）、60+ 地点实例（locations）、旅行耗时与遭遇判定、地点描述随季节/天气/时间刷新。对应西幻骨架 M07。为 M04 战斗（地形修正）、M06 任务（地点目标挂点）、M09 经济（region_mult 区域价格系数）提供地理上下文。",
+      "path": "community/西幻生存领域包/modules/M07_地图区域.md",
+      "source": "社区",
+      "tool_face": null
+    },
+    {
+      "id": "M09",
+      "slug": "m-survival-m09",
+      "kind": "module",
+      "name": "M09",
+      "category": "西幻生存领域包",
+      "summary": "管理**商品定价、市场波动、投资与商店刷新**：以 37 种商品为基础建立价格模型，按聚落类型/区域/季节计算实际价格，周期性发布市场事件制造波动。对应西幻骨架 M09（commodities / market_events / investments / shop_refresh_rules）。与 M17 生产制造构成\"供给-价格双向校准环\"。",
+      "path": "community/西幻生存领域包/modules/M09_经济贸易.md",
+      "source": "社区",
+      "tool_face": null
+    },
+    {
+      "id": "M10",
+      "slug": "m-survival-m10",
+      "kind": "module",
+      "name": "M10",
+      "category": "西幻生存领域包",
+      "summary": "处理**死亡结算与重生**（对应骨架 M10）。本世界观的核心设定：**死亡不结束游戏**，进入重生流程（死亡祝福/遗物继承）。",
+      "path": "community/西幻生存领域包/modules/M10_死亡重生.md",
+      "source": "社区",
+      "tool_face": null
+    },
+    {
+      "id": "M11",
+      "slug": "m-survival-m11",
+      "kind": "module",
+      "name": "M11",
+      "category": "西幻生存领域包",
+      "summary": "实现**文字即咒语**的独特魔法体系（对应骨架 M11）：魔法不靠咒语念诵，而靠文字书写/言灵本身驱动。",
+      "path": "community/西幻生存领域包/modules/M11_文字魔法.md",
+      "source": "社区",
+      "tool_face": null
+    },
+    {
+      "id": "M14",
+      "slug": "m-survival-m14",
+      "kind": "module",
+      "name": "M14",
+      "category": "西幻生存领域包",
+      "summary": "管理**势力阵营、声望等级与阵营关系动态**：维护玩家与各阵营的声望数值与等级、阵营间关系类型（战争/和平/贸易/盟约）、以及声望驱动的势力阴谋解锁。对应西幻骨架 M14（factions 势力系统 / faction_relations / plots）。群体声望的**唯一真相来源**（个体好感归 M13）。",
+      "path": "community/西幻生存领域包/modules/M14_阵营声望.md",
+      "source": "社区",
+      "tool_face": null
+    },
+    {
+      "id": "M15",
+      "slug": "m-survival-m15",
+      "kind": "module",
+      "name": "M15",
+      "category": "西幻生存领域包",
+      "summary": "管理**帮派结构、势力范围与帮派事件**：维护 13 帮派的地盘、首领、目标与资源，执行帮派行动（扩张/火并/交易/秘密行动），驱动地盘争夺与玩家-帮派互动。对应西幻骨架 M15（gangs 帮派系统）。帮派是阵营（M14）的基层执行体，地盘归属联动 M16 建筑据点。",
+      "path": "community/西幻生存领域包/modules/M15_帮派势力.md",
+      "source": "社区",
+      "tool_face": null
+    },
+    {
+      "id": "M16",
+      "slug": "m-survival-m16",
+      "kind": "module",
+      "name": "M16",
+      "category": "西幻生存领域包",
+      "summary": "管理**建筑模板、居民模板与城镇据点生成**：定义建筑类型与功能、生成城镇据点（settlement）及其居民，维护据点税收与事件。对应西幻骨架 M16（building_templates / resident_templates / random_resident_generation / 据点事件税收）。为 M15 帮派提供地盘载体、为 M09 经济提",
+      "path": "community/西幻生存领域包/modules/M16_建筑据点.md",
+      "source": "社区",
+      "tool_face": null
+    },
+    {
+      "id": "M17",
+      "slug": "m-survival-m17",
+      "kind": "module",
+      "name": "生产制造",
+      "category": "生存",
+      "summary": "管理**采集、制造与产出**：以 ProductionRecipe 配方表驱动食物/材料/武器/炼金/锻造等生产链路，产出进入经济系统（M09）（对应骨架 M17）。",
+      "path": "community/西幻生存领域包/modules/M17_生产制造.md",
+      "source": "社区",
+      "tool_face": null
+    },
+    {
+      "id": "M18",
+      "slug": "m-survival-m18",
+      "kind": "module",
+      "name": "M18",
+      "category": "西幻生存领域包",
+      "summary": "管理**混沌规则、随机事件与动态世界扰动**：在一致性约束内生成世界级扰动提议（自然/社会/超自然/原罪碎片异动），经 FreedomManager 引擎校验后广播。对应西幻骨架 M18（chaos_rules / chaos 行为规则 / FreedomManager 混沌引擎）。是世界\"意外\"的生产者——但**不得破坏已建立的因果链**。",
+      "path": "community/西幻生存领域包/modules/M18_混沌事件.md",
+      "source": "社区",
+      "tool_face": null
+    },
+    {
+      "id": "M19",
+      "slug": "m-survival-m19",
+      "kind": "module",
+      "name": "M19",
+      "category": "西幻生存领域包",
+      "summary": "管理角色**婚恋生子与后代遗传**：后代由双亲基因型（种族/属性/天赋）合成，成为可继承的可控/伙伴角色（对应骨架 M19）。本模块是\"跨代际叙事\"（物件跨代承载记忆）的系统支撑。",
+      "path": "community/西幻生存领域包/modules/M19_遗传后代.md",
+      "source": "社区",
+      "tool_face": null
+    },
+    {
+      "id": "M93",
+      "slug": "m-base-m93",
+      "kind": "module",
+      "name": "通用状态快照",
+      "category": "通用",
+      "summary": "数据基座层（P00）装配模块：题材无关的核心状态收敛器。订阅通用:M10 节拍事件（`tick_day` / `minute_tick`），在每个节拍把四类核心实体——角色（源自 M00 数据槽）、世界（M08 季节天气）、时间（M10 节拍）、剧情（M06 任务态）——收敛为**统一快照** `state_snapshot`，作为 P40 层 M95 决策",
+      "path": "community/通用核心基础包/modules/M93_通用状态快照.md",
+      "source": "社区",
+      "tool_face": null
+    },
+    {
+      "id": "M94",
+      "slug": "m-base-m94",
+      "kind": "module",
+      "name": "通用节拍桥",
+      "category": "通用",
+      "summary": "世界推进层（P10）装配模块：题材无关的节拍折算桥。订阅通用:M10 的 `tick_day` / `minute_tick` 原始节拍，折算为**统一节拍流** `beat_tick`（含 tick/day/minute 换算与节拍缓冲队列），供 P40 层 M95 及领域包决策模块按统一节拍消费。领域包可把 `beat_tick` 折算进自身时间制（校园",
+      "path": "community/通用核心基础包/modules/M94_通用节拍桥.md",
+      "source": "社区",
+      "tool_face": null
+    },
+    {
+      "id": "M95",
+      "slug": "m-base-m95",
+      "kind": "module",
+      "name": "通用决策汇总",
+      "category": "通用",
+      "summary": "行为决策层（P40）装配模块：题材无关的决策上下文汇总器。在 M50 主循环的每个决策回合，订阅官方事件层 M06 任务态（`quest_state`）与 M13 NPC 交互态（`interaction_update`）、本包 M93 状态快照（`state_snapshot`）与 M94 统一节拍（`beat_tick`），把回合内全部决策相关上下文汇总",
+      "path": "community/通用核心基础包/modules/M95_通用决策汇总.md",
+      "source": "社区",
+      "tool_face": null
+    },
+    {
+      "id": "M96",
+      "slug": "m-base-m96",
+      "kind": "module",
+      "name": "通用输出润色",
+      "category": "通用",
+      "summary": "输出呈现层（P80）装配模块：题材无关的输出润色器。订阅官方事件:M22 的叙事唯一输入门事件 `narrative_event`（M80 输出生成器的上游输入），结合本包 M95 决策简报 `decision_brief` 做**叙事一致性预检与通用润色**（去重、时序对齐、语境补全），发布 `polished_output`。本模块是 M80 的机制增强",
+      "path": "community/通用核心基础包/modules/M96_通用输出润色.md",
+      "source": "社区",
+      "tool_face": null
+    }
+  ]
+}
