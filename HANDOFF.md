@@ -201,4 +201,4 @@ IDLE 0.14  POINTER_LERP 0.2  SIZES [2,3,4]
 
 1. 打开 http://localhost:8768/ 看现行原型（没有服务就在 `prototype/` 起 python http.server）。
 2. 读 `prototype/index.html` 的 CSS 报章区 + `openArchive` / `triggerEgg`，不要重写引擎。
-3. 只做用户这一次点名的事。规格里未点名的轨道 B、Fusion Pixel，先问。B2 渲染层等用户说「继续」。
+3. 只做用户这一次点名的事。规格里未点名的轨道 B、Fusion Pixel，先问。B3 成画动画等用户说「继续」。
