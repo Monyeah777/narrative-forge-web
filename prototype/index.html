@@ -907,6 +907,21 @@
       var STOP_V = 0.05;
       var ASSEMBLE_MS = 1500;
       var DISPERSE_MS = 1100;
+      var TINT_MS = 200;
+      var TINT_STEPS = 12;
+      var GLYPH_N = { x0: 0.07, y0: 0.22, x1: 0.07 + 7 * 0.034, y1: 0.22 + 7 * 0.075 };
+      var GLYPH_F = { x0: 0.34, y0: 0.22, x1: 0.34 + 6 * 0.034, y1: 0.22 + 7 * 0.075 };
+      var GLYPH_SPLIT = (GLYPH_N.x1 + GLYPH_F.x0) * 0.5;
+      var STOP_N = [
+        [0, [0x5a, 0x6b, 0x72]],
+        [0.55, [0x3a, 0x4a, 0x52]],
+        [1, [0x25, 0x34, 0x3e]]
+      ];
+      var STOP_F = [
+        [0, [0xd0, 0xe3, 0xf0]],
+        [0.48, [0x8b, 0xa7, 0xc4]],
+        [1, [0x4a, 0x6b, 0x8a]]
+      ];
       var SIZES = [4, 6, 8];
 
       var stage = document.getElementById("stage");
@@ -930,12 +945,14 @@
       var cssW = 1;
       var cssH = 1;
       var N = 0;
-      var x, y, vx, vy, hx, hy, tx, ty, nx, ny, nhx, nhy, ntx, nty, z, sid;
+      var x, y, vx, vy, hx, hy, tx, ty, nx, ny, nhx, nhy, ntx, nty, z, sid, gid, tid;
       var sprites = [];
+      var tintSprites = [];
       var mode = "chaos";
       var currentView = "home";
       var hasGlyph = false;
       var modeT0 = 0;
+      var glyphTintT0 = 0;
       var acc = 0;
       var lastT = 0;
       var raf = 0;
@@ -1059,12 +1076,99 @@
         return { canvas: off, css: cssPx };
       }
 
+      function mixRgb(a, b, t) {
+        return [
+          a[0] + (b[0] - a[0]) * t,
+          a[1] + (b[1] - a[1]) * t,
+          a[2] + (b[2] - a[2]) * t
+        ];
+      }
+
+      function sampleStops(t, stops) {
+        var i, u;
+        if (t <= stops[0][0]) return stops[0][1];
+        for (i = 1; i < stops.length; i++) {
+          if (t <= stops[i][0]) {
+            u = (t - stops[i - 1][0]) / (stops[i][0] - stops[i - 1][0]);
+            return mixRgb(stops[i - 1][1], stops[i][1], u);
+          }
+        }
+        return stops[stops.length - 1][1];
+      }
+
+      function gradientT(u, v) {
+        if (u < 0) u = 0;
+        else if (u > 1) u = 1;
+        if (v < 0) v = 0;
+        else if (v > 1) v = 1;
+        return (u + v) * 0.5;
+      }
+
+      function tintMask(src, rgb) {
+        var off = document.createElement("canvas");
+        var g;
+        off.width = src.width;
+        off.height = src.height;
+        g = off.getContext("2d");
+        g.drawImage(src, 0, 0);
+        g.globalCompositeOperation = "source-in";
+        g.fillStyle = "rgb(" + (rgb[0] | 0) + "," + (rgb[1] | 0) + "," + (rgb[2] | 0) + ")";
+        g.fillRect(0, 0, off.width, off.height);
+        g.globalCompositeOperation = "source-over";
+        return off;
+      }
+
+      function buildTintSprites() {
+        var s, letter, step, t, rgb, stops, base, row;
+        tintSprites = [];
+        for (s = 0; s < sprites.length; s++) {
+          base = sprites[s];
+          row = [];
+          for (letter = 0; letter < 2; letter++) {
+            stops = letter === 0 ? STOP_N : STOP_F;
+            for (step = 0; step < TINT_STEPS; step++) {
+              t = TINT_STEPS === 1 ? 0 : step / (TINT_STEPS - 1);
+              rgb = sampleStops(t, stops);
+              row.push({ canvas: tintMask(base.canvas, rgb), css: base.css });
+            }
+          }
+          tintSprites.push(row);
+        }
+      }
+
+      function assignGlyphTint() {
+        var i, box, u, v, tt, letter;
+        if (!gid || !N) return;
+        for (i = 0; i < N; i++) {
+          letter = ntx[i] < GLYPH_SPLIT ? 0 : 1;
+          box = letter === 0 ? GLYPH_N : GLYPH_F;
+          u = (ntx[i] - box.x0) / (box.x1 - box.x0);
+          v = (nty[i] - box.y0) / (box.y1 - box.y0);
+          tt = gradientT(u, v);
+          gid[i] = letter;
+          tid[i] = (tt * (TINT_STEPS - 1) + 0.5) | 0;
+          if (tid[i] >= TINT_STEPS) tid[i] = TINT_STEPS - 1;
+        }
+      }
+
+      function glyphTintK(now) {
+        var elapsed;
+        if (!hasGlyph || mode !== "formed") return 0;
+        if (reduced) return 1;
+        if (!glyphTintT0) return 0;
+        elapsed = (now || performance.now()) - glyphTintT0;
+        if (elapsed >= TINT_MS) return 1;
+        if (elapsed <= 0) return 0;
+        return elapsed / TINT_MS;
+      }
+
       function buildSprites() {
         sprites = [
           makeSprite(SIZES[0], dpr, "rgba(214, 210, 200, 0.78)", "rgba(214, 210, 200, 0.34)"),
           makeSprite(SIZES[1], dpr, "rgba(200, 205, 215, 0.82)", "rgba(200, 205, 215, 0.38)"),
           makeSprite(SIZES[2], dpr, "rgba(176, 198, 224, 0.8)", "rgba(176, 198, 224, 0.36)")
         ];
+        buildTintSprites();
       }
 
       function alloc(n) {
@@ -1085,6 +1189,8 @@
         nty = new Float32Array(n);
         z = new Float32Array(n);
         sid = new Uint8Array(n);
+        gid = new Uint8Array(n);
+        tid = new Uint8Array(n);
       }
 
       function toPx() {
@@ -1134,6 +1240,7 @@
             tx[i] = ntx[i] * cssW;
             ty[i] = nty[i] * cssH;
           }
+          assignGlyphTint();
           return;
         }
         for (i = 0; i < N; i++) {
@@ -1142,6 +1249,7 @@
           tx[i] = ntx[i] * cssW;
           ty[i] = nty[i] * cssH;
         }
+        assignGlyphTint();
       }
 
       function placeNow(fromTargets) {
@@ -1345,11 +1453,12 @@
         }
       }
 
-      function render() {
-        var i, s, spr, dx, dy, sc, a;
+      function render(now) {
+        var i, s, spr, dx, dy, sc, a, tintK, tinted;
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         ctx.imageSmoothingEnabled = true;
         ctx.clearRect(0, 0, cssW, cssH);
+        tintK = glyphTintK(now);
         for (s = 0; s < sprites.length; s++) {
           spr = sprites[s];
           for (i = 0; i < N; i++) {
@@ -1358,8 +1467,21 @@
             a = 0.32 + z[i] * 0.68;
             dx = Math.floor(x[i] - sc * 0.5);
             dy = Math.floor(y[i] - sc * 0.5);
-            ctx.globalAlpha = a;
-            ctx.drawImage(spr.canvas, dx, dy, sc, sc);
+            if (tintK <= 0) {
+              ctx.globalAlpha = a;
+              ctx.drawImage(spr.canvas, dx, dy, sc, sc);
+            } else {
+              tinted = tintSprites[s][gid[i] * TINT_STEPS + tid[i]];
+              if (tintK >= 1) {
+                ctx.globalAlpha = a;
+                ctx.drawImage(tinted.canvas, dx, dy, sc, sc);
+              } else {
+                ctx.globalAlpha = a * (1 - tintK);
+                ctx.drawImage(spr.canvas, dx, dy, sc, sc);
+                ctx.globalAlpha = a * tintK;
+                ctx.drawImage(tinted.canvas, dx, dy, sc, sc);
+              }
+            }
           }
         }
         ctx.globalAlpha = 1;
@@ -1382,7 +1504,7 @@
           pointerEver = false;
           setMode("chaos");
         }
-        render();
+        render(now);
         raf = requestAnimationFrame(tick);
       }
 
@@ -1410,6 +1532,7 @@
       }
 
       function setMode(next) {
+        var prev = mode;
         mode = next;
         modeT0 = performance.now();
         stage.dataset.mode = next;
@@ -1417,6 +1540,8 @@
         lastT = performance.now();
         var show = next === "formed" && currentView !== "home";
         dossier.setAttribute("aria-hidden", show ? "false" : "true");
+        if (next === "formed" && prev !== "formed") glyphTintT0 = performance.now();
+        else if (next !== "formed") glyphTintT0 = 0;
       }
 
       function appHref(path) {
