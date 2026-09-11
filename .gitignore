@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# HD painting masters stay out of git. Only the baked 1200px preview is tracked.
+painting/*
+!painting/01-dallas.jpg
+!painting/source.json
