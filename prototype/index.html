@@ -842,9 +842,20 @@
       var btnHall = document.getElementById("btn-hall");
       var btnCommunity = document.getElementById("btn-community");
       var btnEgg = document.getElementById("btn-egg");
+      var btnStart = document.getElementById("btn-start");
       var btnSave = document.getElementById("btn-save");
       var btnSettings = document.getElementById("btn-settings");
       var settingsLitTimer = 0;
+      var DRIVES = [
+        { id: "A", J: 0.18, D: 0.975, vmax: 4 },
+        { id: "B", J: 0.60, D: 0.955, vmax: 12 },
+        { id: "C", J: 0.02, D: 0.93, vmax: 2 }
+      ];
+      var driveIdx = 0;
+      var driveJ = DRIVES[0].J;
+      var driveD = DRIVES[0].D;
+      var driveVmax = DRIVES[0].vmax;
+      var isFrozen = false;
       var navItems = stage.querySelectorAll(".nav-item");
       if (!ctx) return;
 
@@ -1145,9 +1156,9 @@
 
       function capSpeed(i) {
         var s = Math.sqrt(vx[i] * vx[i] + vy[i] * vy[i]);
-        if (s > VMAX) {
-          vx[i] *= VMAX / s;
-          vy[i] *= VMAX / s;
+        if (s > driveVmax) {
+          vx[i] *= driveVmax / s;
+          vy[i] *= driveVmax / s;
         }
       }
 
@@ -1176,6 +1187,8 @@
           vy[i] = vy[i] * rho + gauss() * sig * 0.22;
           walls(i);
         }
+        vx[i] *= driveD;
+        vy[i] *= driveD;
         capSpeed(i);
         x[i] += vx[i];
         y[i] += vy[i];
@@ -1188,8 +1201,26 @@
       }
 
       function springTo(i, gx, gy) {
-        vx[i] += (gx - x[i]) * SPRING;
-        vy[i] += (gy - y[i]) * SPRING;
+        vx[i] += (gx - x[i]) * driveJ;
+        vy[i] += (gy - y[i]) * driveJ;
+      }
+
+      function healParticle(i, toGlyph) {
+        if (
+          Number.isFinite(x[i]) &&
+          Number.isFinite(y[i]) &&
+          Number.isFinite(vx[i]) &&
+          Number.isFinite(vy[i])
+        ) return;
+        if (toGlyph && hasGlyph) {
+          x[i] = tx[i];
+          y[i] = ty[i];
+        } else {
+          x[i] = hx[i];
+          y[i] = hy[i];
+        }
+        vx[i] = 0;
+        vy[i] = 0;
       }
 
       function pointerLive() {
@@ -1206,12 +1237,12 @@
         var i, dx, dy, dist, f, inv, kSpring;
         mx += (mxT - mx) * POINTER_LERP;
         my += (myT - my) * POINTER_LERP;
-        kSpring = formed && !hasGlyph ? SPRING * 0.55 : SPRING;
+        kSpring = formed && !hasGlyph ? driveJ * 0.55 : driveJ;
         for (i = 0; i < N; i++) {
           dx = x[i] - mx;
           dy = y[i] - my;
           dist = Math.sqrt(dx * dx + dy * dy);
-          if (live && dist < REPEL_R && dist > 0.0001) {
+          if (!isFrozen && live && dist < REPEL_R && dist > 0.0001) {
             inv = 1 / dist;
             f = (1 - dist / REPEL_R) * REPEL;
             vx[i] += dx * inv * f;
@@ -1234,6 +1265,7 @@
             springTo(i, hx[i], hy[i]);
           }
           integrate(i, mode === "chaos" || (formed && (!hasGlyph || live)));
+          healParticle(i, assembling || formed);
         }
         toNorm();
         if (assembling && N > 0 && settled / N >= 0.97) {
@@ -1270,6 +1302,12 @@
 
       function tick(now) {
         if (!running) return;
+        if (isFrozen) {
+          lastT = now;
+          render();
+          raf = requestAnimationFrame(tick);
+          return;
+        }
         var ft = (now - lastT) / 1000;
         lastT = now;
         if (ft > FRAME_CLAMP) ft = FRAME_CLAMP;
@@ -1316,8 +1354,38 @@
         mode = next;
         modeT0 = performance.now();
         stage.dataset.mode = next;
+        acc = 0;
+        lastT = performance.now();
         var show = next === "formed" && currentView !== "home";
         dossier.setAttribute("aria-hidden", show ? "false" : "true");
+      }
+
+      function setFrozen(next) {
+        if (isFrozen === next) {
+          if (btnSave) btnSave.setAttribute("aria-pressed", next ? "true" : "false");
+          return;
+        }
+        isFrozen = next;
+        acc = 0;
+        lastT = performance.now();
+        if (next) stage.setAttribute("data-frozen", "true");
+        else stage.removeAttribute("data-frozen");
+        if (btnSave) btnSave.setAttribute("aria-pressed", next ? "true" : "false");
+      }
+
+      function applyDrive(idx) {
+        driveIdx = (idx + DRIVES.length) % DRIVES.length;
+        driveJ = DRIVES[driveIdx].J;
+        driveD = DRIVES[driveIdx].D;
+        driveVmax = DRIVES[driveIdx].vmax;
+        stage.dataset.drive = DRIVES[driveIdx].id;
+        acc = 0;
+        lastT = performance.now();
+      }
+
+      function onStart() {
+        if (isFrozen) setFrozen(false);
+        assemble();
       }
 
       function appHref(path) {
@@ -1351,7 +1419,6 @@
           pulseRise();
           return;
         }
-        if (mode === "assemble") return;
         assemble();
       }
 
@@ -1373,6 +1440,7 @@
       }
 
       function assemble() {
+        if (isFrozen) setFrozen(false);
         pointerEver = false;
         setMode("assemble");
         if (reduced) {
@@ -1385,6 +1453,7 @@
       }
 
       function disperse() {
+        if (isFrozen) setFrozen(false);
         scatterHomes();
         pointerEver = false;
         setMode("disperse");
@@ -1510,6 +1579,8 @@
         formTargets(points);
         placeNow(false);
         setMode("chaos");
+        applyDrive(0);
+        setFrozen(false);
         booted = true;
         render();
         syncReduced();
@@ -1537,14 +1608,17 @@
           triggerEgg();
         });
       }
+      if (btnStart) {
+        btnStart.addEventListener("click", onStart);
+      }
       if (btnSave) {
         btnSave.addEventListener("click", function () {
-          var on = btnSave.getAttribute("aria-pressed") === "true";
-          btnSave.setAttribute("aria-pressed", on ? "false" : "true");
+          setFrozen(!isFrozen);
         });
       }
       if (btnSettings) {
         btnSettings.addEventListener("click", function () {
+          applyDrive(driveIdx + 1);
           btnSettings.classList.add("is-lit");
           btnSettings.style.color = "#6F8FAF";
           window.clearTimeout(settingsLitTimer);
