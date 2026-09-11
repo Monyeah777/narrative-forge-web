@@ -117,6 +117,7 @@
       overflow: visible;
       pointer-events: auto;
       text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
+      container-type: inline-size;
     }
 
     .hud {
@@ -160,7 +161,7 @@
     .plate-title {
       margin: 0;
       font-family: 'Press Start2P', monospace;
-      font-size: clamp(2rem, 3.5vw, 4rem);
+      font-size: clamp(1rem, 3.05vw, 2.75rem);
       line-height: 1.05;
       letter-spacing: .06em;
       color: #C9CFD8;
@@ -168,8 +169,16 @@
       animation: strike 0.55s steps(9, end);
     }
 
+    @supports (font-size: 1cqi) {
+      .plate-title {
+        font-size: clamp(1rem, 10.2cqi, 4rem);
+      }
+    }
+
     .plate-title .line {
       display: block;
+      white-space: nowrap;
+      max-width: 100%;
     }
 
     .cursor {
