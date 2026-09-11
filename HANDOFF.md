@@ -10,14 +10,14 @@
 
 ## 当前进度（云端 Track A）
 
-手册 **B1-4 已完成**，停在等「继续」。不要开 B2（渲染层 / 调色盘精灵 / 12k 上屏）。
+手册 **B2 已完成**，停在等「继续」。不要开 B3（成画弹簧/驱离改参 / 可打断时序重写）。
 
-- 落盘 `prototype/assets/points.json`（与 `painting/points.json` 同字节，契约 v2）
-- `<link rel="preload" as="fetch" href="assets/points.json" crossorigin>` + `fetch(..., {credentials:"omit", mode:"cors"})`
-- 冻结接口：`id,w,h,count,note,palette,points`（`points` 为 `[[x,y,i],...]`）；`window.__nfPoints`
-- 数据未就绪：临时随机点，**同一套字段**（`?nf-points=placeholder` 可强制）
-- 引擎仍按宽度 cap 960/1280/1600，对 12k 目标取模，不在本步把 N 拉到 12000
-- 验收：gzip **82812 B**（python gzip -9）&lt; 120KB；preload 命中后 fetch transferSize=0；加载列表见 `painting/b1-4-load.json`
+- 12,000 全量上屏（仅 `?fx=lite` 评测闸门）
+- 调色板软边图集 2/3/4px，中心 α≈0.85，`createImageBitmap`，按色分桶 `drawImage`（整数坐标、不缩放）
+- contain 适配，四周留深空边
+- 成画静止后停 rAF；指针 / 导航 / resize / visibility 唤醒
+- 本条分支：`cursor/b2-render-atlas-52ec`（叠在 `cursor/b1-4-points-load-52ec` 上）
+- B1-4 仍有效：`assets/points.json` 契约 v2、preload、gzip 82812 B
 
 ---
 
@@ -27,7 +27,7 @@
 |---|---|
 | 本仓 | `C:\Users\mon_7\Downloads\narrative-forge-web` |
 | GitHub | `Monyeah777/narrative-forge-web` |
-| 当前分支 | 云端叠 PR 在 `cursor/b1-4-points-load-52ec` |
+| 当前分支 | 云端叠 PR 在 `cursor/b2-render-atlas-52ec` |
 | 原型路径 | `prototype/index.html`（live fetch：`assets/points.json`；`gen-points.mjs` 仍写同目录字形 `points.json`） |
 | 画作预览 | `painting/01-dallas.jpg`（primary）+ `02`–`06`；`painting/points.json`（B1-2 v2）；高清不进 git |
 | NF 主仓 | `C:\Users\mon_7\Downloads\NarrativeForge-main` |
@@ -117,21 +117,21 @@ Next.js 16，API 与训练记忆可能不同。改 Next 代码前读 `node_modul
 - `prototype/points.json` 仍是 NF 字形生成物（约 1630 `{x,y}`），**不再被 live fetch**
 - `prototype/gen-points.mjs` 确定性栅格 **N / F**（mulberry32 seed `0x4e46`）
 
-规格要作者选定的 Monet 英雄图。B1-1 六张 1200px 已齐；B1-2 采成 12k；B1-4 已接到原型 fetch。成画目标是画作点云子集（cap 取模），**调色盘上色是 B2**。
+规格要作者选定的 Monet 英雄图。B1-1 六张 1200px 已齐；B1-2 采成 12k；B1-4 接到 fetch；B2 已 12k 调色盘上屏（contain）。**弹簧改参是 B3**。
 
-数量分档：桌面 1600 / 中 1280 / 窄 960。
+数量：默认 **12,000** 全量；`?fx=lite` 才降到 2000 做评测对照。
 
-物理常量（现状，与规格 0.05/0.88 已偏离，改前先问）：
+物理常量（现状，与规格 0.05/0.88 已偏离，改参是 B3）：
 
 ```
 SPRING 0.012  GAMMA0 0.042  KT0 0.0018  V_TERM 0.01
 CURL_AMP 20  CURL_K 0.0036  REPEL_R 50  REPEL 0.11
-IDLE 0.14  POINTER_LERP 0.2  SIZES [4,6,8]
+IDLE 0.14  POINTER_LERP 0.2  SIZES [2,3,4]
 ```
 
-有字形时（`hasGlyph`）：formed 且指针不在，关掉卷流，弹簧用满 `SPRING`，避免「随机成形后微漂」。指针靠近仍驱离（半径 50px，力约 0.11）。混沌态环面包裹，不要墙边堆。
+成画静止后停 rAF。指针靠近仍驱离（半径 50px）。混沌态环面包裹。
 
-精灵：实心径向（中心不透明、边缘透明），三色相（暖/银/冷），假深度 `z` 调尺度和透明度。
+精灵：调色板软边图集（中心 α≈0.85），ImageBitmap，按亮度 2/3/4px，按色分桶绘制。
 
 ---
 
@@ -164,7 +164,7 @@ IDLE 0.14  POINTER_LERP 0.2  SIZES [4,6,8]
 ## 未完成 / 已知问题
 
 1. 轨道 B 未开始（原型未验收，不要擅自灌进 Next）。
-2. 成画目标已是达拉斯 12k 点（引擎仍 cap 1600 取模）。**调色盘精灵 / 全量上屏是 B2**。不要在 B2 前改物理常数。
+2. 成画已是达拉斯 12k 调色盘点云（contain）。**弹簧改参 / 可打断时序是 B3**。不要在 B3 前改 SPRING。
 3. 大厅目录在窄报章栏会按字折行。
 4. 介绍 / 大厅 / 社区成画共用画作点云（cap 取模）；彩蛋仍是首页多一条成画入口。字形 NF 栅格不再是 live 目标。
 5. 原型「打开完整大厅/社区页」依赖 localhost:3000。
@@ -176,7 +176,7 @@ IDLE 0.14  POINTER_LERP 0.2  SIZES [4,6,8]
 
 ## 设计偏差（对规格）
 
-- 成画目标图应为作者点名英雄图 → B1-4 已接到达拉斯 12k 点；屏幕粒子数仍 cap 1600 取模。调色盘上色未接（B2）。
+- 成画目标图应为作者点名英雄图 → B2 已 12k 调色盘点云 + contain。弹簧仍是旧 Langevin 组（B3 再改）。
 - 物理参数已改成 Langevin/OU + curl 场，不是规格里的弹簧 0.05 / 阻尼 0.88。
 - 报章面板全透明，不是规格建议的 `rgba(20,20,23,0.78)` 档案底板（用户锁死透明）。
 - 四导航都能进「成画 + 换文案」，规格只写了介绍成画。
@@ -201,4 +201,4 @@ IDLE 0.14  POINTER_LERP 0.2  SIZES [4,6,8]
 
 1. 打开 http://localhost:8768/ 看现行原型（没有服务就在 `prototype/` 起 python http.server）。
 2. 读 `prototype/index.html` 的 CSS 报章区 + `openArchive` / `triggerEgg`，不要重写引擎。
-3. 只做用户这一次点名的事。规格里未点名的轨道 B、Fusion Pixel，先问。B2 渲染层等用户说「继续」。
+3. 只做用户这一次点名的事。规格里未点名的轨道 B、Fusion Pixel，先问。B3 成画动画等用户说「继续」。
