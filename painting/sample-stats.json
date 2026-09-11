@@ -1,0 +1,122 @@
+{
+  "id": "poplars-dallas",
+  "source": "painting/01-dallas.jpg",
+  "w": 1200,
+  "h": 1519,
+  "pixels": 1822800,
+  "count": 12000,
+  "k": 256,
+  "seed": 20038,
+  "dark_L": 0.19,
+  "dark_cull_pct": 0.0005,
+  "dark_cull_note": "Dallas stand-in is a high-key canopy/sky crop; L p01\u22480.54 so the 0.17\u20130.22 band cannot reach the 3\u20136% cull designed for darker sources. Kept handbook default 0.19 rather than eating midtones.",
+  "weight": "0.6 + 0.4*L^1.2",
+  "relax_rounds": 0,
+  "L_hist_image": {
+    "bins": 10,
+    "range": [
+      0.0,
+      1.0
+    ],
+    "counts": [
+      1,
+      14,
+      132,
+      1139,
+      8239,
+      42079,
+      236097,
+      1282537,
+      247140,
+      5422
+    ],
+    "edges": [
+      0.0,
+      0.1,
+      0.2,
+      0.3,
+      0.4,
+      0.5,
+      0.6,
+      0.7,
+      0.8,
+      0.9,
+      1.0
+    ]
+  },
+  "L_hist_sampled": {
+    "bins": 10,
+    "range": [
+      0.0,
+      1.0
+    ],
+    "counts": [
+      0,
+      0,
+      2,
+      7,
+      47,
+      248,
+      1476,
+      8494,
+      1685,
+      41
+    ],
+    "edges": [
+      0.0,
+      0.1,
+      0.2,
+      0.3,
+      0.4,
+      0.5,
+      0.6,
+      0.7,
+      0.8,
+      0.9,
+      1.0
+    ]
+  },
+  "L_image": {
+    "min": 0.05811,
+    "mean": 0.74839,
+    "max": 0.9965,
+    "p01": 0.53612
+  },
+  "Y709_linear_mean": 0.42764,
+  "deltaE_ok_css": {
+    "mean": 0.007198,
+    "max": 0.037601,
+    "p95": 0.013844,
+    "note": "CSS Color 4 \u0394EOK = Euclidean OKLab, L 0..1; JND\u22480.02"
+  },
+  "deltaE_ok_100": {
+    "mean": 0.7198,
+    "max": 3.7601,
+    "p95": 1.3844,
+    "note": "100\u00d7\u0394EOK so one JND\u22482 like \u0394E2000 (CSS Color 4 note)"
+  },
+  "hue_shift_deg": {
+    "mean_abs_deg": 7.7299,
+    "chroma_weighted_abs_deg": 7.2621,
+    "max_abs_deg": 74.7878,
+    "total_abs_mean_signed_deg": 0.0118,
+    "chromatic_n": 5646,
+    "chroma_floor": 0.02,
+    "note": "\u603b\u91cf = |circular mean of signed \u0394h| on C\u22650.02; near-neutrals inflate unweighted mean|\u0394h|"
+  },
+  "kcenter_max_deltaE_ok_100": 2.1589,
+  "kcenter_note": "Gonzalez k-center max radius at k=256. Covering every sample at \u0394E_ok\u00d7100\u22642 needs ~268 balls on this set, above the handbook k cap.",
+  "palette_len": 256,
+  "checks": {
+    "count_12000": true,
+    "k_in_160_256": true,
+    "coords_4dp": true,
+    "deltaE_ok_100_mean_le_2": true,
+    "deltaE_ok_100_max_le_2": false,
+    "hue_total_le_2": true,
+    "hue_mean_abs_le_2": false,
+    "dark_cull_3_to_6": false
+  },
+  "bytes": 240054,
+  "gzip_bytes": 76609
+}
