@@ -586,12 +586,59 @@
       animation: rise 400ms 640ms forwards;
     }
 
+    .arcade {
+      position: fixed;
+      right: 8%;
+      bottom: 2.75rem;
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.45rem;
+      margin: 0;
+      pointer-events: none;
+      text-shadow: none;
+    }
+
+    .arcade-mode {
+      margin: 0;
+      min-height: 1em;
+      font-family: 'Press Start2P', monospace;
+      font-size: 8px;
+      line-height: 1;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: #8E959D;
+      white-space: nowrap;
+      text-shadow: none;
+    }
+
+    .arcade-row {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .arcade-meta {
+      font-family: 'Press Start2P', monospace;
+      font-size: 8px;
+      line-height: 1;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: #8E959D;
+      pointer-events: none;
+      user-select: none;
+      white-space: nowrap;
+      text-shadow: none;
+    }
+
     .console {
       display: flex;
       flex-wrap: nowrap;
       align-items: center;
-      gap: 0.2em 1.1em;
-      margin: 2.2em 0 0;
+      gap: 2rem;
+      margin: 0;
     }
 
     .console-key {
@@ -601,21 +648,22 @@
       align-items: center;
       justify-content: center;
       margin: 0;
-      padding: 0 0.15em;
+      padding: 0;
       min-width: 44px;
       min-height: 44px;
       border: 0;
       background: transparent;
       box-shadow: none;
-      font-family: 'Silkscreen', monospace;
+      font-family: 'Press Start2P', monospace;
       font-weight: 400;
-      font-size: 16px;
+      font-size: 10px;
       line-height: 1;
-      letter-spacing: 0.12em;
+      letter-spacing: 0.25em;
       text-transform: uppercase;
       color: #8A8A8A;
       cursor: pointer;
-      text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
+      pointer-events: auto;
+      text-shadow: none;
     }
 
     #btn-start {
@@ -623,25 +671,26 @@
       animation: startBreath 1.8s ease-in-out infinite;
     }
 
-    #btn-save[aria-pressed="true"] {
+    #btn-start:active {
+      transform: translateY(1px);
+    }
+
+    #btn-save.is-saved,
+    #btn-save.is-saved:hover {
       color: #E5E7EB;
     }
 
     @media (hover: hover) and (pointer: fine) {
-      .console-key:hover {
+      #btn-save:hover,
+      #btn-settings:hover {
         color: #FFFFFF;
       }
-    }
-
-    #btn-settings.is-lit,
-    #btn-settings.is-lit:hover {
-      color: #6F8FAF;
     }
 
     .colophon {
       position: relative;
       z-index: 5;
-      margin-top: 40px;
+      margin-top: 3em;
       padding-top: 0;
       font-size: 11px;
       letter-spacing: 0.15em;
@@ -713,10 +762,6 @@
         left: auto;
         width: min(440px, 84vw);
       }
-      .console {
-        flex-wrap: wrap;
-        gap: 0 0.8em;
-      }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -787,11 +832,6 @@
           <a class="go" id="go-community" href="/community">打开社区页</a>
         </div>
       </section>
-      <div class="console" role="group" aria-label="控制台">
-        <button type="button" class="console-key" id="btn-start">START</button>
-        <button type="button" class="console-key" id="btn-save" aria-pressed="false">SAVE</button>
-        <button type="button" class="console-key" id="btn-settings">SETTINGS</button>
-      </div>
       <p class="colophon"><button type="button" class="egg" id="btn-egg" aria-label="像素 NF">NF</button> · 内容契约层 · 定内容，不定模型</p>
     </aside>
   </div>
@@ -802,6 +842,18 @@
     <span class="vf-corner vf-bl"></span>
     <span class="vf-corner vf-br"></span>
     <p class="vf-readout"><span class="rec-dot"></span>REC　F/2.8　ISO400　BATT99%</p>
+  </div>
+  <div class="arcade">
+    <p class="arcade-mode" id="arcade-mode" aria-live="polite"></p>
+    <div class="arcade-row">
+      <span class="arcade-meta" aria-hidden="true">INSERT COIN</span>
+      <div class="console" role="group" aria-label="控制台">
+        <button type="button" class="console-key" id="btn-start">START</button>
+        <button type="button" class="console-key" id="btn-save">SAVE</button>
+        <button type="button" class="console-key" id="btn-settings">SETTINGS</button>
+      </div>
+      <span class="arcade-meta" aria-hidden="true">CREDIT 01</span>
+    </div>
   </div>
 
   <script>
@@ -842,14 +894,15 @@
       var btnHall = document.getElementById("btn-hall");
       var btnCommunity = document.getElementById("btn-community");
       var btnEgg = document.getElementById("btn-egg");
-      var btnStart = document.getElementById("btn-start");
       var btnSave = document.getElementById("btn-save");
       var btnSettings = document.getElementById("btn-settings");
-      var settingsLitTimer = 0;
+      var arcadeMode = document.getElementById("arcade-mode");
+      var saveLampTimer = 0;
+      var modeFlashTimer = 0;
       var DRIVES = [
-        { id: "A", J: 0.18, D: 0.975, vmax: 4 },
-        { id: "B", J: 0.60, D: 0.955, vmax: 12 },
-        { id: "C", J: 0.02, D: 0.93, vmax: 2 }
+        { id: "A", label: "LOW DRIFT", J: 0.18, D: 0.975, vmax: 4 },
+        { id: "B", label: "STORM", J: 0.60, D: 0.955, vmax: 12 },
+        { id: "C", label: "STILL", J: 0.02, D: 0.93, vmax: 2 }
       ];
       var driveIdx = 0;
       var driveJ = DRIVES[0].J;
@@ -1361,16 +1414,12 @@
       }
 
       function setFrozen(next) {
-        if (isFrozen === next) {
-          if (btnSave) btnSave.setAttribute("aria-pressed", next ? "true" : "false");
-          return;
-        }
+        if (isFrozen === next) return;
         isFrozen = next;
         acc = 0;
         lastT = performance.now();
         if (next) stage.setAttribute("data-frozen", "true");
         else stage.removeAttribute("data-frozen");
-        if (btnSave) btnSave.setAttribute("aria-pressed", next ? "true" : "false");
       }
 
       function applyDrive(idx) {
@@ -1383,9 +1432,13 @@
         lastT = performance.now();
       }
 
-      function onStart() {
-        if (isFrozen) setFrozen(false);
-        assemble();
+      function flashMode() {
+        if (!arcadeMode) return;
+        arcadeMode.textContent = "> MODE: " + DRIVES[driveIdx].label;
+        window.clearTimeout(modeFlashTimer);
+        modeFlashTimer = window.setTimeout(function () {
+          arcadeMode.textContent = "";
+        }, 1000);
       }
 
       function appHref(path) {
@@ -1608,24 +1661,19 @@
           triggerEgg();
         });
       }
-      if (btnStart) {
-        btnStart.addEventListener("click", onStart);
-      }
       if (btnSave) {
         btnSave.addEventListener("click", function () {
-          setFrozen(!isFrozen);
+          btnSave.classList.add("is-saved");
+          window.clearTimeout(saveLampTimer);
+          saveLampTimer = window.setTimeout(function () {
+            btnSave.classList.remove("is-saved");
+          }, 1500);
         });
       }
       if (btnSettings) {
         btnSettings.addEventListener("click", function () {
           applyDrive(driveIdx + 1);
-          btnSettings.classList.add("is-lit");
-          btnSettings.style.color = "#6F8FAF";
-          window.clearTimeout(settingsLitTimer);
-          settingsLitTimer = window.setTimeout(function () {
-            btnSettings.classList.remove("is-lit");
-            btnSettings.style.color = "";
-          }, 1000);
+          flashMode();
         });
       }
 
