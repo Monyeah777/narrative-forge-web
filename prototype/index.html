@@ -469,34 +469,6 @@
       transition: none;
     }
 
-    .nav-start {
-      display: inline-block;
-      margin-left: 0.75em;
-      font-family: 'Silkscreen', monospace;
-      font-weight: 400;
-      font-size: 16px;
-      line-height: 1;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: #A33B2A;
-      vertical-align: 0.05em;
-      pointer-events: auto;
-      text-shadow: none;
-      -webkit-font-smoothing: none;
-      animation: softBlink 1.8s ease-in-out infinite;
-    }
-
-    .nav-item:hover .nav-start,
-    .nav-item[aria-current="page"] .nav-start {
-      color: #A33B2A;
-    }
-
-    @media (hover: hover) and (pointer: fine) {
-      .nav-start:hover {
-        text-shadow: 0 0 8px rgba(163, 59, 42, 0.3);
-      }
-    }
-
     .dossier {
       margin-top: 2em;
       visibility: hidden;
@@ -751,11 +723,6 @@
       50% { opacity: 1; }
     }
 
-    @keyframes softBlink {
-      0%, 100% { opacity: 0.3; }
-      50% { opacity: 1; }
-    }
-
     @keyframes blink {
       50% { opacity: 0; }
     }
@@ -800,11 +767,6 @@
         animation: none !important;
         opacity: 1;
       }
-      .nav-start {
-        animation: none !important;
-        opacity: 1;
-        text-shadow: none;
-      }
       .stage[data-mode="formed"] .lead,
       .stage[data-mode="formed"] .sub,
       .stage[data-mode="formed"] .catalog,
@@ -832,7 +794,7 @@
         <a href="https://gitee.com/monyeah777/narrative-forge" rel="noopener noreferrer" target="_blank">Gitee</a>
       </div>
       <nav class="nav" aria-label="站点">
-        <button type="button" class="nav-item" id="btn-home" data-idx="01" aria-current="page">首页<span class="nav-start" aria-hidden="true">START</span></button>
+        <button type="button" class="nav-item" id="btn-home" data-idx="01" aria-current="page">首页</button>
         <button type="button" class="nav-item" id="btn-intro" data-idx="02">介绍</button>
         <button type="button" class="nav-item" id="btn-hall" data-idx="03">数据大厅</button>
         <button type="button" class="nav-item" id="btn-community" data-idx="04">社区</button>
