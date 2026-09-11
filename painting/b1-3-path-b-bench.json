@@ -1,0 +1,29 @@
+{
+  "path": "B",
+  "tool": "painting/sample-browser.js (Canvas2D getImageData once)",
+  "count": 12000,
+  "points_len": 12000,
+  "palette_len": 256,
+  "w": 1200,
+  "h": 1540,
+  "id": "poplars-dallas",
+  "keys": [
+    "id",
+    "w",
+    "h",
+    "count",
+    "note",
+    "palette",
+    "points"
+  ],
+  "timing": {
+    "image_load_ms": 3.2,
+    "getImageData_ms": 23.6,
+    "sample_ms": 440.3,
+    "total_ms": 477.2,
+    "json_bytes": 240390,
+    "dark_cull_pct": 0.0001,
+    "getImageData_calls": 1,
+    "willReadFrequently": true
+  }
+}

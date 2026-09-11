@@ -1,0 +1,58 @@
+{
+  "path": "A",
+  "tool": "scripts/sample-painting.py (Pillow + numpy)",
+  "image": "painting/01-dallas.jpg",
+  "image_load_ms": 18.765,
+  "runs": [
+    {
+      "run": 1,
+      "sample_ms": 4403.174,
+      "bytes": 238906,
+      "gzip_bytes": 82812,
+      "sha256": "d35cae4c65a1c17ebbb609176b908750ff7aef5479aa7c563e7a1faf4e68d134",
+      "count": 12000,
+      "points_len": 12000,
+      "palette_len": 256,
+      "keys": [
+        "id",
+        "w",
+        "h",
+        "count",
+        "note",
+        "palette",
+        "points"
+      ]
+    },
+    {
+      "run": 2,
+      "sample_ms": 4298.713,
+      "bytes": 238906,
+      "gzip_bytes": 82812,
+      "sha256": "d35cae4c65a1c17ebbb609176b908750ff7aef5479aa7c563e7a1faf4e68d134",
+      "count": 12000,
+      "points_len": 12000,
+      "palette_len": 256,
+      "keys": [
+        "id",
+        "w",
+        "h",
+        "count",
+        "note",
+        "palette",
+        "points"
+      ]
+    }
+  ],
+  "a_twice_identical": true,
+  "committed_points": {
+    "path": "painting/points.json",
+    "bytes": 238906,
+    "read_ms": 0.097,
+    "sha256": "d35cae4c65a1c17ebbb609176b908750ff7aef5479aa7c563e7a1faf4e68d134",
+    "matches_run": true
+  },
+  "acceptance": {
+    "a_twice_identical": true,
+    "count_12000": true
+  }
+}
