@@ -1,4 +1,3 @@
-import { Mapping } from "@/components/concepts/M02_Mapping/Mapping";
 import { Paths } from "@/components/concepts/M04_Paths/Paths";
 import { Quality } from "@/components/concepts/M03_Quality/Quality";
 import { What } from "@/components/concepts/M01_What/What";
@@ -21,7 +20,6 @@ export default function ConceptsPage() {
         paragraphs={content.what}
       />
       <div className="mt-10 flex flex-col gap-10">
-        <Mapping heading={content.headingMapping} rows={content.mapping} />
         <Quality heading={content.headingQuality} paragraphs={content.quality} />
         <Paths
           heading={content.headingPaths}

@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NarrativeForge · 宇宙像素档案</title>
+  <link rel="preload" href="points.json" as="fetch" crossorigin="anonymous" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      background: #050505;
+      color: #e8eef6;
+    }
+
+    body {
+      font-family: "Courier New", Courier, monospace;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .stage {
+      position: relative;
+      z-index: 2;
+      height: 100vh;
+      min-height: 100vh;
+      overflow: hidden;
+      background: transparent;
+    }
+
+    @supports (height: 100svh) {
+      .stage {
+        height: 100svh;
+        min-height: 100svh;
+      }
+    }
+
+    canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+      display: block;
+      background: #050505;
+      touch-action: none;
+    }
+
+    .paper {
+      position: absolute;
+      top: 15%;
+      right: 8%;
+      z-index: 200;
+      width: min(440px, 40vw);
+      padding: 0;
+      color: #e8eef6;
+      background: none;
+      border: 0;
+      overflow: visible;
+      pointer-events: auto;
+      text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
+    }
+
+    .hud {
+      position: fixed;
+      top: 1.4rem;
+      left: 1.6rem;
+      z-index: 99;
+      margin: 0;
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: #6a7180;
+      pointer-events: none;
+      text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
+    }
+
+    .veil {
+      position: fixed;
+      inset: 0;
+      z-index: 4;
+      pointer-events: none;
+      background: radial-gradient(ellipse 78% 70% at 36% 46%, transparent 0%, transparent 46%, rgba(5, 5, 5, 0.42) 100%);
+    }
+
+    .grain {
+      position: fixed;
+      inset: 0;
+      z-index: 5;
+      pointer-events: none;
+      opacity: 0.045;
+      mix-blend-mode: overlay;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    .mast {
+      display: block;
+    }
+
+    .masthead {
+      margin: 0;
+      font-family: "Courier New", Courier, monospace;
+      font-size: clamp(32px, 4.4vw, 54px);
+      font-weight: 700;
+      line-height: 0.98;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #f4f7fb;
+      text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
+      animation: strike 0.55s steps(9, end);
+    }
+
+    .cursor {
+      display: inline-block;
+      margin-left: 0.08em;
+      font-weight: 400;
+      animation: blink 1.05s steps(1) infinite;
+    }
+
+    .vol {
+      margin: 0.55em 0 0;
+      font-size: 11px;
+      line-height: 1.4;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #8b93a3;
+      text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
+    }
+
+    .channels {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75em;
+      margin-top: 2em;
+    }
+
+    .channels a {
+      appearance: none;
+      font-family: "Press Start 2P", cursive;
+      font-size: 10px;
+      line-height: 1.6;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #d8eaff;
+      background: none;
+      border: 0;
+      border-bottom: 1px solid transparent;
+      min-height: 44px;
+      padding: 0.35em 0 0.2em;
+      margin-right: 1.25em;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.7;
+      text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
+    }
+
+    .channels a:hover,
+    .channels a:focus-visible {
+      opacity: 1;
+      background: none;
+      border-bottom: 1px solid #ffffff;
+    }
+
+    .channels a:focus-visible,
+    .nav-item:focus-visible {
+      outline: 1px solid rgba(200, 205, 215, 0.7);
+      outline-offset: 3px;
+    }
+
+    .nav {
+      display: block;
+      margin-top: 2em;
+    }
+
+    .nav-item {
+      appearance: none;
+      position: relative;
+      width: 100%;
+      margin: 0;
+      padding: 0.75em 2.4em 0.75em 1.35em;
+      min-height: 44px;
+      border: 0;
+      background: transparent;
+      color: #c8cdd6;
+      font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: none;
+      text-align: left;
+      cursor: pointer;
+      text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
+    }
+
+    .nav-item::before {
+      content: ">";
+      position: absolute;
+      left: 0;
+      top: 50%;
+      color: #f2f2f2;
+      text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
+      opacity: 0;
+      transform: translate(-10px, -50%);
+      pointer-events: none;
+      transition: none;
+    }
+
+    .nav-item:hover,
+    .nav-item[aria-current="page"] {
+      color: #f4f4f4;
+    }
+
+    .nav-item:hover::before,
+    .nav-item[aria-current="page"]::before {
+      opacity: 1;
+      transform: translate(0, -50%);
+      transition: opacity 160ms ease-out, transform 160ms ease-out;
+    }
+
+    .nav-item::after {
+      content: attr(data-idx);
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      font-family: "Courier New", Courier, monospace;
+      font-size: 10px;
+      font-weight: 400;
+      letter-spacing: 0.18em;
+      color: #6a7180;
+      opacity: 0.55;
+      pointer-events: none;
+    }
+
+    .nav:hover .nav-item[aria-current="page"]:not(:hover)::before {
+      opacity: 0;
+      transform: translate(-10px, -50%);
+      transition: none;
+    }
+
+    .dossier {
+      margin-top: 2em;
+      visibility: hidden;
+    }
+
+    .stage[data-mode="formed"] .dossier {
+      visibility: visible;
+    }
+
+    .lead,
+    .sub {
+      opacity: 0;
+    }
+
+    .lead {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1.4;
+      letter-spacing: 0.06em;
+      text-transform: none;
+      color: #f4f7fb;
+      text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
+    }
+
+    .sub {
+      margin: 1.5em 0 0;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: none;
+      color: #c8cdd6;
+      text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
+    }
+
+    .panel {
+      display: none;
+    }
+
+    .dossier[data-view="intro"] .panel[data-panel="intro"],
+    .dossier[data-view="hall"] .panel[data-panel="hall"],
+    .dossier[data-view="community"] .panel[data-panel="community"] {
+      display: block;
+    }
+
+    .catalog,
+    .go {
+      opacity: 0;
+    }
+
+    .catalog {
+      list-style: none;
+      margin: 1.2em 0 0;
+      padding: 0;
+      font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+      font-size: 12px;
+      line-height: 1.55;
+      color: #c8cdd6;
+      text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
+    }
+
+    .catalog li + li {
+      margin-top: 0.85em;
+    }
+
+    .catalog span {
+      display: block;
+      margin-bottom: 0.15em;
+      font-family: "Courier New", Courier, monospace;
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #6a7180;
+    }
+
+    .go {
+      display: inline-block;
+      margin-top: 1.35em;
+      font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: #d8eaff;
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
+    }
+
+    .go:hover,
+    .go:focus-visible {
+      color: #ffffff;
+      border-bottom-color: #ffffff;
+    }
+
+    .stage[data-mode="formed"] .lead {
+      animation: rise 400ms 400ms forwards;
+    }
+    .stage[data-mode="formed"] .sub {
+      animation: rise 400ms 500ms forwards;
+    }
+    .stage[data-mode="formed"] .catalog {
+      animation: rise 400ms 560ms forwards;
+    }
+    .stage[data-mode="formed"] .go {
+      animation: rise 400ms 640ms forwards;
+    }
+
+    .colophon {
+      position: relative;
+      z-index: 5;
+      margin-top: 3em;
+      padding-top: 0;
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #6a7180;
+      pointer-events: auto;
+      text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
+    }
+
+    .egg {
+      appearance: none;
+      -webkit-appearance: none;
+      position: relative;
+      display: inline-block;
+      margin: -16px -10px;
+      padding: 16px 10px;
+      font: inherit;
+      line-height: inherit;
+      letter-spacing: inherit;
+      text-transform: inherit;
+      color: inherit;
+      background: transparent;
+      border: 0;
+      box-shadow: none;
+      cursor: pointer;
+      pointer-events: auto;
+      vertical-align: baseline;
+    }
+
+    .egg:hover,
+    .egg:focus-visible {
+      color: #f4f7fb;
+    }
+
+    @keyframes rise {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+
+    @keyframes strike {
+      from {
+        letter-spacing: 0.42em;
+        opacity: 0.15;
+      }
+      to {
+        letter-spacing: 0.2em;
+        opacity: 1;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .paper {
+        top: 12%;
+        right: 8%;
+        left: auto;
+        width: min(440px, 84vw);
+      }
+      .masthead { font-size: 30px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .masthead, .cursor, .lead, .sub { animation: none !important; }
+      .cursor { display: none; }
+      .nav-item::before,
+      .nav-item:hover::before,
+      .nav-item[aria-current="page"]::before { transition: none !important; }
+      .grain, .veil { display: none; }
+      .stage[data-mode="formed"] .lead,
+      .stage[data-mode="formed"] .sub,
+      .stage[data-mode="formed"] .catalog,
+      .stage[data-mode="formed"] .go { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="stage" id="stage" data-mode="chaos">
+    <canvas id="void" role="img" aria-label="深空粒子场"></canvas>
+    <div class="veil" aria-hidden="true"></div>
+    <div class="grain" aria-hidden="true"></div>
+    <p class="hud" aria-hidden="true">NF · VOID / 050505</p>
+    <aside class="paper">
+      <header class="mast">
+        <h1 class="masthead">Narrative<br />Forge<span class="cursor" aria-hidden="true">█</span></h1>
+        <p class="vol" id="vol">COSMIC PIXEL ARCHIVE · VOL. 01</p>
+      </header>
+      <div class="channels">
+        <a href="https://github.com/Monyeah777/NarrativeForge" rel="noopener noreferrer" target="_blank">GitHub</a>
+        <a href="https://gitee.com/monyeah777/narrative-forge" rel="noopener noreferrer" target="_blank">Gitee</a>
+      </div>
+      <nav class="nav" aria-label="站点">
+        <button type="button" class="nav-item" id="btn-home" data-idx="01" aria-current="page">首页</button>
+        <button type="button" class="nav-item" id="btn-intro" data-idx="02">介绍</button>
+        <button type="button" class="nav-item" id="btn-hall" data-idx="03">数据大厅</button>
+        <button type="button" class="nav-item" id="btn-community" data-idx="04">社区</button>
+      </nav>
+      <section class="dossier" id="dossier" data-view="home" aria-live="polite" aria-hidden="true">
+        <div class="panel" data-panel="intro">
+          <p class="lead">把叙事，变成工程。</p>
+          <p class="sub">质量不是猜出来的，是校验出来的。</p>
+        </div>
+        <div class="panel" data-panel="hall">
+          <p class="lead">数据大厅</p>
+          <p class="sub">只读浏览官方核心模块、核心管线与资产键。</p>
+          <ul class="catalog">
+            <li><span>核心板块 · 13</span>季节天气 · 任务剧情 · NPC 对话 · NPC 交互 · 世界知识库 · 事件叙事 · 技术文档结构 · 数据结构 · 时间推进 · 认知边界 · 组合规则 · 主循环 · 输出生成器</li>
+            <li><span>核心管线 · 3</span>P00 通用文档生成管线 · P01 标准管线（官方核心装配） · P90 技术文档生成管线</li>
+            <li><span>资产键 · 3</span>STYLE_DNA · TECH_RULES · TECH_TEMPLATES</li>
+          </ul>
+          <a class="go" id="go-hall" href="/hall">打开完整大厅</a>
+        </div>
+        <div class="panel" data-panel="community">
+          <p class="lead">社区入口</p>
+          <p class="sub">community/ 是公开货架：领域包默认 community 档，实战验证后再议升级。不照搬代码市场。即将开放，不承诺日期。</p>
+          <a class="go" id="go-community" href="/community">打开社区页</a>
+        </div>
+      </section>
+      <p class="colophon"><button type="button" class="egg" id="btn-egg" aria-label="像素 NF">NF</button> · 内容契约层 · 定内容，不定模型</p>
+    </aside>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var VOID = "#050505";
+      var DT = 1 / 60;
+      var MAX_STEPS = 2;
+      var FRAME_CLAMP = 0.25;
+      var SPRING = 0.012;
+      var GAMMA0 = 0.042;
+      var KT0 = 0.0018;
+      var V_TERM = 0.01;
+      var CURL_AMP = 20;
+      var CURL_K = 0.0036;
+      var WALL = 36;
+      var WALL_K = 0.01;
+      var LEFT_BAND = 0.6;
+      var LEFT_WEIGHT = 0.6;
+      var REPEL_R = 50;
+      var REPEL = 0.11;
+      var VMAX = 1.05;
+      var IDLE = 0.14;
+      var POINTER_LERP = 0.2;
+      var STOP_PX = 0.5;
+      var STOP_V = 0.05;
+      var ASSEMBLE_MS = 1500;
+      var DISPERSE_MS = 1100;
+      var SIZES = [4, 6, 8];
+
+      var stage = document.getElementById("stage");
+      var canvas = document.getElementById("void");
+      var dossier = document.getElementById("dossier");
+      var volEl = document.getElementById("vol");
+      var ctx = canvas.getContext("2d", { alpha: false });
+      var btnHome = document.getElementById("btn-home");
+      var btnIntro = document.getElementById("btn-intro");
+      var btnHall = document.getElementById("btn-hall");
+      var btnCommunity = document.getElementById("btn-community");
+      var btnEgg = document.getElementById("btn-egg");
+      var navItems = stage.querySelectorAll(".nav-item");
+      if (!ctx) return;
+
+      var dpr = 1;
+      var cssW = 1;
+      var cssH = 1;
+      var N = 0;
+      var x, y, vx, vy, hx, hy, tx, ty, nx, ny, nhx, nhy, ntx, nty, z, sid;
+      var sprites = [];
+      var mode = "chaos";
+      var currentView = "home";
+      var hasGlyph = false;
+      var modeT0 = 0;
+      var acc = 0;
+      var lastT = 0;
+      var raf = 0;
+      var running = false;
+      var booted = false;
+      var mx = 0;
+      var my = 0;
+      var mxT = 0;
+      var myT = 0;
+      var pointerOn = false;
+      var pointerEver = false;
+      var touchUntil = 0;
+      var reduced = false;
+      var finePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
+      var reduceMq = window.matchMedia("(prefers-reduced-motion: reduce)");
+      var resizeTimer = 0;
+      var gaussSpare = null;
+
+      function quantizeDpr() {
+        var raw = window.devicePixelRatio || 1;
+        if (raw >= 1.5) return 2;
+        return 1;
+      }
+
+      function capCount() {
+        var w = window.innerWidth;
+        if (w <= 768) return 960;
+        if (w <= 1100) return 1280;
+        return 1600;
+      }
+
+      function rand() {
+        return Math.random();
+      }
+
+      function spawnNormX() {
+        if (rand() < LEFT_WEIGHT) return rand() * LEFT_BAND;
+        return rand();
+      }
+
+      function gauss() {
+        var u, v, r, m, out;
+        if (gaussSpare !== null) {
+          out = gaussSpare;
+          gaussSpare = null;
+          return out;
+        }
+        do {
+          u = rand() * 2 - 1;
+          v = rand() * 2 - 1;
+          r = u * u + v * v;
+        } while (r === 0 || r >= 1);
+        m = Math.sqrt(-2 * Math.log(r) / r);
+        gaussSpare = v * m;
+        return u * m;
+      }
+
+      function radiusOf(i) {
+        return 0.72 + sid[i] * 0.28;
+      }
+
+      function dampOf(i) {
+        var rr = radiusOf(i);
+        return Math.exp(-GAMMA0 / (rr * rr));
+      }
+
+      function thermalSig(i, rho) {
+        var rr = radiusOf(i);
+        var mass = rr * rr * rr;
+        return Math.sqrt(Math.max(0, (KT0 / mass) * (1 - rho * rho)));
+      }
+
+      function streamPsi(px, py, t) {
+        var k = CURL_K;
+        return Math.sin(px * k + t * 0.13) * Math.cos(py * k * 0.82 - t * 0.09)
+          + 0.42 * Math.sin(px * k * 1.9 - py * k * 1.35 + t * 0.21)
+          + 0.18 * Math.sin(px * k * 3.1 + py * k * 2.4 - t * 0.07);
+      }
+
+      function curlVel(px, py, t) {
+        var e = 12;
+        var dpsy = (streamPsi(px, py + e, t) - streamPsi(px, py - e, t)) / (2 * e);
+        var dpsx = (streamPsi(px + e, py, t) - streamPsi(px - e, py, t)) / (2 * e);
+        return { ux: dpsy * CURL_AMP, uy: -dpsx * CURL_AMP };
+      }
+
+      function seedVel(i, nx) {
+        var rho = dampOf(i);
+        var sig = thermalSig(i, rho);
+        var slow = nx < LEFT_BAND ? 0.55 : 1;
+        vx[i] = gauss() * sig * slow;
+        vy[i] = gauss() * sig * slow;
+      }
+
+      function makeSprite(cssPx, pixelRatio, c0, c1) {
+        var pixel = Math.max(16, Math.round(cssPx * 3 * pixelRatio));
+        var off = document.createElement("canvas");
+        off.width = pixel;
+        off.height = pixel;
+        var g = off.getContext("2d");
+        var c = pixel * 0.5;
+        var radius = pixel * 0.5;
+        var grd = g.createRadialGradient(c, c, 0, c, c, radius);
+        grd.addColorStop(0, c0);
+        grd.addColorStop(0.5, c1);
+        grd.addColorStop(1, "rgba(200, 205, 215, 0)");
+        g.fillStyle = grd;
+        g.beginPath();
+        g.arc(c, c, radius, 0, Math.PI * 2);
+        g.fill();
+        return { canvas: off, css: cssPx };
+      }
+
+      function buildSprites() {
+        sprites = [
+          makeSprite(SIZES[0], dpr, "rgba(214, 210, 200, 0.78)", "rgba(214, 210, 200, 0.34)"),
+          makeSprite(SIZES[1], dpr, "rgba(200, 205, 215, 0.82)", "rgba(200, 205, 215, 0.38)"),
+          makeSprite(SIZES[2], dpr, "rgba(176, 198, 224, 0.8)", "rgba(176, 198, 224, 0.36)")
+        ];
+      }
+
+      function alloc(n) {
+        N = n;
+        x = new Float32Array(n);
+        y = new Float32Array(n);
+        vx = new Float32Array(n);
+        vy = new Float32Array(n);
+        hx = new Float32Array(n);
+        hy = new Float32Array(n);
+        tx = new Float32Array(n);
+        ty = new Float32Array(n);
+        nx = new Float32Array(n);
+        ny = new Float32Array(n);
+        nhx = new Float32Array(n);
+        nhy = new Float32Array(n);
+        ntx = new Float32Array(n);
+        nty = new Float32Array(n);
+        z = new Float32Array(n);
+        sid = new Uint8Array(n);
+      }
+
+      function toPx() {
+        var i;
+        for (i = 0; i < N; i++) {
+          x[i] = nx[i] * cssW;
+          y[i] = ny[i] * cssH;
+          hx[i] = nhx[i] * cssW;
+          hy[i] = nhy[i] * cssH;
+          tx[i] = ntx[i] * cssW;
+          ty[i] = nty[i] * cssH;
+        }
+      }
+
+      function toNorm() {
+        var i, iw, ih;
+        if (cssW <= 0 || cssH <= 0) return;
+        iw = 1 / cssW;
+        ih = 1 / cssH;
+        for (i = 0; i < N; i++) {
+          nx[i] = x[i] * iw;
+          ny[i] = y[i] * ih;
+          nhx[i] = hx[i] * iw;
+          nhy[i] = hy[i] * ih;
+          ntx[i] = tx[i] * iw;
+          nty[i] = ty[i] * ih;
+        }
+      }
+
+      function scatterHomes() {
+        var i;
+        for (i = 0; i < N; i++) {
+          nhx[i] = spawnNormX();
+          nhy[i] = rand();
+          hx[i] = nhx[i] * cssW;
+          hy[i] = nhy[i] * cssH;
+        }
+      }
+
+      function formTargets(points) {
+        var i, p;
+        if (points && points.length) {
+          for (i = 0; i < N; i++) {
+            p = points[i % points.length];
+            ntx[i] = p.x;
+            nty[i] = p.y;
+            tx[i] = ntx[i] * cssW;
+            ty[i] = nty[i] * cssH;
+          }
+          return;
+        }
+        for (i = 0; i < N; i++) {
+          ntx[i] = spawnNormX();
+          nty[i] = rand();
+          tx[i] = ntx[i] * cssW;
+          ty[i] = nty[i] * cssH;
+        }
+      }
+
+      function placeNow(fromTargets) {
+        var i;
+        for (i = 0; i < N; i++) {
+          if (fromTargets) {
+            nx[i] = ntx[i];
+            ny[i] = nty[i];
+            x[i] = tx[i];
+            y[i] = ty[i];
+          } else {
+            nx[i] = nhx[i];
+            ny[i] = nhy[i];
+            x[i] = hx[i];
+            y[i] = hy[i];
+          }
+          vx[i] = 0;
+          vy[i] = 0;
+          sid[i] = i % 3;
+          z[i] = 0.18 + rand() * 0.82;
+          seedVel(i, nx[i]);
+        }
+      }
+
+      function snapshotHomes() {
+        var i;
+        for (i = 0; i < N; i++) {
+          hx[i] = x[i];
+          hy[i] = y[i];
+          nhx[i] = nx[i];
+          nhy[i] = ny[i];
+        }
+      }
+
+      function parsePoints(data) {
+        var arr = Array.isArray(data) ? data : (data && data.points);
+        if (!arr || !arr.length) return null;
+        var out = [];
+        var i, p, px, py;
+        for (i = 0; i < arr.length; i++) {
+          p = arr[i];
+          px = typeof p.x === "number" ? p.x : p[0];
+          py = typeof p.y === "number" ? p.y : p[1];
+          if (px >= 0 && px <= 1 && py >= 0 && py <= 1) out.push({ x: px, y: py });
+        }
+        return out.length ? out : null;
+      }
+
+      function paintVoid() {
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.fillStyle = VOID;
+        ctx.fillRect(0, 0, cssW, cssH);
+      }
+
+      function resizeCanvas() {
+        var rect = canvas.getBoundingClientRect();
+        var nextW = Math.max(1, Math.round(rect.width));
+        var nextH = Math.max(1, Math.round(rect.height));
+        var nextDpr = quantizeDpr();
+        var dprChanged = nextDpr !== dpr;
+        var firstSprites = sprites.length === 0;
+        cssW = nextW;
+        cssH = nextH;
+        dpr = nextDpr;
+        canvas.width = cssW * dpr;
+        canvas.height = cssH * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.imageSmoothingEnabled = true;
+        if (firstSprites || dprChanged) buildSprites();
+        if (N) {
+          toPx();
+          var i;
+          for (i = 0; i < N; i++) {
+            vx[i] = 0;
+            vy[i] = 0;
+          }
+        }
+        paintVoid();
+      }
+
+      function capSpeed(i) {
+        var s = Math.sqrt(vx[i] * vx[i] + vy[i] * vy[i]);
+        if (s > VMAX) {
+          vx[i] *= VMAX / s;
+          vy[i] *= VMAX / s;
+        }
+      }
+
+      function walls(i) {
+        var right = cssW - WALL;
+        var bottom = cssH - WALL;
+        if (x[i] < WALL) vx[i] += (WALL - x[i]) * WALL_K;
+        else if (x[i] > right) vx[i] -= (x[i] - right) * WALL_K;
+        if (y[i] < WALL) vy[i] += (WALL - y[i]) * WALL_K;
+        else if (y[i] > bottom) vy[i] -= (y[i] - bottom) * WALL_K;
+      }
+
+      function integrate(i, useFlow) {
+        var rho = dampOf(i);
+        var sig = thermalSig(i, rho);
+        var term = V_TERM * radiusOf(i) * radiusOf(i);
+        var fl;
+        var amp;
+        if (useFlow) {
+          fl = curlVel(x[i], y[i], lastT * 0.001);
+          amp = (mode === "formed" ? (hasGlyph ? 0.04 : IDLE) : 0.42 + z[i] * 0.58);
+          vx[i] = vx[i] * rho + (1 - rho) * fl.ux * amp + gauss() * sig * amp;
+          vy[i] = vy[i] * rho + (1 - rho) * (fl.uy * amp + term * amp) + gauss() * sig * amp;
+        } else {
+          vx[i] = vx[i] * rho + gauss() * sig * 0.22;
+          vy[i] = vy[i] * rho + gauss() * sig * 0.22;
+          walls(i);
+        }
+        capSpeed(i);
+        x[i] += vx[i];
+        y[i] += vy[i];
+        if (useFlow && mode === "chaos") {
+          if (y[i] > cssH) y[i] -= cssH;
+          if (y[i] < 0) y[i] += cssH;
+          if (x[i] > cssW) x[i] -= cssW;
+          if (x[i] < 0) x[i] += cssW;
+        }
+      }
+
+      function springTo(i, gx, gy) {
+        vx[i] += (gx - x[i]) * SPRING;
+        vy[i] += (gy - y[i]) * SPRING;
+      }
+
+      function pointerLive() {
+        if (finePointer.matches) return pointerOn;
+        return performance.now() < touchUntil;
+      }
+
+      function physics() {
+        var live = pointerLive();
+        var assembling = mode === "assemble";
+        var formed = mode === "formed";
+        var dispersing = mode === "disperse";
+        var settled = 0;
+        var i, dx, dy, dist, f, inv, kSpring;
+        mx += (mxT - mx) * POINTER_LERP;
+        my += (myT - my) * POINTER_LERP;
+        kSpring = formed && !hasGlyph ? SPRING * 0.55 : SPRING;
+        for (i = 0; i < N; i++) {
+          dx = x[i] - mx;
+          dy = y[i] - my;
+          dist = Math.sqrt(dx * dx + dy * dy);
+          if (live && dist < REPEL_R && dist > 0.0001) {
+            inv = 1 / dist;
+            f = (1 - dist / REPEL_R) * REPEL;
+            vx[i] += dx * inv * f;
+            vy[i] += dy * inv * f;
+          } else if (assembling || formed) {
+            vx[i] += (tx[i] - x[i]) * kSpring;
+            vy[i] += (ty[i] - y[i]) * kSpring;
+            if (
+              assembling &&
+              Math.abs(tx[i] - x[i]) < STOP_PX &&
+              Math.abs(ty[i] - y[i]) < STOP_PX &&
+              Math.abs(vx[i]) < STOP_V &&
+              Math.abs(vy[i]) < STOP_V
+            ) {
+              settled++;
+            }
+          } else if (dispersing) {
+            springTo(i, hx[i], hy[i]);
+          } else if (!live && pointerEver) {
+            springTo(i, hx[i], hy[i]);
+          }
+          integrate(i, mode === "chaos" || (formed && (!hasGlyph || live)));
+        }
+        toNorm();
+        if (assembling && N > 0 && settled / N >= 0.97) {
+          for (i = 0; i < N; i++) {
+            x[i] = tx[i];
+            y[i] = ty[i];
+            vx[i] = 0;
+            vy[i] = 0;
+          }
+          toNorm();
+          setMode("formed");
+        }
+      }
+
+      function render() {
+        var i, spr, dx, dy, sc, a;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.imageSmoothingEnabled = true;
+        ctx.fillStyle = VOID;
+        ctx.fillRect(0, 0, cssW, cssH);
+        for (i = 0; i < N; i++) {
+          spr = sprites[sid[i]];
+          sc = spr.css * (0.52 + z[i] * 0.7);
+          a = 0.32 + z[i] * 0.68;
+          dx = x[i] - sc * 0.5;
+          dy = y[i] - sc * 0.5;
+          ctx.globalAlpha = a;
+          ctx.drawImage(spr.canvas, dx, dy, sc, sc);
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      function tick(now) {
+        if (!running) return;
+        var ft = (now - lastT) / 1000;
+        lastT = now;
+        if (ft > FRAME_CLAMP) ft = FRAME_CLAMP;
+        acc += ft;
+        var steps = 0;
+        while (acc >= DT && steps < MAX_STEPS) {
+          physics();
+          acc -= DT;
+          steps++;
+        }
+        if (mode === "assemble" && now - modeT0 >= ASSEMBLE_MS) setMode("formed");
+        if (mode === "disperse" && now - modeT0 >= DISPERSE_MS) {
+          pointerEver = false;
+          setMode("chaos");
+        }
+        render();
+        raf = requestAnimationFrame(tick);
+      }
+
+      function startLoop() {
+        if (running || reduced || !booted) return;
+        running = true;
+        acc = 0;
+        lastT = performance.now();
+        raf = requestAnimationFrame(tick);
+      }
+
+      function stopLoop() {
+        running = false;
+        acc = 0;
+        if (raf) cancelAnimationFrame(raf);
+        raf = 0;
+      }
+
+      function setCurrentNav(btn) {
+        var i;
+        for (i = 0; i < navItems.length; i++) {
+          if (navItems[i] === btn) navItems[i].setAttribute("aria-current", "page");
+          else navItems[i].removeAttribute("aria-current");
+        }
+      }
+
+      function setMode(next) {
+        mode = next;
+        modeT0 = performance.now();
+        stage.dataset.mode = next;
+        var show = next === "formed" && currentView !== "home";
+        dossier.setAttribute("aria-hidden", show ? "false" : "true");
+      }
+
+      function appHref(path) {
+        var port = window.location.port;
+        if (port === "3000") return path;
+        return "http://localhost:3000" + path;
+      }
+
+      function pulseRise() {
+        var els = dossier.querySelectorAll(".lead, .sub, .catalog, .go");
+        var i;
+        if (reduced) return;
+        for (i = 0; i < els.length; i++) els[i].style.animation = "none";
+        void dossier.offsetWidth;
+        for (i = 0; i < els.length; i++) els[i].style.animation = "";
+      }
+
+      function openArchive(view) {
+        currentView = view;
+        dossier.dataset.view = view;
+        if (view === "home") {
+          setCurrentNav(btnHome);
+          disperse();
+          return;
+        }
+        if (view === "intro") setCurrentNav(btnIntro);
+        else if (view === "hall") setCurrentNav(btnHall);
+        else setCurrentNav(btnCommunity);
+        if (mode === "formed") {
+          setMode("formed");
+          pulseRise();
+          return;
+        }
+        if (mode === "assemble") return;
+        assemble();
+      }
+
+      function burstFromGlyph() {
+        var i;
+        for (i = 0; i < N; i++) {
+          x[i] = tx[i] + (rand() * 2 - 1) * 28;
+          y[i] = ty[i] + (rand() * 2 - 1) * 28;
+          vx[i] = (rand() * 2 - 1) * 0.55;
+          vy[i] = (rand() * 2 - 1) * 0.55;
+        }
+        toNorm();
+      }
+
+      function triggerEgg() {
+        if (!hasGlyph || !booted) return;
+        if (mode === "formed") burstFromGlyph();
+        assemble();
+      }
+
+      function assemble() {
+        pointerEver = false;
+        setMode("assemble");
+        if (reduced) {
+          placeNow(true);
+          setMode("formed");
+          render();
+          return;
+        }
+        startLoop();
+      }
+
+      function disperse() {
+        scatterHomes();
+        pointerEver = false;
+        setMode("disperse");
+        if (reduced) {
+          placeNow(false);
+          setMode("chaos");
+          render();
+          return;
+        }
+        startLoop();
+      }
+
+      window.assemble = function () { openArchive("intro"); };
+      window.disperse = function () { openArchive("home"); };
+
+      function onPointerMove(e) {
+        var r = canvas.getBoundingClientRect();
+        mxT = e.clientX - r.left;
+        myT = e.clientY - r.top;
+        if (!finePointer.matches && performance.now() >= touchUntil) return;
+        if (!pointerOn) snapshotHomes();
+        pointerOn = true;
+        pointerEver = true;
+      }
+
+      function onPointerLeave() {
+        pointerOn = false;
+      }
+
+      function onPointerDown(e) {
+        var r = canvas.getBoundingClientRect();
+        mxT = e.clientX - r.left;
+        myT = e.clientY - r.top;
+        mx = mxT;
+        my = myT;
+        if (!finePointer.matches) {
+          snapshotHomes();
+          touchUntil = performance.now() + 180;
+          pointerEver = true;
+        }
+      }
+
+      function scrambleLine(el, finalText, duration) {
+        var glyphs = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789· ";
+        var t0 = performance.now();
+        function step(now) {
+          var p = Math.min(1, (now - t0) / duration);
+          var out = "";
+          var i, reveal;
+          reveal = Math.floor(p * finalText.length);
+          for (i = 0; i < finalText.length; i++) {
+            if (finalText.charAt(i) === " ") out += " ";
+            else if (i < reveal) out += finalText.charAt(i);
+            else out += glyphs.charAt((Math.random() * glyphs.length) | 0);
+          }
+          el.textContent = out;
+          if (p < 1) requestAnimationFrame(step);
+          else el.textContent = finalText;
+        }
+        requestAnimationFrame(step);
+      }
+
+      function syncReduced(ev) {
+        reduced = !!(ev ? ev.matches : reduceMq.matches);
+        if (!booted) return;
+        if (reduced) {
+          stopLoop();
+          if (mode === "assemble" || mode === "formed") {
+            placeNow(true);
+            setMode("formed");
+          } else {
+            placeNow(false);
+            setMode("chaos");
+          }
+          render();
+        } else {
+          startLoop();
+        }
+      }
+
+      function onVisibility() {
+        if (document.hidden) {
+          stopLoop();
+        } else if (!reduced) {
+          startLoop();
+        }
+      }
+
+      function onResize() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function () {
+          resizeCanvas();
+          if (booted) render();
+        }, 150);
+      }
+
+      function boot(points) {
+        hasGlyph = !!(points && points.length);
+        alloc(capCount());
+        if (!sprites.length) buildSprites();
+        scatterHomes();
+        formTargets(points);
+        placeNow(false);
+        setMode("chaos");
+        booted = true;
+        render();
+        syncReduced();
+        if (!reduced) startLoop();
+        if (!reduced && volEl) scrambleLine(volEl, "COSMIC PIXEL ARCHIVE · VOL. 01", 900);
+      }
+
+      canvas.addEventListener("pointermove", onPointerMove);
+      canvas.addEventListener("pointerleave", onPointerLeave);
+      canvas.addEventListener("pointercancel", onPointerLeave);
+      canvas.addEventListener("pointerdown", onPointerDown);
+      window.addEventListener("resize", onResize);
+      document.addEventListener("visibilitychange", onVisibility);
+      if (reduceMq.addEventListener) reduceMq.addEventListener("change", syncReduced);
+      else reduceMq.addListener(syncReduced);
+
+      btnHome.addEventListener("click", function () { openArchive("home"); });
+      btnIntro.addEventListener("click", function () { openArchive("intro"); });
+      btnHall.addEventListener("click", function () { openArchive("hall"); });
+      btnCommunity.addEventListener("click", function () { openArchive("community"); });
+      if (btnEgg) {
+        btnEgg.addEventListener("click", function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          triggerEgg();
+        });
+      }
+
+      var goHall = document.getElementById("go-hall");
+      var goCommunity = document.getElementById("go-community");
+      if (goHall) goHall.setAttribute("href", appHref("/hall"));
+      if (goCommunity) goCommunity.setAttribute("href", appHref("/community"));
+
+      reduced = reduceMq.matches;
+      resizeCanvas();
+      paintVoid();
+
+      fetch("points.json")
+        .then(function (res) { return res.ok ? res.json() : null; })
+        .then(function (data) { boot(parsePoints(data)); })
+        .catch(function () { boot(null); });
+    })();
+  </script>
+</body>
+</html>

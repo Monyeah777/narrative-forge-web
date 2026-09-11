@@ -11,10 +11,6 @@ export type HomeCopy = {
   metaDescription: string;
   ogTitle: string;
   ogDescription: string;
-  statModules: string;
-  statPipelines: string;
-  statCommunity: string;
-  statAssetKeys: string;
 };
 
 function parseFrontMatter(raw: string): Record<string, string> {
@@ -52,9 +48,5 @@ export function loadHomeCopy(): HomeCopy {
     metaDescription: fields.meta_description ?? "",
     ogTitle: fields.og_title ?? "",
     ogDescription: fields.og_description ?? "",
-    statModules: fields.stat_modules ?? "",
-    statPipelines: fields.stat_pipelines ?? "",
-    statCommunity: fields.stat_community ?? "",
-    statAssetKeys: fields.stat_asset_keys ?? "",
   };
 }

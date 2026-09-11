@@ -1,3 +1,4 @@
+import assetsDoc from "../../../content/generated/assets.json";
 import modulesDoc from "../../../content/generated/modules.json";
 import pipelinesDoc from "../../../content/generated/pipelines.json";
 
@@ -17,7 +18,7 @@ export type ToolFaceEntry = {
 export type HallAsset = {
   id: string;
   slug: string;
-  kind: "module" | "pipeline";
+  kind: "module" | "pipeline" | "asset";
   name: string;
   category: string;
   summary: string;
@@ -48,6 +49,7 @@ type CatalogFile = {
 const catalog: HallAsset[] = [
   ...(modulesDoc as CatalogFile).items,
   ...(pipelinesDoc as CatalogFile).items,
+  ...(assetsDoc as CatalogFile).items,
 ];
 
 function clone<T>(value: T): T {
@@ -56,6 +58,14 @@ function clone<T>(value: T): T {
 
 export function listAssets(): HallAsset[] {
   return catalog.map((item) => clone(item));
+}
+
+export function listHallItems(): HallAsset[] {
+  return [
+    ...queryAssets({ kind: "module", source: "官方核心" }),
+    ...queryAssets({ kind: "pipeline", source: "官方核心" }),
+    ...queryAssets({ kind: "asset", source: "官方核心" }),
+  ];
 }
 
 export function getAsset(id: string): HallAsset | undefined {

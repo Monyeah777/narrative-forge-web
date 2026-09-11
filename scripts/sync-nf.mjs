@@ -41,7 +41,13 @@ const PACK_SLUG = {
 };
 
 function packKey(rel) {
-  if (rel.startsWith("04_模块库/") || rel.startsWith("03_管线库/")) return "core";
+  if (
+    rel.startsWith("04_模块库/") ||
+    rel.startsWith("03_管线库/") ||
+    rel.startsWith("05_资产库/")
+  ) {
+    return "core";
+  }
   const folder = rel.split("/")[1] ?? "pkg";
   if (PACK_SLUG[folder]) return PACK_SLUG[folder];
   let hash = 2166136261;
@@ -62,7 +68,7 @@ function idKey(id) {
 
 /** ASCII slug，避免中文/冒号在 dev 与静态导出里 404。 */
 function toSlug(kind, rel, id) {
-  const prefix = kind === "pipeline" ? "p" : "m";
+  const prefix = kind === "pipeline" ? "p" : kind === "asset" ? "a" : "m";
   return `${prefix}-${packKey(rel)}-${idKey(id)}`;
 }
 
@@ -243,7 +249,76 @@ function categoryFromPath(rel) {
     return rel.split("/")[1] ?? "社区";
   }
   if (rel.startsWith("03_管线库/")) return "官方管线";
+  if (rel.startsWith("05_资产库/")) return "官方";
   return "未分类";
+}
+
+function normalizeAssetPath(file) {
+  const rel = toPosix(String(file ?? ""));
+  if (rel.startsWith("用户自定义/")) return `05_资产库/${rel}`;
+  return rel;
+}
+
+function skipAssetFile(rel) {
+  const base = rel.split("/").pop() ?? "";
+  return !rel.endsWith(".md") || base === "README.md" || base.startsWith("附_");
+}
+
+function collectAssetFiles(ledger, provenance) {
+  const byFile = new Map();
+  function add(file, key, pkg) {
+    const rel = normalizeAssetPath(file);
+    if (!rel || skipAssetFile(rel)) return;
+    const current = byFile.get(rel) ?? { keys: new Set(), package: pkg || "" };
+    if (key) current.keys.add(String(key));
+    if (pkg && !current.package) current.package = pkg;
+    byFile.set(rel, current);
+  }
+  for (const entry of ledger?.entries ?? []) {
+    add(entry.file, entry.key, entry.package);
+  }
+  for (const asset of provenance?.assets ?? []) {
+    add(asset.file, asset.key, provenance.package || "官方");
+  }
+  return byFile;
+}
+
+function projectAssets(byFile) {
+  const items = [];
+  const files = [...byFile.entries()].sort(([a], [b]) => a.localeCompare(b, "zh-CN"));
+  for (const [rel, meta] of files) {
+    const keys = [...meta.keys];
+    const id =
+      keys.length === 1
+        ? keys[0]
+        : (rel.split("/").pop() ?? rel).replace(/\.md$/, "");
+    const pkg =
+      meta.package ||
+      (rel.startsWith("05_资产库/") ? "官方" : rel.split("/")[1] || "资产");
+    items.push({
+      id,
+      slug: toSlug("asset", rel, id),
+      kind: "asset",
+      name: id,
+      category: pkg === "官方核心资产集" ? "官方" : pkg,
+      summary: `${pkg} 资产键`,
+      path: rel,
+      source:
+        rel.startsWith("05_资产库/") || pkg === "官方" || pkg === "官方核心资产集"
+          ? "官方核心"
+          : "社区",
+      tool_face: null,
+    });
+  }
+  return items;
+}
+
+async function readJsonIfExists(rel) {
+  try {
+    return JSON.parse(await readSource(rel));
+  } catch {
+    return null;
+  }
 }
 
 async function projectModule(rel) {
@@ -312,7 +387,11 @@ for (const rel of [...officialPipelinePaths, ...communityPipelinePaths]) {
   pipelines.push(await projectPipeline(rel));
 }
 
-const slugs = [...modules, ...pipelines].map((item) => item.slug);
+const ledger = await readJsonIfExists("protocol/community_asset_ledger.json");
+const provenance = await readJsonIfExists("05_资产库/provenance.json");
+const assets = projectAssets(collectAssetFiles(ledger, provenance));
+
+const slugs = [...modules, ...pipelines, ...assets].map((item) => item.slug);
 const dup = slugs.filter((slug, i) => slugs.indexOf(slug) !== i);
 if (dup.length) {
   throw new Error(`duplicate hall slugs: ${[...new Set(dup)].join(", ")}`);
@@ -330,6 +409,12 @@ const pipelinesDoc = {
   official_count: officialPipelinePaths.length,
   community_count: communityPipelinePaths.length,
   items: pipelines,
+};
+const officialAssetCount = assets.filter((item) => item.source === "官方核心").length;
+const assetsDoc = {
+  official_count: officialAssetCount,
+  community_count: assets.length - officialAssetCount,
+  items: assets,
 };
 
 await mkdir(OUT_DIR, { recursive: true });
@@ -354,10 +439,16 @@ await writeFile(
   `${JSON.stringify(pipelinesDoc, null, 2)}\n`,
   "utf8",
 );
+await writeFile(
+  path.join(OUT_DIR, "assets.json"),
+  `${JSON.stringify(assetsDoc, null, 2)}\n`,
+  "utf8",
+);
 
 console.log(`模块数 ${modules.length}`);
 console.log(`版本数 ${countVersions(changelog)}`);
 console.log(`清单条数 ${inventory.entries.length}`);
 console.log(`管线数 ${pipelines.length}`);
+console.log(`资产键 ${assets.length}`);
 console.log(`registry模块 ${countModules(registry)}`);
 if (LOCAL_ROOT) console.log(`本地源 ${LOCAL_ROOT}`);

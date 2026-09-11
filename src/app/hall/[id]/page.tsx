@@ -8,12 +8,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { getAsset, listAssets } from "@/lib/data";
+import { getAsset, listHallItems } from "@/lib/data";
 
 export const dynamicParams = false;
 
 export function generateStaticParams() {
-  return listAssets()
+  return listHallItems()
     .map((item) => item.slug)
     .filter((id) => id.length > 0)
     .map((id) => ({ id }));
@@ -40,7 +40,11 @@ export default async function HallDetailPage({
       <div className="flex flex-wrap items-center gap-2">
         <h1 className="text-3xl font-medium tracking-tight">{asset.name}</h1>
         <Badge variant="secondary">
-          {asset.kind === "module" ? "模块" : "管线"}
+          {asset.kind === "module"
+            ? "模块"
+            : asset.kind === "pipeline"
+              ? "管线"
+              : "资产"}
         </Badge>
         <Badge variant="outline">{asset.category}</Badge>
       </div>

@@ -30,10 +30,13 @@ npm run build
 specs/           设计令牌与后续任务/文案（tokens.json 初稿）
 content/generated/  主仓库投影（脚本生成）
 scripts/sync-nf.mjs 拉取 registry.json、04 模块库清单、CHANGELOG.md
+prototype/       首屏 Canvas 原型（零依赖，不参与 Next 构建）
 src/app/         App Router 页面
 src/components/  UI（含 shadcn）
 src/lib/         工具与后续数据访问层
 ```
+
+轨道 A 原型在 `prototype/`：本地可 `python -m http.server` 打开 `index.html`。粒子成形与彩蛋逻辑在该文件的 `openArchive` / `triggerEgg`。当前在分支 `task/T-0005-community`，尚未合进 `main`。
 
 ## 技术基座
 
