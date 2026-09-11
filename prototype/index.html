@@ -113,7 +113,7 @@
       height: 100vh;
       z-index: 1;
       display: block;
-      background: #050505;
+      background: transparent;
       touch-action: none;
     }
 
@@ -634,7 +634,6 @@
     (function () {
       "use strict";
 
-      var VOID = "#050505";
       var DT = 1 / 60;
       var MAX_STEPS = 2;
       var FRAME_CLAMP = 0.25;
@@ -663,7 +662,7 @@
       var canvas = document.getElementById("void");
       var dossier = document.getElementById("dossier");
       var volEl = document.getElementById("vol");
-      var ctx = canvas.getContext("2d", { alpha: false });
+      var ctx = canvas.getContext("2d");
       var btnHome = document.getElementById("btn-home");
       var btnIntro = document.getElementById("btn-intro");
       var btnHall = document.getElementById("btn-hall");
@@ -699,8 +698,16 @@
       var reduceMq = window.matchMedia("(prefers-reduced-motion: reduce)");
       var resizeTimer = 0;
       var gaussSpare = null;
+      var curlScratch = { ux: 0, uy: 0 };
+      var dprOverride = 0;
+      try {
+        dprOverride = parseFloat(new URLSearchParams(window.location.search).get("dpr") || "");
+      } catch (err) {
+        dprOverride = 0;
+      }
 
       function quantizeDpr() {
+        if (dprOverride > 0 && dprOverride <= 3) return dprOverride;
         var raw = window.devicePixelRatio || 1;
         if (raw >= 1.5) return 2;
         return 1;
@@ -765,7 +772,9 @@
         var e = 12;
         var dpsy = (streamPsi(px, py + e, t) - streamPsi(px, py - e, t)) / (2 * e);
         var dpsx = (streamPsi(px + e, py, t) - streamPsi(px - e, py, t)) / (2 * e);
-        return { ux: dpsy * CURL_AMP, uy: -dpsx * CURL_AMP };
+        curlScratch.ux = dpsy * CURL_AMP;
+        curlScratch.uy = -dpsx * CURL_AMP;
+        return curlScratch;
       }
 
       function seedVel(i, nx) {
@@ -928,8 +937,7 @@
 
       function paintVoid() {
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        ctx.fillStyle = VOID;
-        ctx.fillRect(0, 0, cssW, cssH);
+        ctx.clearRect(0, 0, cssW, cssH);
       }
 
       function resizeCanvas() {
@@ -1064,19 +1072,21 @@
       }
 
       function render() {
-        var i, spr, dx, dy, sc, a;
+        var i, s, spr, dx, dy, sc, a;
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         ctx.imageSmoothingEnabled = true;
-        ctx.fillStyle = VOID;
-        ctx.fillRect(0, 0, cssW, cssH);
-        for (i = 0; i < N; i++) {
-          spr = sprites[sid[i]];
-          sc = spr.css * (0.52 + z[i] * 0.7);
-          a = 0.32 + z[i] * 0.68;
-          dx = x[i] - sc * 0.5;
-          dy = y[i] - sc * 0.5;
-          ctx.globalAlpha = a;
-          ctx.drawImage(spr.canvas, dx, dy, sc, sc);
+        ctx.clearRect(0, 0, cssW, cssH);
+        for (s = 0; s < sprites.length; s++) {
+          spr = sprites[s];
+          for (i = 0; i < N; i++) {
+            if (sid[i] !== s) continue;
+            sc = spr.css * (0.52 + z[i] * 0.7);
+            a = 0.32 + z[i] * 0.68;
+            dx = Math.floor(x[i] - sc * 0.5);
+            dy = Math.floor(y[i] - sc * 0.5);
+            ctx.globalAlpha = a;
+            ctx.drawImage(spr.canvas, dx, dy, sc, sc);
+          }
         }
         ctx.globalAlpha = 1;
       }
@@ -1330,12 +1340,12 @@
         if (!reduced && volEl) scrambleLine(volEl, "COSMIC PIXEL ARCHIVE · VOL. 01", 900);
       }
 
-      canvas.addEventListener("pointermove", onPointerMove);
-      canvas.addEventListener("pointerleave", onPointerLeave);
-      canvas.addEventListener("pointercancel", onPointerLeave);
-      canvas.addEventListener("pointerdown", onPointerDown);
-      window.addEventListener("resize", onResize);
-      document.addEventListener("visibilitychange", onVisibility);
+      canvas.addEventListener("pointermove", onPointerMove, { passive: true });
+      canvas.addEventListener("pointerleave", onPointerLeave, { passive: true });
+      canvas.addEventListener("pointercancel", onPointerLeave, { passive: true });
+      canvas.addEventListener("pointerdown", onPointerDown, { passive: true });
+      window.addEventListener("resize", onResize, { passive: true });
+      document.addEventListener("visibilitychange", onVisibility, { passive: true });
       if (reduceMq.addEventListener) reduceMq.addEventListener("change", syncReduced);
       else reduceMq.addListener(syncReduced);
 
