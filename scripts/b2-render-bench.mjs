@@ -114,7 +114,10 @@ async function main() {
     const homeShot = await snap(page, "b2_home_palette_dust.png");
 
     await page.click("#btn-intro");
-    await page.mouse.move(5, 5);
+    await page.evaluate(() => {
+      var el = document.getElementById("void");
+      if (el) el.dispatchEvent(new PointerEvent("pointerleave", { bubbles: true }));
+    });
     const formedDeadline = Date.now() + 16_000;
     let formed = null;
     while (Date.now() < formedDeadline) {

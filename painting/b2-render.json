@@ -1,0 +1,84 @@
+{
+  "task": "B2",
+  "ready": {
+    "n": 12000,
+    "running": true,
+    "mode": "chaos",
+    "frozen": false,
+    "activeCount": 12000,
+    "tickCount": 3,
+    "dpr": 1,
+    "atlasCtor": "ImageBitmap",
+    "atlasIsImageBitmap": true,
+    "atlasCell": 16,
+    "atlasPalN": 256,
+    "sizes": [
+      2,
+      3,
+      4
+    ],
+    "fxLite": false,
+    "contain": {
+      "x": 328.31168831168833,
+      "y": 5.684341886080802e-14,
+      "w": 623.3766233766233,
+      "h": 799.9999999999999,
+      "srcW": 1200,
+      "srcH": 1540
+    },
+    "imageSmoothingEnabled": true
+  },
+  "chaos_fps": {
+    "ticks": 29,
+    "ms": 1046.3999999994412,
+    "fps": 27.714067278302263,
+    "n": 12000,
+    "running": true
+  },
+  "formed": {
+    "mode": "formed",
+    "running": false,
+    "activeCount": 0,
+    "n": 12000,
+    "atlasCtor": "ImageBitmap",
+    "atlasIsImageBitmap": true,
+    "contain": {
+      "x": 328.31168831168833,
+      "y": 5.684341886080802e-14,
+      "w": 623.3766233766233,
+      "h": 799.9999999999999,
+      "srcW": 1200,
+      "srcH": 1540
+    },
+    "dpr": 1,
+    "leadText": "把叙事，变成工程。",
+    "leadOpacity": "1",
+    "stageMode": "formed"
+  },
+  "idle_5s": {
+    "ticks": 0,
+    "running": false,
+    "activeCount": 0,
+    "mode": "formed"
+  },
+  "pointer_woke": true,
+  "logs": [],
+  "screenshots": {
+    "home": "/opt/cursor/artifacts/b2_home_palette_dust.png",
+    "intro": "/opt/cursor/artifacts/b2_intro_formed_settled.png",
+    "zoom": "/opt/cursor/artifacts/b2_sprite_zoom_sky.png",
+    "vs_source": "/opt/cursor/artifacts/b2_formed_vs_source.png"
+  },
+  "acceptance": {
+    "n_12000": true,
+    "atlas_imagebitmap": true,
+    "contain_aspect": true,
+    "contain_margins": true,
+    "intro_copy": true,
+    "settled_stop_raf": true,
+    "pointer_wakes": true,
+    "fps_recorded": true,
+    "dpr_le_2": true,
+    "pass": true
+  }
+}
