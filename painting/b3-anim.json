@@ -1,0 +1,109 @@
+{
+  "task": "B3",
+  "assemble_ms": 1923,
+  "formed": {
+    "mode": "formed",
+    "running": false,
+    "frozen": false,
+    "anim": {
+      "spring": 0.055,
+      "damp": 0.9,
+      "vmax": 10,
+      "repelR": 100,
+      "stopPx": 0.6,
+      "stopV": 0.06,
+      "assembleS": 1.5,
+      "disperseS": 1.1,
+      "phaseElapsed": 0,
+      "feel": "sharp",
+      "frozen": false,
+      "mode": "formed",
+      "nanHeals": 0,
+      "reduced": false,
+      "checksum": 2282.1288146972656
+    }
+  },
+  "settled": {
+    "running": false,
+    "activeCount": 0,
+    "frozen": false,
+    "anim": {
+      "spring": 0.055,
+      "damp": 0.9,
+      "vmax": 10,
+      "repelR": 100,
+      "stopPx": 0.6,
+      "stopV": 0.06,
+      "assembleS": 1.5,
+      "disperseS": 1.1,
+      "phaseElapsed": 0,
+      "feel": "sharp",
+      "frozen": false,
+      "mode": "formed",
+      "nanHeals": 0,
+      "reduced": false,
+      "checksum": 2282.1288146972656
+    },
+    "lead": "把叙事，变成工程。"
+  },
+  "freeze": {
+    "a": {
+      "frozen": true,
+      "running": false,
+      "pressed": "true",
+      "checksum": 2282.1288146972656,
+      "phaseElapsed": 0
+    },
+    "b": {
+      "frozen": true,
+      "running": false,
+      "checksum": 2282.1288146972656,
+      "phaseElapsed": 0,
+      "tickCount": 129
+    }
+  },
+  "settingsB": {
+    "feel": "B",
+    "spring": 0.6,
+    "damp": 0.955,
+    "vmax": 12,
+    "line": "> MODE: STORM"
+  },
+  "afterStart": {
+    "frozen": false,
+    "running": true,
+    "mode": "assemble",
+    "pressed": "false"
+  },
+  "interrupt": {
+    "ok": true,
+    "nanHeals": 0,
+    "rounds": 5
+  },
+  "reduced": {
+    "ms": 110,
+    "running": false,
+    "reduced": true,
+    "mode": "formed"
+  },
+  "logs": [],
+  "screenshots": {
+    "home": "/opt/cursor/artifacts/b3_home_before_assemble.png",
+    "intro": "/opt/cursor/artifacts/b3_intro_formed_1_5s.png",
+    "start": "/opt/cursor/artifacts/b3_start_unfreeze_formed.png",
+    "disperse": "/opt/cursor/artifacts/b3_home_disperse.png",
+    "reduced": "/opt/cursor/artifacts/b3_reduced_instant_formed.png"
+  },
+  "acceptance": {
+    "assemble_window": true,
+    "spring_sharp": true,
+    "freeze_sticky": true,
+    "freeze_stable": true,
+    "settings_storm": true,
+    "start_unfreeze": true,
+    "interrupt_finite": true,
+    "reduced_instant": true,
+    "settled_stop": true,
+    "pass": true
+  }
+}
