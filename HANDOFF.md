@@ -10,13 +10,13 @@
 
 ## 当前进度（云端 Track A）
 
-手册 **B1-1 已完成**，停在等「继续」。不要开 B1-2（12k 采样 / points v2）。
+手册 **B1-1 已完成（HD 重烤）**，停在等「继续」。不要开 B1-2（12k 采样 / points v2）。
 
-- 工程内唯一源：`painting/01-dallas.jpg`（1200×1519，EXIF 已烘焙、画心裁切、HSV S×0.88）
-- 元数据：`painting/source.json`；脚本：`scripts/prep-painting.py`
-- 作者本机 `C:\Users\mon_7\Downloads\narrative-forge-web\painting` **没有进云端克隆**。本条按手册用「01 达拉斯」公版预览跑通管线。换成作者选定图：`python3 scripts/prep-painting.py --input <file>`
+- 工程内唯一源：`painting/01-dallas.jpg`（**1200×1540**，由 `dallas_lespeupliers_5497x7054.jpg` EXIF 烘焙 + LANCZOS + HSV S×0.88；**无画框裁切**，master 已是画心）
+- 元数据：`painting/source.json`（`standIn: false`）；脚本：`scripts/prep-painting.py`
+- 作者临时放入的 `painting/masters/` **已处理完并从 git 移除**（高清不进项目）
 - 原型仍加载 `prototype/points.json`（NF 字形），**还没接画作**
-- 本条分支：`cursor/b1-1-dallas-preview-ae29`（叠在 `cursor/remove-nav-start-ae29` 上）
+- 本条分支：`cursor/b1-1-hd-bake-52ec`（叠在 `cursor/b1-1-dallas-preview-ae29` 上）
 
 ---
 
@@ -115,7 +115,7 @@ Next.js 16，API 与训练记忆可能不同。改 Next 代码前读 `node_modul
 - `prototype/points.json` `{ "points": [{x,y}, ...] }` 归一化 0..1，约 1630 点
 - `prototype/gen-points.mjs` 确定性栅格 **N / F**（mulberry32 seed `0x4e46`），落在左约 62%，避免压到报章。另有脊线+底边粉尘。
 
-规格要作者选定的 Monet 英雄图。B1-1 已把「01 达拉斯」公版预览做成 `painting/01-dallas.jpg`；**粒子仍是 NF 字母替身**，等 B1-2 才采样。作者 `painting/` 里若另有主视觉，先重跑预处理再采。
+规格要作者选定的 Monet 英雄图。B1-1 已用达拉斯 HD master 烤成 `painting/01-dallas.jpg`（1200×1540，S×0.88，`standIn: false`）；**粒子仍是 NF 字母替身**，等 B1-2 才采样。
 
 数量分档：桌面 1600 / 中 1280 / 窄 960。
 
@@ -162,7 +162,7 @@ IDLE 0.14  POINTER_LERP 0.2  SIZES [4,6,8]
 ## 未完成 / 已知问题
 
 1. 轨道 B 未开始（原型未验收，不要擅自灌进 Next）。
-2. `points.json` 仍是像素 NF。B1-1 已有达拉斯 1200px 预览，**采样成 12k 点要等 B1-2**。作者本机 `painting/` 若有另一张主视觉，用 `scripts/prep-painting.py --input` 替换后再采。
+2. `points.json` 仍是像素 NF。B1-1 已有达拉斯 HD 烤制的 1200×1540 预览，**采样成 12k 点要等 B1-2**。换主视觉：`scripts/prep-painting.py --input <master>`。
 3. 大厅目录在窄报章栏会按字折行。
 4. 介绍 / 大厅 / 社区成画也是同一套 NF 字形；彩蛋是首页多一条入口，不是唯一触发。若用户要把字形改成「只有彩蛋才出现」，先问再改。
 5. 原型「打开完整大厅/社区页」依赖 localhost:3000。

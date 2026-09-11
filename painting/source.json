@@ -8,21 +8,21 @@
   "objectUrl": "https://www.dma.org/art/collection/object/5327894",
   "commonsUrl": "https://commons.wikimedia.org/wiki/File:Claude_Monet_-_Poplars,_Pink_Effect_-_2019.67.14.McD_-_Dallas_Museum_of_Art.jpg",
   "license": "Public domain",
-  "standIn": true,
+  "standIn": false,
   "file": "01-dallas.jpg",
   "w": 1200,
-  "h": 1519,
+  "h": 1540,
   "saturationFactor": 0.88,
   "saturationSpace": "HSV",
   "resample": "LANCZOS",
   "exifTranspose": true,
-  "cropNorm": [
-    0.175,
-    0.1549,
-    0.826,
-    0.8247
-  ],
-  "inputOrientation": null,
+  "cropNorm": null,
+  "inputOrientation": 1,
   "outputOrientation": null,
-  "note": "Unique in-repo 1200px source after EXIF bake + S×0.88. Author painting/ folder was not in the cloud clone; this is the handbook Dallas stand-in. Re-run scripts/prep-painting.py --input <master> to replace."
+  "note": "Unique in-repo 1200px source after EXIF bake + S×0.88. Baked from painting/masters/dallas_lespeupliers_5497x7054.jpg ([5497, 7054]); HD master stays out of git.",
+  "master": "painting/masters/dallas_lespeupliers_5497x7054.jpg",
+  "masterSize": [
+    5497,
+    7054
+  ]
 }

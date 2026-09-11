@@ -304,8 +304,11 @@ def write_source_json(out: Path, meta: dict) -> None:
         payload["standIn"] = False
         payload["note"] = (
             "Unique in-repo 1200px source after EXIF bake + S×0.88. "
+            f"Baked from {meta.get('input')} ({meta.get('input_size')}); "
             "HD master stays out of git."
         )
+        payload["master"] = meta.get("input")
+        payload["masterSize"] = meta.get("input_size")
     SOURCE_JSON.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n")
 
 
@@ -404,6 +407,7 @@ def run(argv: list[str] | None = None) -> int:
     if args.self_test:
         self_test_exif_rotate()
         print("exif_transpose fixture: ok")
+        return 0
 
     src, dallas = discover_input(args.input)
     if not src.exists():

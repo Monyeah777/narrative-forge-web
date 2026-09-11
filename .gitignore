@@ -40,11 +40,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# HD painting masters stay out of git. Only the baked 1200px preview is tracked.
+# HD painting masters stay out of git. Only the baked 1200px preview (+ light meta) is tracked.
 painting/*
 !painting/01-dallas.jpg
 !painting/source.json
+!painting/b1-1-refs.json
 
-# TEMP (2026-09-11)：作者指示 · 高清源图临时入库供云端处理（painting/masters/）。
-# 处理完成、烤好选定画作后，可整体删除该目录与下方例外行；见 painting/masters/README.md。
-!painting/masters/

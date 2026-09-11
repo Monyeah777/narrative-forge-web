@@ -1,0 +1,24 @@
+{
+  "task": "B1-1",
+  "title": "素材规格与预处理（HD master → 1200px）",
+  "searched": [
+    {
+      "q": "pillow ImageOps.exif_transpose resize LANCZOS thumbnail best practice",
+      "refs": [
+        "https://pillow.readthedocs.io/en/stable/reference/ImageOps.html",
+        "https://thelinuxcode.com/python-pil-imageopen-a-practical-productionready-guide/"
+      ],
+      "takeaway": "Always exif_transpose before resize; LANCZOS for photo downscale; strip Orientation so it is not double-applied."
+    },
+    {
+      "q": "pillow adjust saturation HSV hue unchanged python colorsys",
+      "refs": [
+        "https://docs.python.org/3/library/colorsys.html",
+        "https://stackoverflow.com/questions/24874765/python-pil-shift-the-hue-and-saturation"
+      ],
+      "takeaway": "Scale S only in HSV/colorsys; leave H and V untouched (handbook S×0.88)."
+    }
+  ],
+  "input": "painting/masters/dallas_lespeupliers_5497x7054.jpg (5497×7054, removed after bake)",
+  "output": "painting/01-dallas.jpg"
+}
