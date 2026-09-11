@@ -151,7 +151,7 @@
 
     .hud {
       position: fixed;
-      top: 1.4rem;
+      top: calc(1.4rem + 18px);
       left: 1.6rem;
       z-index: 99;
       margin: 0;
@@ -262,9 +262,13 @@
     }
 
     .viewfinder {
+      position: fixed;
+      top: 1.4rem;
+      left: 1.6rem;
+      z-index: 99;
       display: flex;
       align-items: center;
-      margin: 0.55em 0 0;
+      margin: 0;
       font-family: "Courier New", Courier, monospace;
       font-size: 10px;
       line-height: 1;
@@ -287,7 +291,7 @@
     }
 
     .vol {
-      margin: 0.4em 0 0;
+      margin: 0.55em 0 0;
       font-family: 'Silkscreen', monospace;
       font-weight: 400;
       font-size: 11px;
@@ -635,6 +639,7 @@
     <canvas id="void" role="img" aria-label="深空粒子场"></canvas>
     <div class="veil" aria-hidden="true"></div>
     <div class="grain" aria-hidden="true"></div>
+    <p class="viewfinder" aria-hidden="true"><span class="rec-dot"></span>REC　F/2.8　ISO400　BATT99%</p>
     <p class="hud" aria-hidden="true">NF · VOID / 050505</p>
     <aside class="paper">
       <header class="mast">
@@ -642,7 +647,6 @@
           <span class="line"><span class="cap cap-n">N</span>ARRATIVE</span>
           <span class="line"><span class="cap cap-f">F</span>ORGE<span class="cursor" aria-hidden="true"></span></span>
         </h1>
-        <p class="viewfinder" aria-hidden="true"><span class="rec-dot"></span>REC　F/2.8　ISO400　BATT99%</p>
         <p class="vol" id="vol"><span class="vol-label">COSMIC PIXEL ARCHIVE · </span><span class="vol-ver">VOL. 01</span></p>
       </header>
       <div class="channels">
