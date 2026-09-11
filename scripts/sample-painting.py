@@ -10,8 +10,10 @@ Pipeline (handbook B1-2):
      (Secord 2002: unweighted Lloyd blurs; voids/clumps are the artifact to kill)
   6. Quantize sample colors in OKLab (median-cut seed + k-means, k=256, fixed seed)
   7. Write painting/points.json (palette + [x, y, i], coords 0..1 four decimals, shuffled)
+     and copy the same bytes to prototype/assets/points.json (B1-4 live fetch).
 
-Does not replace prototype/points.json (still the NF glyph). Wiring is B1-4.
+prototype/points.json remains the NF glyph generator output; the live page
+loads prototype/assets/points.json.
 
 Refs:
   https://bottosson.github.io/posts/oklab/
@@ -37,6 +39,7 @@ PAINTING_DIR = ROOT / "painting"
 DEFAULT_IMAGE = PAINTING_DIR / "01-dallas.jpg"
 SOURCE_JSON = PAINTING_DIR / "source.json"
 DEFAULT_POINTS = PAINTING_DIR / "points.json"
+ASSET_POINTS = ROOT / "prototype" / "assets" / "points.json"
 DEFAULT_STATS = PAINTING_DIR / "sample-stats.json"
 
 COUNT = 12_000
@@ -731,6 +734,9 @@ def run(argv: list[str] | None = None) -> int:
     out.parent.mkdir(parents=True, exist_ok=True)
     raw = json.dumps(payload, separators=(",", ":"), ensure_ascii=True) + "\n"
     out.write_text(raw)
+    if out.resolve() == DEFAULT_POINTS.resolve():
+        ASSET_POINTS.parent.mkdir(parents=True, exist_ok=True)
+        ASSET_POINTS.write_text(raw)
     stats["bytes"] = len(raw.encode("utf-8"))
     stats["gzip_bytes"] = len(gzip.compress(raw.encode("utf-8"), compresslevel=9))
     stats_path.write_text(json.dumps(stats, indent=2, ensure_ascii=True) + "\n")
