@@ -151,8 +151,8 @@
 
     .hud {
       position: fixed;
-      top: 1.4rem;
-      left: 1.6rem;
+      top: 38px;
+      left: 40px;
       z-index: 99;
       margin: 0;
       font-family: 'Silkscreen', monospace;
@@ -259,6 +259,78 @@
         -webkit-text-fill-color: currentColor;
         color: #C9CFD8;
       }
+    }
+
+    .viewfinder {
+      position: fixed;
+      inset: 16px;
+      z-index: 10000;
+      margin: 0;
+      pointer-events: none;
+    }
+
+    .vf-corner {
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      box-sizing: border-box;
+      border-style: solid;
+      border-color: #8E959D;
+      border-width: 0;
+    }
+
+    .vf-tl {
+      top: 0;
+      left: 0;
+      border-top-width: 1px;
+      border-left-width: 1px;
+    }
+
+    .vf-tr {
+      top: 0;
+      right: 0;
+      border-top-width: 1px;
+      border-right-width: 1px;
+    }
+
+    .vf-bl {
+      bottom: 0;
+      left: 0;
+      border-bottom-width: 1px;
+      border-left-width: 1px;
+    }
+
+    .vf-br {
+      bottom: 0;
+      right: 0;
+      border-bottom-width: 1px;
+      border-right-width: 1px;
+    }
+
+    .vf-readout {
+      position: absolute;
+      top: 4px;
+      left: 22px;
+      display: flex;
+      align-items: center;
+      margin: 0;
+      font-family: "Courier New", Courier, monospace;
+      font-size: 10px;
+      line-height: 1;
+      letter-spacing: 0.2em;
+      color: #8E959D;
+      white-space: nowrap;
+    }
+
+    .rec-dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      margin-right: 0.55em;
+      flex: 0 0 6px;
+      border-radius: 50%;
+      background: #A33B2A;
+      animation: recBreath 2.4s ease-in-out infinite;
     }
 
     .vol {
@@ -552,6 +624,11 @@
       color: #f4f7fb;
     }
 
+    @keyframes recBreath {
+      0%, 100% { opacity: 0.35; }
+      50% { opacity: 0.85; }
+    }
+
     @keyframes blink {
       50% { opacity: 0; }
     }
@@ -588,6 +665,10 @@
       .nav-item:hover::before,
       .nav-item[aria-current="page"]::before { transition: none !important; }
       .grain, .veil { display: none; }
+      .rec-dot {
+        animation: none !important;
+        opacity: 0.85;
+      }
       .stage[data-mode="formed"] .lead,
       .stage[data-mode="formed"] .sub,
       .stage[data-mode="formed"] .catalog,
@@ -645,6 +726,13 @@
     </aside>
   </div>
   <div class="fx-crt" aria-hidden="true"></div>
+  <div class="viewfinder" aria-hidden="true">
+    <span class="vf-corner vf-tl"></span>
+    <span class="vf-corner vf-tr"></span>
+    <span class="vf-corner vf-bl"></span>
+    <span class="vf-corner vf-br"></span>
+    <p class="vf-readout"><span class="rec-dot"></span>REC　F/2.8　ISO400　BATT99%</p>
+  </div>
 
   <script>
     (function () {
