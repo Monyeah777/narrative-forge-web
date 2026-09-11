@@ -89,6 +89,21 @@
       background-size: 40px 40px, 40px 40px, 8px 8px, 8px 8px;
     }
 
+    .fx-crt {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      pointer-events: none;
+      background:
+        radial-gradient(720px 400px at 78% -8%, rgba(255, 255, 255, 0.14), transparent 55%),
+        radial-gradient(1600px 900px at 50% -18%, rgba(255, 255, 255, 0.05), transparent 70%),
+        radial-gradient(820px 380px at 16% -8%, rgba(255, 255, 255, 0.05), transparent 68%),
+        repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 3px);
+      box-shadow:
+        inset 0 0 150px rgba(0, 0, 0, 0.55),
+        inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    }
+
     .stage {
       position: relative;
       z-index: 2;
@@ -629,6 +644,7 @@
       <p class="colophon"><button type="button" class="egg" id="btn-egg" aria-label="像素 NF">NF</button> · 内容契约层 · 定内容，不定模型</p>
     </aside>
   </div>
+  <div class="fx-crt" aria-hidden="true"></div>
 
   <script>
     (function () {
