@@ -40,9 +40,16 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# HD painting masters stay out of git. Only the baked 1200px preview (+ light meta) is tracked.
+# HD painting masters stay out of git. Only the baked 1200px previews (+ light meta) are tracked.
 painting/*
 !painting/01-dallas.jpg
+!painting/02-scotland.jpg
+!painting/03-philadelphia-gap.jpg
+!painting/04-philadelphia-upload.jpg
+!painting/05-met-fourtrees.jpg
+!painting/06-vertical.jpg
 !painting/source.json
+!painting/catalog.json
 !painting/b1-1-refs.json
+!painting/b1-1-batch.json
 

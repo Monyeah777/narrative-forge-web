@@ -10,13 +10,14 @@
 
 ## 当前进度（云端 Track A）
 
-手册 **B1-1 已完成（HD 重烤）**，停在等「继续」。不要开 B1-2（12k 采样 / points v2）。
+手册 **B1-1 已完成（6 张 HD 全部烤成 1200px）**，停在等「继续」。不要开 B1-2（12k 采样 / points v2）。
 
-- 工程内唯一源：`painting/01-dallas.jpg`（**1200×1540**，由 `dallas_lespeupliers_5497x7054.jpg` EXIF 烘焙 + LANCZOS + HSV S×0.88；**无画框裁切**，master 已是画心）
-- 元数据：`painting/source.json`（`standIn: false`）；脚本：`scripts/prep-painting.py`
-- 作者临时放入的 `painting/masters/` **已处理完并从 git 移除**（高清不进项目）
+- 工程内当前唯一源（`primary`）：`painting/01-dallas.jpg`（1200×1540）
+- 其余预览：`02-scotland.jpg` 1200² · `03-philadelphia-gap.jpg` 1200×1512 · `04-philadelphia-upload.jpg` 1200×1550 · `05-met-fourtrees.jpg` 1200×1190 · `06-vertical.jpg` 1200×1528（来源待核定）
+- 目录：`painting/catalog.json`；脚本：`python3 scripts/prep-painting.py --all-masters`
+- 高清 `painting/masters/` **不进 git**（本机可按 README 再放）
 - 原型仍加载 `prototype/points.json`（NF 字形），**还没接画作**
-- 本条分支：`cursor/b1-1-hd-bake-52ec`（叠在 `cursor/b1-1-dallas-preview-ae29` 上）
+- 本条分支：`cursor/b1-1-all-previews-52ec`（叠在 `cursor/b1-1-hd-bake-52ec` 上）
 
 ---
 
@@ -28,7 +29,7 @@
 | GitHub | `Monyeah777/narrative-forge-web` |
 | 当前分支 | 云端叠 PR 在 `cursor/b1-1-dallas-preview-ae29`；本地主线仍可能是 `task/T-0005-community` |
 | 原型路径 | `prototype/index.html`（同目录 `points.json`、`gen-points.mjs`） |
-| 画作预览 | `painting/01-dallas.jpg`（B1-1；高清原图不进 git） |
+| 画作预览 | `painting/01-dallas.jpg`（primary）+ `02`–`06`；目录 `catalog.json`；高清不进 git |
 | NF 主仓 | `C:\Users\mon_7\Downloads\NarrativeForge-main` |
 | 规格 | `C:\Users\mon_7\Downloads\NF首屏_执行清单_v3.0_2026-09-10.md` |
 | Next 预览 | `npm run dev` → http://localhost:3000 |
@@ -115,7 +116,7 @@ Next.js 16，API 与训练记忆可能不同。改 Next 代码前读 `node_modul
 - `prototype/points.json` `{ "points": [{x,y}, ...] }` 归一化 0..1，约 1630 点
 - `prototype/gen-points.mjs` 确定性栅格 **N / F**（mulberry32 seed `0x4e46`），落在左约 62%，避免压到报章。另有脊线+底边粉尘。
 
-规格要作者选定的 Monet 英雄图。B1-1 已用达拉斯 HD master 烤成 `painting/01-dallas.jpg`（1200×1540，S×0.88，`standIn: false`）；**粒子仍是 NF 字母替身**，等 B1-2 才采样。
+规格要作者选定的 Monet 英雄图。B1-1 已把 6 张 HD 全部烤成 1200px（`catalog.json`）；当前 primary 仍是达拉斯 `01-dallas.jpg`。**粒子仍是 NF 字母替身**，等 B1-2 才采样。
 
 数量分档：桌面 1600 / 中 1280 / 窄 960。
 
@@ -162,11 +163,11 @@ IDLE 0.14  POINTER_LERP 0.2  SIZES [4,6,8]
 ## 未完成 / 已知问题
 
 1. 轨道 B 未开始（原型未验收，不要擅自灌进 Next）。
-2. `points.json` 仍是像素 NF。B1-1 已有达拉斯 HD 烤制的 1200×1540 预览，**采样成 12k 点要等 B1-2**。换主视觉：`scripts/prep-painting.py --input <master>`。
+2. `points.json` 仍是像素 NF。B1-1 六张 1200px 预览已齐，**采样成 12k 点要等 B1-2**。换主视觉：改 `source.json` 的 primary，或 `prep-painting.py --input <master> --output painting/01-….jpg`。
 3. 大厅目录在窄报章栏会按字折行。
 4. 介绍 / 大厅 / 社区成画也是同一套 NF 字形；彩蛋是首页多一条入口，不是唯一触发。若用户要把字形改成「只有彩蛋才出现」，先问再改。
 5. 原型「打开完整大厅/社区页」依赖 localhost:3000。
-6. `painting/01-dallas.jpg` + `painting/source.json` 已跟踪；高清原图和作者未提交的其它画仍 gitignore。并发会话共用本仓时，禁止顺手 stash/reset。
+6. `painting/01`–`06` + `source.json` + `catalog.json` 已跟踪；`painting/masters/` gitignore。并发会话共用本仓时，禁止顺手 stash/reset。
 7. 别的对话框如果打开的是 GitHub 默认 `main`，会看不到原型。先 `git fetch` 再 `git checkout task/T-0005-community`。
 8. 规格里的盒装介绍按钮组、春夏秋、玻璃卡、Fusion Pixel，原型里都还没有；用户已否掉额外盒装按钮。
 

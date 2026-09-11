@@ -1,0 +1,263 @@
+{
+  "count": 6,
+  "results": [
+    {
+      "id": "poplars-dallas",
+      "file": "01-dallas.jpg",
+      "w": 1200,
+      "h": 1540,
+      "input_orientation": 1,
+      "output_orientation": null,
+      "dallas_stand_in": false,
+      "crop_norm": null,
+      "input": "painting/masters/dallas_lespeupliers_5497x7054.jpg",
+      "input_size": [
+        5497,
+        7054
+      ],
+      "hsv_before": {
+        "mean_h_deg": 211.871,
+        "mean_s": 0.13984,
+        "mean_v": 0.70917,
+        "samples": 115500,
+        "hue_samples": 104643
+      },
+      "hsv_after": {
+        "mean_h_deg": 186.832,
+        "mean_s": 0.12136,
+        "mean_v": 0.70917,
+        "samples": 115500,
+        "hue_samples": 97310
+      },
+      "sat_ratio": 0.8678,
+      "hue_paired": {
+        "mean_abs_hue_delta_deg": 0.9214,
+        "max_abs_hue_delta_deg": 4.0,
+        "chromatic_samples": 56409
+      },
+      "hue_delta_deg": 0.9214,
+      "checks": {
+        "width_1200": true,
+        "sat_0_85_0_90": true,
+        "hue_delta_le_2": true,
+        "exif_stripped": true,
+        "v_unchanged": true
+      }
+    },
+    {
+      "id": "poplars-scotland",
+      "file": "02-scotland.jpg",
+      "w": 1200,
+      "h": 1200,
+      "input_orientation": null,
+      "output_orientation": null,
+      "dallas_stand_in": false,
+      "crop_norm": null,
+      "input": "painting/masters/scotland_GAP_4001.jpg",
+      "input_size": [
+        4001,
+        4001
+      ],
+      "hsv_before": {
+        "mean_h_deg": 68.801,
+        "mean_s": 0.19841,
+        "mean_v": 0.58073,
+        "samples": 90000,
+        "hue_samples": 83619
+      },
+      "hsv_after": {
+        "mean_h_deg": 66.564,
+        "mean_s": 0.17292,
+        "mean_v": 0.58073,
+        "samples": 90000,
+        "hue_samples": 80778
+      },
+      "sat_ratio": 0.8715,
+      "hue_paired": {
+        "mean_abs_hue_delta_deg": 0.9159,
+        "max_abs_hue_delta_deg": 12.0,
+        "chromatic_samples": 63669
+      },
+      "hue_delta_deg": 0.9159,
+      "checks": {
+        "width_1200": true,
+        "sat_0_85_0_90": true,
+        "hue_delta_le_2": true,
+        "exif_stripped": true,
+        "v_unchanged": true
+      }
+    },
+    {
+      "id": "poplars-philadelphia-gap",
+      "file": "03-philadelphia-gap.jpg",
+      "w": 1200,
+      "h": 1512,
+      "input_orientation": null,
+      "output_orientation": null,
+      "dallas_stand_in": false,
+      "crop_norm": null,
+      "input": "painting/masters/philadelphia_GAP_4248x5353.jpg",
+      "input_size": [
+        4248,
+        5353
+      ],
+      "hsv_before": {
+        "mean_h_deg": 19.92,
+        "mean_s": 0.23246,
+        "mean_v": 0.72815,
+        "samples": 113400,
+        "hue_samples": 106339
+      },
+      "hsv_after": {
+        "mean_h_deg": 16.479,
+        "mean_s": 0.20287,
+        "mean_v": 0.72815,
+        "samples": 113400,
+        "hue_samples": 103262
+      },
+      "sat_ratio": 0.8727,
+      "hue_paired": {
+        "mean_abs_hue_delta_deg": 0.8265,
+        "max_abs_hue_delta_deg": 5.035,
+        "chromatic_samples": 84471
+      },
+      "hue_delta_deg": 0.8265,
+      "checks": {
+        "width_1200": true,
+        "sat_0_85_0_90": true,
+        "hue_delta_le_2": true,
+        "exif_stripped": true,
+        "v_unchanged": true
+      }
+    },
+    {
+      "id": "poplars-philadelphia-upload",
+      "file": "04-philadelphia-upload.jpg",
+      "w": 1200,
+      "h": 1550,
+      "input_orientation": null,
+      "output_orientation": null,
+      "dallas_stand_in": false,
+      "crop_norm": null,
+      "input": "painting/masters/philadelphia_upload_4249x5490.jpg",
+      "input_size": [
+        4249,
+        5490
+      ],
+      "hsv_before": {
+        "mean_h_deg": 320.167,
+        "mean_s": 0.31311,
+        "mean_v": 0.67449,
+        "samples": 116400,
+        "hue_samples": 112339
+      },
+      "hsv_after": {
+        "mean_h_deg": 320.2,
+        "mean_s": 0.27386,
+        "mean_v": 0.67449,
+        "samples": 116400,
+        "hue_samples": 110651
+      },
+      "sat_ratio": 0.8746,
+      "hue_paired": {
+        "mean_abs_hue_delta_deg": 0.8098,
+        "max_abs_hue_delta_deg": 9.0,
+        "chromatic_samples": 97785
+      },
+      "hue_delta_deg": 0.8098,
+      "checks": {
+        "width_1200": true,
+        "sat_0_85_0_90": true,
+        "hue_delta_le_2": true,
+        "exif_stripped": true,
+        "v_unchanged": true
+      }
+    },
+    {
+      "id": "four-trees-met",
+      "file": "05-met-fourtrees.jpg",
+      "w": 1200,
+      "h": 1190,
+      "input_orientation": null,
+      "output_orientation": null,
+      "dallas_stand_in": false,
+      "crop_norm": null,
+      "input": "painting/masters/met_fourtrees_3689x3658.jpg",
+      "input_size": [
+        3689,
+        3658
+      ],
+      "hsv_before": {
+        "mean_h_deg": 228.587,
+        "mean_s": 0.19805,
+        "mean_v": 0.71593,
+        "samples": 89400,
+        "hue_samples": 83926
+      },
+      "hsv_after": {
+        "mean_h_deg": 227.649,
+        "mean_s": 0.17314,
+        "mean_v": 0.71593,
+        "samples": 89400,
+        "hue_samples": 82542
+      },
+      "sat_ratio": 0.8742,
+      "hue_paired": {
+        "mean_abs_hue_delta_deg": 0.8718,
+        "max_abs_hue_delta_deg": 15.0,
+        "chromatic_samples": 67274
+      },
+      "hue_delta_deg": 0.8718,
+      "checks": {
+        "width_1200": true,
+        "sat_0_85_0_90": true,
+        "hue_delta_le_2": true,
+        "exif_stripped": true,
+        "v_unchanged": true
+      }
+    },
+    {
+      "id": "poplars-vertical-unverified",
+      "file": "06-vertical.jpg",
+      "w": 1200,
+      "h": 1528,
+      "input_orientation": null,
+      "output_orientation": null,
+      "dallas_stand_in": false,
+      "crop_norm": null,
+      "input": "painting/masters/vertical_2589.jpg",
+      "input_size": [
+        2589,
+        3297
+      ],
+      "hsv_before": {
+        "mean_h_deg": 199.862,
+        "mean_s": 0.21506,
+        "mean_v": 0.61353,
+        "samples": 114600,
+        "hue_samples": 108281
+      },
+      "hsv_after": {
+        "mean_h_deg": 200.128,
+        "mean_s": 0.18756,
+        "mean_v": 0.61353,
+        "samples": 114600,
+        "hue_samples": 105650
+      },
+      "sat_ratio": 0.8721,
+      "hue_paired": {
+        "mean_abs_hue_delta_deg": 0.9315,
+        "max_abs_hue_delta_deg": 12.0,
+        "chromatic_samples": 84578
+      },
+      "hue_delta_deg": 0.9315,
+      "checks": {
+        "width_1200": true,
+        "sat_0_85_0_90": true,
+        "hue_delta_le_2": true,
+        "exif_stripped": true,
+        "v_unchanged": true
+      }
+    }
+  ]
+}
