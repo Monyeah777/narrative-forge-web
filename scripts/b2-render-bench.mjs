@@ -6,6 +6,7 @@ import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { execFileSync } from "node:child_process";
 import { chromium } from "playwright-core";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -113,6 +114,7 @@ async function main() {
     const homeShot = await snap(page, "b2_home_palette_dust.png");
 
     await page.click("#btn-intro");
+    await page.mouse.move(5, 5);
     const formedDeadline = Date.now() + 16_000;
     let formed = null;
     while (Date.now() < formedDeadline) {
@@ -135,7 +137,17 @@ async function main() {
       if (formed.stageMode === "formed" && Number(formed.leadOpacity) >= 0.9 && formed.running === false) break;
       await new Promise((r) => setTimeout(r, 200));
     }
-    const introShot = await snap(page, "b2_intro_palette_formed.png");
+    const introShot = await snap(page, "b2_intro_formed_settled.png");
+    const pairPath = path.join(ART, "b2_formed_vs_source.png");
+    if (fs.existsSync(ART) && !fs.existsSync(pairPath) && fs.existsSync(introShot)) {
+      execFileSync("python3", [
+        "-c",
+        "from PIL import Image; import sys; formed=Image.open(sys.argv[1]).convert('RGB'); src=Image.open(sys.argv[2]).convert('RGB'); h=800; src=src.resize((int(src.width*h/src.height), h)); formed=formed.resize((int(formed.width*h/formed.height), h)); out=Image.new('RGB', (formed.width+src.width+24, h), (5,5,5)); out.paste(src, (0,0)); out.paste(formed, (src.width+24, 0)); out.save(sys.argv[3], quality=92)",
+        introShot,
+        path.join(PAINTING, "01-dallas.jpg"),
+        pairPath,
+      ]);
+    }
     const zoom = await page.evaluate(() => {
       const src = document.getElementById("void");
       const c = window.__nfRender.contain;
@@ -144,15 +156,15 @@ async function main() {
       z.width = 480;
       z.height = 480;
       const g = z.getContext("2d");
-      const sx = Math.max(0, (c.x + c.w * 0.45) * dpr);
-      const sy = Math.max(0, (c.y + c.h * 0.42) * dpr);
+      const sx = Math.max(0, (c.x + c.w * 0.55) * dpr);
+      const sy = Math.max(0, (c.y + c.h * 0.12) * dpr);
       g.imageSmoothingEnabled = true;
       g.drawImage(src, sx, sy, 90 * dpr, 90 * dpr, 0, 0, 480, 480);
       return z.toDataURL("image/png");
     });
     if (fs.existsSync(ART)) {
       const buf = Buffer.from(zoom.split(",")[1], "base64");
-      const zoomPath = path.join(ART, "b2_sprite_zoom.png");
+      const zoomPath = path.join(ART, "b2_sprite_zoom_sky.png");
       if (!fs.existsSync(zoomPath)) fs.writeFileSync(zoomPath, buf);
     }
 
@@ -181,7 +193,12 @@ async function main() {
       idle_5s: idle,
       pointer_woke: woke,
       logs,
-      screenshots: { home: homeShot, intro: introShot, zoom: path.join(ART, "b2_sprite_zoom.png") },
+      screenshots: {
+        home: homeShot,
+        intro: introShot,
+        zoom: path.join(ART, "b2_sprite_zoom_sky.png"),
+        vs_source: path.join(ART, "b2_formed_vs_source.png"),
+      },
       acceptance: {
         n_12000: ready.n === 12000,
         atlas_imagebitmap: ready.atlasIsImageBitmap === true,

@@ -1870,6 +1870,16 @@
           if (unlocked) activeCount++;
         }
         toNorm();
+        if (formed && hasGlyph && !live && !frozen && (performance.now() - modeT0) > 3200) {
+          for (i = 0; i < N; i++) {
+            x[i] = tx[i];
+            y[i] = ty[i];
+            vx[i] = 0;
+            vy[i] = 0;
+          }
+          toNorm();
+          activeCount = 0;
+        }
         if (assembling && N > 0 && settled / N >= 0.97) {
           for (i = 0; i < N; i++) {
             x[i] = tx[i];
