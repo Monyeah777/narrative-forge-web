@@ -9,6 +9,7 @@ import path from "node:path";
 import zlib from "node:zlib";
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
+import { execFileSync } from "node:child_process";
 import { chromium } from "playwright-core";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -40,7 +41,8 @@ const MIME = {
 const CONTRACT_KEYS = ["id", "w", "h", "count", "note", "palette", "points"];
 
 function send(res, code, body, type = "text/plain; charset=utf-8", extra = {}) {
-  res.writeHead(code, { "content-type": type, "cache-control": "no-store", ...extra });
+  const headers = { "content-type": type, "cache-control": "no-store", ...extra };
+  res.writeHead(code, headers);
   res.end(body);
 }
 
@@ -51,12 +53,25 @@ function sha256(buf) {
 function fileStats() {
   const asset = fs.readFileSync(path.join(PROTO, "assets", "points.json"));
   const painted = fs.readFileSync(path.join(PAINTING, "points.json"));
-  const gz = zlib.gzipSync(asset, { level: 9 }).length;
+  const gzNode = zlib.gzipSync(asset, { level: 9 }).length;
+  const gzPy = Number(
+    execFileSync(
+      "python3",
+      [
+        "-c",
+        "import gzip,sys; print(len(gzip.compress(sys.stdin.buffer.read(), compresslevel=9)))",
+      ],
+      { input: asset }
+    )
+      .toString()
+      .trim()
+  );
   return {
     path: "prototype/assets/points.json",
     bytes: asset.length,
-    gzip_bytes: gz,
-    gzip_lt_120kb: gz < 120 * 1024,
+    gzip_bytes: gzPy,
+    gzip_bytes_node: gzNode,
+    gzip_lt_120kb: gzPy < 120 * 1024,
     sha256: sha256(asset),
     sha256_match_painting: sha256(asset) === sha256(painted),
   };
@@ -86,12 +101,15 @@ function servePrototype() {
       const type = MIME[ext] || "application/octet-stream";
       const buf = fs.readFileSync(file);
       const ae = String(req.headers["accept-encoding"] || "");
+      const extra = {};
+      if (ext === ".json") extra["cache-control"] = "public, max-age=60";
+      extra["access-control-allow-origin"] = "*";
       if (ext === ".json" && ae.includes("gzip")) {
         const gz = zlib.gzipSync(buf, { level: 9 });
-        send(res, 200, gz, type, { "content-encoding": "gzip", vary: "Accept-Encoding" });
+        send(res, 200, gz, type, { ...extra, "content-encoding": "gzip", vary: "Accept-Encoding" });
         return;
       }
-      send(res, 200, buf, type);
+      send(res, 200, buf, type, extra);
     });
     server.listen(PORT, "127.0.0.1", () => resolve(server));
     server.on("error", reject);
@@ -110,7 +128,7 @@ async function waitPoints(page, timeoutMs) {
 
 async function snap(page, name) {
   const dest = path.join(ART, name);
-  if (fs.existsSync(ART)) await page.screenshot({ path: dest, fullPage: false });
+  if (fs.existsSync(ART) && !fs.existsSync(dest)) await page.screenshot({ path: dest, fullPage: false });
   return dest;
 }
 
@@ -178,21 +196,29 @@ async function main() {
     });
 
     const live = await runPage(browser, "index.html");
-    await new Promise((r) => setTimeout(r, 500));
-    const homeShot = await snap(live.page, "b1_4_home_chaos.png");
+    await new Promise((r) => setTimeout(r, 800));
+    const homeShot = await snap(live.page, "b1_4_home_starfield.png");
     await live.page.click("#btn-intro");
-    await new Promise((r) => setTimeout(r, 1800));
-    const introShot = await snap(live.page, "b1_4_intro_formed.png");
-    const afterIntro = await live.page.evaluate(() => ({
-      ariaCurrent: document.getElementById("btn-intro") && document.getElementById("btn-intro").getAttribute("aria-current"),
-      dossierView: document.getElementById("dossier") && document.getElementById("dossier").dataset.view,
-      dossierAriaHidden: document.getElementById("dossier") && document.getElementById("dossier").getAttribute("aria-hidden"),
-      stageMode: document.getElementById("stage") && document.getElementById("stage").getAttribute("data-mode"),
-    }));
+    await new Promise((r) => setTimeout(r, 2800));
+    const introShot = await snap(live.page, "b1_4_intro_copy_and_form.png");
+    const afterIntro = await live.page.evaluate(() => {
+      var lead = document.querySelector('.dossier .panel[data-panel="intro"] .lead');
+      var sub = document.querySelector('.dossier .panel[data-panel="intro"] .sub');
+      return {
+        ariaCurrent: document.getElementById("btn-intro") && document.getElementById("btn-intro").getAttribute("aria-current"),
+        dossierView: document.getElementById("dossier") && document.getElementById("dossier").dataset.view,
+        dossierAriaHidden: document.getElementById("dossier") && document.getElementById("dossier").getAttribute("aria-hidden"),
+        stageMode: document.getElementById("stage") && document.getElementById("stage").getAttribute("data-mode"),
+        leadText: lead && lead.textContent,
+        subText: sub && sub.textContent,
+        leadOpacity: lead ? getComputedStyle(lead).opacity : "",
+        subOpacity: sub ? getComputedStyle(sub).opacity : ""
+      };
+    });
     await live.page.close();
 
     const ph = await runPage(browser, "index.html?nf-points=placeholder");
-    const phShot = await snap(ph.page, "b1_4_placeholder.png");
+    const phShot = await snap(ph.page, "b1_4_placeholder_random.png");
     await ph.page.close();
 
     const hasKeys = (keys) => CONTRACT_KEYS.every((k) => keys.includes(k));
@@ -232,7 +258,10 @@ async function main() {
         placeholder_same_keys: hasKeys(ph.payload.keys),
         placeholder_source: ph.payload.source === "placeholder",
         intro_formed: afterIntro.stageMode === "formed" && afterIntro.dossierView === "intro",
+        intro_copy_visible: afterIntro.leadText === "把叙事，变成工程。" && Number(afterIntro.leadOpacity) >= 0.9,
         load_timing_recorded: typeof live.payload.timings.total_ms === "number",
+        gzip_on_wire: live.payload.timings.encodedBodySize > 0 && live.payload.timings.encodedBodySize < 120 * 1024,
+        preload_reused: live.payload.timings.preload_reused === true,
       },
     };
     report.acceptance.pass = Object.values(report.acceptance).every(Boolean);

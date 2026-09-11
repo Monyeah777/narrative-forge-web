@@ -17,7 +17,7 @@
 - 冻结接口：`id,w,h,count,note,palette,points`（`points` 为 `[[x,y,i],...]`）；`window.__nfPoints`
 - 数据未就绪：临时随机点，**同一套字段**（`?nf-points=placeholder` 可强制）
 - 引擎仍按宽度 cap 960/1280/1600，对 12k 目标取模，不在本步把 N 拉到 12000
-- 本条分支：`cursor/b1-4-points-load-52ec`（叠在 `cursor/b1-3-path-ab-52ec` 上）
+- 验收：gzip **82812 B**（python gzip -9）&lt; 120KB；preload 命中后 fetch transferSize=0；加载列表见 `painting/b1-4-load.json`
 
 ---
 

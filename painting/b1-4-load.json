@@ -1,0 +1,161 @@
+{
+  "task": "B1-4",
+  "disk": {
+    "path": "prototype/assets/points.json",
+    "bytes": 238906,
+    "gzip_bytes": 82812,
+    "gzip_bytes_node": 82429,
+    "gzip_lt_120kb": true,
+    "sha256": "d35cae4c65a1c17ebbb609176b908750ff7aef5479aa7c563e7a1faf4e68d134",
+    "sha256_match_painting": true
+  },
+  "load_timing_list": [
+    {
+      "step": "t_fetch_start_ms",
+      "ms": 36.9
+    },
+    {
+      "step": "fetch_ms",
+      "ms": 5.6
+    },
+    {
+      "step": "parse_ms",
+      "ms": 3.9
+    },
+    {
+      "step": "total_ms",
+      "ms": 9.5
+    },
+    {
+      "step": "preload_link_duration_ms",
+      "ms": 30.1
+    },
+    {
+      "step": "fetch_resource_duration_ms",
+      "ms": 1.7
+    },
+    {
+      "step": "encodedBodySize",
+      "bytes": 82429
+    },
+    {
+      "step": "decodedBodySize",
+      "bytes": 238906
+    },
+    {
+      "step": "transferSize",
+      "bytes": 0
+    }
+  ],
+  "live": {
+    "id": "poplars-dallas",
+    "w": 1200,
+    "h": 1540,
+    "count": 12000,
+    "palette_len": 256,
+    "points_len": 12000,
+    "triple0": [
+      0.4842,
+      0.5019,
+      197
+    ],
+    "keys": [
+      "id",
+      "w",
+      "h",
+      "count",
+      "note",
+      "palette",
+      "points",
+      "source",
+      "timings"
+    ],
+    "source": "fetch",
+    "timings": {
+      "href": "assets/points.json",
+      "source": "fetch",
+      "t_fetch_start_ms": 36.9,
+      "fetch_ms": 5.6,
+      "parse_ms": 3.9,
+      "total_ms": 9.5,
+      "count": 12000,
+      "http_status": 200,
+      "preload_reused": true,
+      "resource": {
+        "entries": 2,
+        "link": {
+          "initiatorType": "link",
+          "duration_ms": 30.1,
+          "transferSize": 82729,
+          "encodedBodySize": 82429,
+          "decodedBodySize": 238906,
+          "startTime": 7.1,
+          "responseEnd": 37.2
+        },
+        "fetch": {
+          "initiatorType": "fetch",
+          "duration_ms": 1.7,
+          "transferSize": 0,
+          "encodedBodySize": 82429,
+          "decodedBodySize": 238906,
+          "startTime": 38.2,
+          "responseEnd": 39.9
+        }
+      },
+      "encodedBodySize": 82429,
+      "decodedBodySize": 238906,
+      "transferSize": 0
+    },
+    "after_intro": {
+      "ariaCurrent": "page",
+      "dossierView": "intro",
+      "dossierAriaHidden": "false",
+      "stageMode": "formed",
+      "leadText": "把叙事，变成工程。",
+      "subText": "质量不是猜出来的，是校验出来的。",
+      "leadOpacity": "1",
+      "subOpacity": "1"
+    },
+    "console": [
+      "[nf-load] assets/points.json\n  source=fetch\n  t_fetch_start_ms=36.9\n  fetch_ms=5.6\n  parse_ms=3.9\n  total_ms=9.5\n  count=12000\n  http_status=200\n  encodedBodySize=82429\n  decodedBodySize=238906\n  transferSize=0\n  preload_link_duration_ms=30.1\n  fetch_duration_ms=1.7\n  preload_reused=true"
+    ]
+  },
+  "placeholder": {
+    "id": "placeholder-random",
+    "count": 1600,
+    "source": "placeholder",
+    "keys": [
+      "id",
+      "w",
+      "h",
+      "count",
+      "note",
+      "palette",
+      "points",
+      "source",
+      "timings"
+    ],
+    "reason": "query nf-points=placeholder"
+  },
+  "screenshots": {
+    "home": "/opt/cursor/artifacts/b1_4_home_starfield.png",
+    "intro": "/opt/cursor/artifacts/b1_4_intro_copy_and_form.png",
+    "placeholder": "/opt/cursor/artifacts/b1_4_placeholder_random.png"
+  },
+  "acceptance": {
+    "gzip_lt_120kb": true,
+    "sha_match": true,
+    "keys_frozen": true,
+    "live_id_dallas": true,
+    "live_count_12000": true,
+    "live_source_fetch": true,
+    "placeholder_same_keys": true,
+    "placeholder_source": true,
+    "intro_formed": true,
+    "intro_copy_visible": true,
+    "load_timing_recorded": true,
+    "gzip_on_wire": true,
+    "preload_reused": true,
+    "pass": true
+  }
+}
