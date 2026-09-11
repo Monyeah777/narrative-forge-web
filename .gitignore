@@ -65,4 +65,6 @@ painting/*
 !painting/b1-4-load.json
 !painting/b2-refs.json
 !painting/b2-render.json
+!painting/b3-refs.json
+!painting/b3-anim.json
 
