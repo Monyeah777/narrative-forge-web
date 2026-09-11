@@ -174,9 +174,9 @@
 
     .cursor {
       display: inline-block;
-      width: 0.72em;
+      width: 0.28em;
       height: 0.72em;
-      margin-left: 0.1em;
+      margin-left: 0.08em;
       vertical-align: 0.12em;
       overflow: hidden;
       line-height: 0;
@@ -235,15 +235,6 @@
 
     .vol-ver {
       color: #A33B2A;
-    }
-
-    .vol-ver::after {
-      content: "█";
-      display: inline-block;
-      margin-left: 0.12em;
-      font-family: "Courier New", Courier, monospace;
-      color: #A33B2A;
-      animation: vol-rec 1.2s steps(2, end) infinite;
     }
 
     .channels {
@@ -502,11 +493,6 @@
       50% { opacity: 0; }
     }
 
-    @keyframes vol-rec {
-      0%, 49% { opacity: 1; }
-      50%, 100% { opacity: 0.6; }
-    }
-
     @keyframes rise {
       from { opacity: 0; }
       to { opacity: 1; }
@@ -535,7 +521,6 @@
     @media (prefers-reduced-motion: reduce) {
       .plate-title, .cursor, .lead, .sub { animation: none !important; }
       .cursor { display: none; }
-      .vol-ver::after { animation: none !important; opacity: 1; }
       .nav-item::before,
       .nav-item:hover::before,
       .nav-item[aria-current="page"]::before { transition: none !important; }
