@@ -162,7 +162,7 @@
     .plate-title {
       margin: 0;
       font-family: 'Press Start2P', monospace;
-      font-size: clamp(1rem, 3.05vw, 2.75rem);
+      font-size: clamp(16px, 3.05vw, 40px);
       line-height: 1.05;
       letter-spacing: .06em;
       color: #C9CFD8;
@@ -172,7 +172,13 @@
 
     @supports (font-size: 1cqi) {
       .plate-title {
-        font-size: clamp(1rem, 10.2cqi, 4rem);
+        font-size: clamp(16px, 10.2cqi, 40px);
+      }
+    }
+
+    @supports (font-size: 1cqi) and (font-size: round(down, 10px, 8px)) {
+      .plate-title {
+        font-size: clamp(16px, round(down, 10.2cqi, 8px), 40px);
       }
     }
 
