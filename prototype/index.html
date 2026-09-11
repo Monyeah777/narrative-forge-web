@@ -15,6 +15,18 @@
       color-scheme: dark;
     }
 
+    :focus-visible {
+      outline: 2px solid #6F8FAF;
+      outline-offset: 3px;
+    }
+
+    @supports not selector(:focus-visible) {
+      :focus {
+        outline: 2px solid #6F8FAF;
+        outline-offset: 3px;
+      }
+    }
+
     html, body {
       margin: 0;
       height: 100%;
@@ -173,12 +185,6 @@
       opacity: 1;
       background: none;
       border-bottom: 1px solid #ffffff;
-    }
-
-    .channels a:focus-visible,
-    .nav-item:focus-visible {
-      outline: 1px solid rgba(200, 205, 215, 0.7);
-      outline-offset: 3px;
     }
 
     .nav {
