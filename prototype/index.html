@@ -1546,9 +1546,11 @@
       if (btnSettings) {
         btnSettings.addEventListener("click", function () {
           btnSettings.classList.add("is-lit");
+          btnSettings.style.color = "#6F8FAF";
           window.clearTimeout(settingsLitTimer);
           settingsLitTimer = window.setTimeout(function () {
             btnSettings.classList.remove("is-lit");
+            btnSettings.style.color = "";
           }, 1000);
         });
       }
