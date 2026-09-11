@@ -55,4 +55,10 @@ painting/*
 !painting/points.json
 !painting/sample-stats.json
 !painting/b1-2-refs.json
+!painting/b1-3-refs.json
+!painting/b1-3-bench.json
+!painting/b1-3-path-a-bench.json
+!painting/b1-3-path-b-bench.json
+!painting/sample-browser.html
+!painting/sample-browser.js
 

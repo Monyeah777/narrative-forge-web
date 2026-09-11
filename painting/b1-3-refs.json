@@ -1,0 +1,26 @@
+{
+  "task": "B1-3",
+  "title": "实现路径（推荐 A；B 兜底对照）",
+  "chosen": "A",
+  "searched": [
+    {
+      "q": "canvas getImageData willReadFrequently privacy noise",
+      "refs": [
+        "https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/getImageData",
+        "https://github.com/explainers-by-googlers/canvas-noise-on-readbacks",
+        "https://html.spec.whatwg.org/multipage/canvas.html#concept-canvas-will-read-frequently"
+      ],
+      "takeaway": "willReadFrequently must be set on the first getContext. Privacy modes inject subtle noise into getImageData — Path A precompute is more stable. Sample once, never in rAF."
+    },
+    {
+      "q": "precompute points data json gzip / pillow convert RGB",
+      "refs": [
+        "https://docs.python.org/3/library/gzip.html",
+        "https://pillow.readthedocs.io/en/stable/handbook/concepts.html#modes"
+      ],
+      "takeaway": "convert('RGB') before sampling; compact JSON + gzip for size. Page fetch/preload is B1-4."
+    }
+  ],
+  "red_line": "Sample once only. Never inside rAF or interaction callbacks.",
+  "boundary": "Prototype fetch/preload wiring is B1-4."
+}

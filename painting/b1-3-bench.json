@@ -1,0 +1,43 @@
+{
+  "task": "B1-3",
+  "chosen_path": "A",
+  "path_a": {
+    "image_load_ms": 18.765,
+    "run1_sample_ms": 4403.174,
+    "run2_sample_ms": 4298.713,
+    "a_twice_identical": true,
+    "sha256": "d35cae4c65a1c17ebbb609176b908750ff7aef5479aa7c563e7a1faf4e68d134",
+    "gzip_bytes": 82812,
+    "json_read_ms": 0.097,
+    "count": 12000
+  },
+  "path_b": {
+    "timing": {
+      "image_load_ms": 3.2,
+      "getImageData_ms": 23.6,
+      "sample_ms": 440.3,
+      "total_ms": 477.2,
+      "json_bytes": 240390,
+      "dark_cull_pct": 0.0001,
+      "getImageData_calls": 1,
+      "willReadFrequently": true
+    },
+    "count": 12000,
+    "points_len": 12000,
+    "palette_len": 256,
+    "getImageData_calls": 1,
+    "willReadFrequently": true,
+    "w": 1200,
+    "h": 1540
+  },
+  "acceptance": {
+    "load_timing_recorded": true,
+    "a_twice_identical": true,
+    "b_count_equals_a_count": true,
+    "interface_keys_match": true,
+    "getImageData_once": true,
+    "pass": true
+  },
+  "note": "Prototype fetch/preload wiring deferred to B1-4.",
+  "dims_match": true
+}

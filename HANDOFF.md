@@ -10,13 +10,13 @@
 
 ## 当前进度（云端 Track A）
 
-手册 **B1-2 已完成**，停在等「继续」。不要开 B1-3（实现路径 A/B 对照）。
+手册 **B1-3 已完成**，停在等「继续」。不要开 B1-4（preload / 接到原型 fetch）。
 
-- 工程内当前唯一源（`primary`）：`painting/01-dallas.jpg`（1200×1540）
-- 采样：`scripts/sample-painting.py` → `painting/points.json`（契约 v2，12k，k=256）+ `painting/sample-stats.json`
-- 空洞：16px 合格格空格 **1344 → 0**（3 轮密度感知排斥 + 从过密格挪点）；暗部阈值仍 L<0.19
+- 选定路径 **A**：`scripts/sample-painting.py`（Pillow + numpy）预计算 `painting/points.json`
+- 兜底路径 B：`painting/sample-browser.html` 一次性 `getImageData`（`willReadFrequently`），契约字段与 A 相同
+- 对照：`painting/b1-3-bench.json`
 - 原型仍加载 `prototype/points.json`（NF 字形），**接加载是 B1-4**
-- 本条分支：`cursor/b1-2-stipple-holes-52ec`（叠在 `cursor/b1-1-all-previews-52ec` 上）
+- 本条分支：`cursor/b1-3-path-ab-52ec`（叠在 `cursor/b1-2-stipple-holes-52ec` 上）
 
 ---
 
@@ -26,9 +26,9 @@
 |---|---|
 | 本仓 | `C:\Users\mon_7\Downloads\narrative-forge-web` |
 | GitHub | `Monyeah777/narrative-forge-web` |
-| 当前分支 | 云端叠 PR 在 `cursor/b1-1-dallas-preview-ae29`；本地主线仍可能是 `task/T-0005-community` |
+| 当前分支 | 云端叠 PR 在 `cursor/b1-2-stipple-holes-52ec` |
 | 原型路径 | `prototype/index.html`（同目录 `points.json`、`gen-points.mjs`） |
-| 画作预览 | `painting/01-dallas.jpg`（primary）+ `02`–`06`；目录 `catalog.json`；高清不进 git |
+| 画作预览 | `painting/01-dallas.jpg`（primary）+ `02`–`06`；`painting/points.json`（B1-2 v2）；高清不进 git |
 | NF 主仓 | `C:\Users\mon_7\Downloads\NarrativeForge-main` |
 | 规格 | `C:\Users\mon_7\Downloads\NF首屏_执行清单_v3.0_2026-09-10.md` |
 | Next 预览 | `npm run dev` → http://localhost:3000 |
