@@ -1,0 +1,151 @@
+{
+  "id": "poplars-dallas",
+  "source": "painting/01-dallas.jpg",
+  "w": 1200,
+  "h": 1540,
+  "pixels": 1848000,
+  "count": 12000,
+  "k": 256,
+  "seed": 20038,
+  "dark_L": 0.19,
+  "dark_cull_pct": 0.0001,
+  "dark_cull_note": "Dallas stand-in is a high-key canopy/sky crop; L p01\u22480.54 so the 0.17\u20130.22 band cannot reach the 3\u20136% cull designed for darker sources. Kept handbook default 0.19 rather than eating midtones.",
+  "weight": "0.6 + 0.4*L^1.2",
+  "relax_rounds": 3,
+  "holes_before": {
+    "cell_px": 16,
+    "grid": [
+      75,
+      96
+    ],
+    "eligible_cells": 7200,
+    "empty_eligible": 1344,
+    "empty_eligible_frac": 0.186667,
+    "max_count": 8,
+    "mean_count_eligible": 1.6667,
+    "p90_count_eligible": 3.0
+  },
+  "holes_after": {
+    "cell_px": 16,
+    "grid": [
+      75,
+      96
+    ],
+    "eligible_cells": 7200,
+    "empty_eligible": 0,
+    "empty_eligible_frac": 0.0,
+    "max_count": 5,
+    "mean_count_eligible": 1.6667,
+    "p90_count_eligible": 3.0
+  },
+  "holes_moved": 969,
+  "L_hist_image": {
+    "bins": 10,
+    "range": [
+      0.0,
+      1.0
+    ],
+    "counts": [
+      0,
+      2,
+      55,
+      815,
+      7128,
+      41929,
+      323187,
+      1290188,
+      183196,
+      1500
+    ],
+    "edges": [
+      0.0,
+      0.1,
+      0.2,
+      0.3,
+      0.4,
+      0.5,
+      0.6,
+      0.7,
+      0.8,
+      0.9,
+      1.0
+    ]
+  },
+  "L_hist_sampled": {
+    "bins": 10,
+    "range": [
+      0.0,
+      1.0
+    ],
+    "counts": [
+      0,
+      0,
+      2,
+      7,
+      50,
+      268,
+      1985,
+      8394,
+      1284,
+      10
+    ],
+    "edges": [
+      0.0,
+      0.1,
+      0.2,
+      0.3,
+      0.4,
+      0.5,
+      0.6,
+      0.7,
+      0.8,
+      0.9,
+      1.0
+    ]
+  },
+  "L_image": {
+    "min": 0.16112,
+    "mean": 0.7381,
+    "max": 0.99284,
+    "p01": 0.54365
+  },
+  "Y709_linear_mean": 0.40962,
+  "deltaE_ok_css": {
+    "mean": 0.007771,
+    "max": 0.033435,
+    "p95": 0.014447,
+    "note": "CSS Color 4 \u0394EOK = Euclidean OKLab, L 0..1; JND\u22480.02"
+  },
+  "deltaE_ok_100": {
+    "mean": 0.7771,
+    "max": 3.3435,
+    "p95": 1.4447,
+    "note": "100\u00d7\u0394EOK so one JND\u22482 like \u0394E2000 (CSS Color 4 note)"
+  },
+  "hue_shift_deg": {
+    "mean_abs_deg": 6.7507,
+    "chroma_weighted_abs_deg": 6.3613,
+    "max_abs_deg": 57.1364,
+    "total_abs_mean_signed_deg": 0.2488,
+    "chromatic_n": 6846,
+    "chroma_floor": 0.02,
+    "note": "\u603b\u91cf = |circular mean of signed \u0394h| on C\u22650.02; near-neutrals inflate unweighted mean|\u0394h|"
+  },
+  "kcenter_max_deltaE_ok_100": 2.2328,
+  "kcenter_note": "Gonzalez k-center max radius at k=256. Covering every sample at \u0394E_ok\u00d7100\u22642 needs ~268 balls on this set, above the handbook k cap.",
+  "palette_len": 256,
+  "checks": {
+    "count_12000": true,
+    "k_in_160_256": true,
+    "coords_4dp": true,
+    "deltaE_ok_100_mean_le_2": true,
+    "deltaE_ok_100_max_le_2": false,
+    "hue_total_le_2": true,
+    "hue_mean_abs_le_2": false,
+    "dark_cull_3_to_6": false,
+    "empty_eligible_frac_le_2pct": true,
+    "holes_not_worse": true
+  },
+  "bytes": 238906,
+  "gzip_bytes": 82812
+}

@@ -10,14 +10,13 @@
 
 ## 当前进度（云端 Track A）
 
-手册 **B1-1 已完成（6 张 HD 全部烤成 1200px）**，停在等「继续」。不要开 B1-2（12k 采样 / points v2）。
+手册 **B1-2 已完成**，停在等「继续」。不要开 B1-3（实现路径 A/B 对照）。
 
 - 工程内当前唯一源（`primary`）：`painting/01-dallas.jpg`（1200×1540）
-- 其余预览：`02-scotland.jpg` 1200² · `03-philadelphia-gap.jpg` 1200×1512 · `04-philadelphia-upload.jpg` 1200×1550 · `05-met-fourtrees.jpg` 1200×1190 · `06-vertical.jpg` 1200×1528（来源待核定）
-- 目录：`painting/catalog.json`；脚本：`python3 scripts/prep-painting.py --all-masters`
-- 高清 `painting/masters/` **不进 git**（本机可按 README 再放）
-- 原型仍加载 `prototype/points.json`（NF 字形），**还没接画作**
-- 本条分支：`cursor/b1-1-all-previews-52ec`（叠在 `cursor/b1-1-hd-bake-52ec` 上）
+- 采样：`scripts/sample-painting.py` → `painting/points.json`（契约 v2，12k，k=256）+ `painting/sample-stats.json`
+- 空洞：16px 合格格空格 **1344 → 0**（3 轮密度感知排斥 + 从过密格挪点）；暗部阈值仍 L<0.19
+- 原型仍加载 `prototype/points.json`（NF 字形），**接加载是 B1-4**
+- 本条分支：`cursor/b1-2-stipple-holes-52ec`（叠在 `cursor/b1-1-all-previews-52ec` 上）
 
 ---
 
@@ -116,7 +115,7 @@ Next.js 16，API 与训练记忆可能不同。改 Next 代码前读 `node_modul
 - `prototype/points.json` `{ "points": [{x,y}, ...] }` 归一化 0..1，约 1630 点
 - `prototype/gen-points.mjs` 确定性栅格 **N / F**（mulberry32 seed `0x4e46`），落在左约 62%，避免压到报章。另有脊线+底边粉尘。
 
-规格要作者选定的 Monet 英雄图。B1-1 已把 6 张 HD 全部烤成 1200px（`catalog.json`）；当前 primary 仍是达拉斯 `01-dallas.jpg`。**粒子仍是 NF 字母替身**，等 B1-2 才采样。
+规格要作者选定的 Monet 英雄图。B1-1 六张 1200px 已齐；B1-2 已把 primary 达拉斯采成 `painting/points.json`（12k / 契约 v2，空洞格 1344→0）。**屏幕粒子仍是 NF 字母替身**，等 B1-4 才改 fetch。
 
 数量分档：桌面 1600 / 中 1280 / 窄 960。
 
@@ -163,7 +162,7 @@ IDLE 0.14  POINTER_LERP 0.2  SIZES [4,6,8]
 ## 未完成 / 已知问题
 
 1. 轨道 B 未开始（原型未验收，不要擅自灌进 Next）。
-2. `points.json` 仍是像素 NF。B1-1 六张 1200px 预览已齐，**采样成 12k 点要等 B1-2**。换主视觉：改 `source.json` 的 primary，或 `prep-painting.py --input <master> --output painting/01-….jpg`。
+2. 屏幕 `prototype/points.json` 仍是像素 NF。画作 12k 点在 `painting/points.json`（B1-2）。**接进引擎是 B1-4**。
 3. 大厅目录在窄报章栏会按字折行。
 4. 介绍 / 大厅 / 社区成画也是同一套 NF 字形；彩蛋是首页多一条入口，不是唯一触发。若用户要把字形改成「只有彩蛋才出现」，先问再改。
 5. 原型「打开完整大厅/社区页」依赖 localhost:3000。

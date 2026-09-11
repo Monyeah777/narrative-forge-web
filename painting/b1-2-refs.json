@@ -1,0 +1,33 @@
+{
+  "task": "B1-2",
+  "title": "采样算法 v2 + 空洞修补（3 轮密度感知排斥）",
+  "searched": [
+    {
+      "q": "Weighted Voronoi Stippling Adrian Secord 2002",
+      "refs": [
+        "https://www.cs.ubc.ca/labs/imager/tr/2002/secord2002b/secord.2002b.pdf",
+        "https://doi.org/10.1145/508530.508537"
+      ],
+      "takeaway": "Good stipple: no clumps, no uneven voids. Unweighted Lloyd equalizes spacing and blurs the image. Density ρ must weight the centroid. This project is light-on-#050505 so ρ ∝ handbook w=0.6+0.4·L^1.2 (not Secord's 1−f ink density)."
+    },
+    {
+      "q": "Fast Poisson Disk Sampling in Arbitrary Dimensions Bridson 2007",
+      "refs": ["https://www.cs.ubc.ca/~rbridson/docs/bridson-siggraph07-poissondisk.pdf"],
+      "takeaway": "Blue-noise / Poisson-disk: samples at least r apart. Clustering causes holes. Handbook lists Poisson as 进阶备选; this step uses the authorized 3-round 邻域排斥 with local r ∝ 1/√ρ."
+    },
+    {
+      "q": "Lloyd relaxation blue noise stippling holes voids",
+      "refs": [
+        "https://lhf.impa.br/cursos/rr/Martin_2017_SDS.pdf",
+        "https://graphics.stanford.edu/~kbreeden/pub/dGBOD12.pdf"
+      ],
+      "takeaway": "Stop Lloyd early (3 rounds) to keep stardust; full convergence hex-chains. Fill remaining empty eligible cells by moving surplus from overcrowded cells."
+    }
+  ],
+  "red_lines": [
+    "Do not change dark_L=0.19",
+    "Do not change w=0.6+0.4·L^1.2",
+    "Do not wire prototype fetch (B1-4)",
+    "Sample once at preprocess, never per frame"
+  ]
+}
