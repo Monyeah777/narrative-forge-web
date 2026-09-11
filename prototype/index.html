@@ -261,8 +261,33 @@
       }
     }
 
-    .vol {
+    .viewfinder {
+      display: flex;
+      align-items: center;
       margin: 0.55em 0 0;
+      font-family: "Courier New", Courier, monospace;
+      font-size: 10px;
+      line-height: 1;
+      letter-spacing: 0.2em;
+      color: #8E959D;
+      white-space: nowrap;
+      pointer-events: none;
+      text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
+    }
+
+    .rec-dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      margin-right: 0.55em;
+      flex: 0 0 6px;
+      border-radius: 50%;
+      background: #A33B2A;
+      animation: recBreath 2.4s ease-in-out infinite;
+    }
+
+    .vol {
+      margin: 0.4em 0 0;
       font-family: 'Silkscreen', monospace;
       font-weight: 400;
       font-size: 11px;
@@ -552,6 +577,11 @@
       color: #f4f7fb;
     }
 
+    @keyframes recBreath {
+      0%, 100% { opacity: 0.35; }
+      50% { opacity: 0.85; }
+    }
+
     @keyframes blink {
       50% { opacity: 0; }
     }
@@ -588,6 +618,10 @@
       .nav-item:hover::before,
       .nav-item[aria-current="page"]::before { transition: none !important; }
       .grain, .veil { display: none; }
+      .rec-dot {
+        animation: none !important;
+        opacity: 0.85;
+      }
       .stage[data-mode="formed"] .lead,
       .stage[data-mode="formed"] .sub,
       .stage[data-mode="formed"] .catalog,
@@ -608,6 +642,7 @@
           <span class="line"><span class="cap cap-n">N</span>ARRATIVE</span>
           <span class="line"><span class="cap cap-f">F</span>ORGE<span class="cursor" aria-hidden="true"></span></span>
         </h1>
+        <p class="viewfinder" aria-hidden="true"><span class="rec-dot"></span>REC　F/2.8　ISO400　BATT99%</p>
         <p class="vol" id="vol"><span class="vol-label">COSMIC PIXEL ARCHIVE · </span><span class="vol-ver">VOL. 01</span></p>
       </header>
       <div class="channels">
