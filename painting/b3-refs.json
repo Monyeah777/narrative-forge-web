@@ -1,0 +1,46 @@
+{
+  "task": "B3",
+  "title": "成画动画：凌厉弹簧 + 可打断 1.5s + SAVE 冻结",
+  "searched": [
+    {
+      "q": "fixed timestep accumulator javascript game loop / fix your timestep gaffer",
+      "refs": [
+        "https://gafferongames.com/post/fix_your_timestep/",
+        "https://isaacsukin.com/news/2015/01/detailed-explanation-javascript-game-loops-and-timing",
+        "https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame"
+      ],
+      "takeaway": "dt=1/60, accumulator, clamp frameTime≤0.25s, cap 2 steps/frame. Freeze must not accumulate; wake resets lastTime so the pause is skipped, not caught up."
+    },
+    {
+      "q": "spring damping vx *= 0.90 / particle repulsion inverse square / speed clamp",
+      "refs": [
+        "https://github.com/gtktsc/particles-canvas",
+        "https://stackoverflow.com/questions/11543133/particle-system-physics-acting-weird",
+        "https://dev.to/nidal_tahir_cde5660ddbe04/using-physics-to-create-realistic-3d-effects-in-the-browser-3dh4"
+      ],
+      "takeaway": "v += (target-p)*k; v *= damp. Inverse-square mouse force needs softening + clamp so d→0 does not explode. vmax after forces."
+    },
+    {
+      "q": "Nielsen response times 0.1 1.0 10 / interruptible animation",
+      "refs": [
+        "https://www.nngroup.com/articles/response-times-3-important-limits/",
+        "https://www.nngroup.com/articles/website-response-times/"
+      ],
+      "takeaway": "1.5s assemble is noticeable but acceptable (between 1s flow and 10s attention). Time the phase on the simulation clock so freeze does not count; interrupt from current positions, no queue."
+    },
+    {
+      "q": "prefers-reduced-motion matchMedia / SAVE freeze / SETTINGS aria-live",
+      "refs": [
+        "https://developer.mozilla.org/en-US/docs/Web/API/Window/matchMedia",
+        "https://www.w3.org/WAI/WCAG22/Techniques/client-side-script/SCR40",
+        "https://developer.mozilla.org/en-US/docs/Web/API/MediaQueryList/change_event"
+      ],
+      "takeaway": "matchMedia('(prefers-reduced-motion: reduce)') → snap to formed, no assemble tween. SAVE is a sticky aria-pressed freeze. SETTINGS flashes an aria-live MODE line for 1s."
+    }
+  ],
+  "red_lines": [
+    "Do not start B4 bench.html / 60fps gate.",
+    "Do not retune sprite atlas / N / contain (B2).",
+    "Do not overlay N/F glyph tint on the painting pipeline."
+  ]
+}
