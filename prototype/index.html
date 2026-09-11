@@ -6,13 +6,35 @@
   <meta name="theme-color" content="#050505" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>NarrativeForge · 宇宙像素档案</title>
+  <link rel="icon" href="favicon.ico" sizes="any" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="preload" href="points.json" as="fetch" crossorigin="anonymous" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+  <link rel="preload" href="assets/fonts/press-start-2p-subset.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="assets/fonts/silkscreen-400-subset.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="assets/fonts/silkscreen-700-subset.woff2" as="font" type="font/woff2" crossorigin />
   <style>
     :root {
       color-scheme: dark;
+    }
+
+    @font-face {
+      font-family: 'Press Start2P';
+      src: url('assets/fonts/press-start-2p-subset.woff2') format('woff2');
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: 'Silkscreen';
+      src: url('assets/fonts/silkscreen-400-subset.woff2') format('woff2');
+      font-weight: 400;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: 'Silkscreen';
+      src: url('assets/fonts/silkscreen-700-subset.woff2') format('woff2');
+      font-weight: 700;
+      font-display: swap;
     }
 
     :focus-visible {
@@ -96,6 +118,8 @@
       left: 1.6rem;
       z-index: 99;
       margin: 0;
+      font-family: 'Silkscreen', monospace;
+      font-weight: 700;
       font-size: 10px;
       letter-spacing: 0.22em;
       text-transform: uppercase;
@@ -148,6 +172,8 @@
 
     .vol {
       margin: 0.55em 0 0;
+      font-family: 'Silkscreen', monospace;
+      font-weight: 400;
       font-size: 11px;
       line-height: 1.4;
       letter-spacing: 0.15em;
@@ -165,7 +191,7 @@
 
     .channels a {
       appearance: none;
-      font-family: "Press Start 2P", cursive;
+      font-family: 'Press Start2P', cursive;
       font-size: 10px;
       line-height: 1.6;
       letter-spacing: 0.12em;
