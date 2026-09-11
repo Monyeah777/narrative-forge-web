@@ -12,6 +12,7 @@
   <link rel="preload" href="assets/fonts/press-start-2p-subset.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="assets/fonts/silkscreen-400-subset.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="assets/fonts/silkscreen-700-subset.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="assets/fonts/fusion-pixel-12-nav-subset.woff2" as="font" type="font/woff2" crossorigin />
   <style>
     :root {
       color-scheme: dark;
@@ -34,6 +35,12 @@
       font-family: 'Silkscreen';
       src: url('assets/fonts/silkscreen-700-subset.woff2') format('woff2');
       font-weight: 700;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: 'Fusion Pixel 12';
+      src: url('assets/fonts/fusion-pixel-12-nav-subset.woff2') format('woff2');
       font-display: swap;
     }
 
@@ -167,11 +174,15 @@
 
     .cursor {
       display: inline-block;
-      margin-left: 0.08em;
-      font-family: "Courier New", Courier, monospace;
-      font-weight: 400;
-      color: #C9CFD8;
-      -webkit-text-fill-color: #C9CFD8;
+      width: 0.72em;
+      height: 0.72em;
+      margin-left: 0.1em;
+      vertical-align: 0.14em;
+      overflow: hidden;
+      font-size: 0;
+      line-height: 0;
+      color: transparent;
+      background-color: #C9CFD8;
       text-shadow: none;
       animation: blink 1.05s steps(1) infinite;
     }
@@ -215,8 +226,25 @@
       line-height: 1.4;
       letter-spacing: 0.15em;
       text-transform: uppercase;
-      color: #8b93a3;
+      color: #8E959D;
       text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
+    }
+
+    .vol-label {
+      color: #8E959D;
+    }
+
+    .vol-ver {
+      color: #A33B2A;
+    }
+
+    .vol-ver::after {
+      content: "█";
+      display: inline-block;
+      margin-left: 0.12em;
+      font-family: "Courier New", Courier, monospace;
+      color: #A33B2A;
+      animation: vol-rec 1.2s steps(2, end) infinite;
     }
 
     .channels {
@@ -271,10 +299,10 @@
       border: 0;
       background: transparent;
       color: #c8cdd6;
-      font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
-      font-size: 15px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
+      font-family: 'Fusion Pixel 12', monospace;
+      font-size: 14px;
+      font-weight: 400;
+      letter-spacing: 0.25em;
       text-transform: none;
       text-align: left;
       cursor: pointer;
@@ -475,6 +503,11 @@
       50% { opacity: 0; }
     }
 
+    @keyframes vol-rec {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0.6; }
+    }
+
     @keyframes rise {
       from { opacity: 0; }
       to { opacity: 1; }
@@ -503,6 +536,7 @@
     @media (prefers-reduced-motion: reduce) {
       .plate-title, .cursor, .lead, .sub { animation: none !important; }
       .cursor { display: none; }
+      .vol-ver::after { animation: none !important; opacity: 1; }
       .nav-item::before,
       .nav-item:hover::before,
       .nav-item[aria-current="page"]::before { transition: none !important; }
@@ -524,9 +558,9 @@
       <header class="mast">
         <h1 class="plate-title">
           <span class="line"><span class="cap cap-n">N</span>ARRATIVE</span>
-          <span class="line"><span class="cap cap-f">F</span>ORGE<span class="cursor" aria-hidden="true">█</span></span>
+          <span class="line"><span class="cap cap-f">F</span>ORGE<span class="cursor" aria-hidden="true"></span></span>
         </h1>
-        <p class="vol" id="vol">COSMIC PIXEL ARCHIVE · VOL. 01</p>
+        <p class="vol" id="vol"><span class="vol-label">COSMIC PIXEL ARCHIVE · </span><span class="vol-ver">VOL. 01</span></p>
       </header>
       <div class="channels">
         <a href="https://github.com/Monyeah777/NarrativeForge" rel="noopener noreferrer" target="_blank">GitHub</a>
@@ -1173,6 +1207,26 @@
         }
       }
 
+      function paintVol(finalText) {
+        var mark = "VOL. 01";
+        var at;
+        if (!volEl) return;
+        at = finalText.lastIndexOf(mark);
+        volEl.replaceChildren();
+        if (at < 0) {
+          volEl.textContent = finalText;
+          return;
+        }
+        var label = document.createElement("span");
+        label.className = "vol-label";
+        label.textContent = finalText.slice(0, at);
+        var ver = document.createElement("span");
+        ver.className = "vol-ver";
+        ver.textContent = finalText.slice(at);
+        volEl.appendChild(label);
+        volEl.appendChild(ver);
+      }
+
       function scrambleLine(el, finalText, duration) {
         var glyphs = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789· ";
         var t0 = performance.now();
@@ -1188,6 +1242,7 @@
           }
           el.textContent = out;
           if (p < 1) requestAnimationFrame(step);
+          else if (el === volEl) paintVol(finalText);
           else el.textContent = finalText;
         }
         requestAnimationFrame(step);
