@@ -884,7 +884,8 @@
         [0.48, [0x8b, 0xa7, 0xc4]],
         [1, [0x4a, 0x6b, 0x8a]]
       ];
-      var SIZES = [4, 6, 8];
+      var SIZES = [2, 3, 4];
+      var ATLAS_PAD = 3;
 
       var stage = document.getElementById("stage");
       var canvas = document.getElementById("void");
@@ -907,9 +908,44 @@
       var cssW = 1;
       var cssH = 1;
       var N = 0;
-      var x, y, vx, vy, hx, hy, tx, ty, nx, ny, nhx, nhy, ntx, nty, z, sid, gid, tid;
+      var x, y, vx, vy, hx, hy, tx, ty, nx, ny, nhx, nhy, ntx, nty, z, sid, gid, tid, pid;
       var sprites = [];
       var tintSprites = [];
+      var atlasGen = 0;
+      var atlasBmp = null;
+      var atlasCell = 0;
+      var atlasPalN = 0;
+      var palSize = null;
+      var bucketCount = null;
+      var bucketPrefix = null;
+      var bucketIndex = null;
+      var fitX = 0;
+      var fitY = 0;
+      var fitW = 1;
+      var fitH = 1;
+      var srcW = 1;
+      var srcH = 1;
+      var activeCount = 0;
+      var tickCount = 0;
+      var frozen = false;
+      var fxLite = false;
+      var renderInfo = {
+        n: 0,
+        running: false,
+        mode: "chaos",
+        frozen: false,
+        activeCount: 0,
+        tickCount: 0,
+        dpr: 1,
+        atlasCtor: "",
+        atlasIsImageBitmap: false,
+        atlasCell: 0,
+        atlasPalN: 0,
+        sizes: SIZES,
+        fxLite: false,
+        contain: { x: 0, y: 0, w: 1, h: 1, srcW: 1, srcH: 1 },
+        imageSmoothingEnabled: true
+      };
       var mode = "chaos";
       var currentView = "home";
       var hasGlyph = false;
@@ -936,22 +972,26 @@
       var dprOverride = 0;
       try {
         dprOverride = parseFloat(new URLSearchParams(window.location.search).get("dpr") || "");
+        fxLite = new URLSearchParams(window.location.search).get("fx") === "lite";
       } catch (err) {
         dprOverride = 0;
+        fxLite = false;
       }
 
       function quantizeDpr() {
         if (dprOverride > 0 && dprOverride <= 3) return dprOverride;
         var raw = window.devicePixelRatio || 1;
+        if (raw >= 2) return 2;
         if (raw >= 1.5) return 2;
         return 1;
       }
 
-      function capCount() {
-        var w = window.innerWidth;
-        if (w <= 768) return 960;
-        if (w <= 1100) return 1280;
-        return 1600;
+      function engineCount() {
+        var rec;
+        if (fxLite) return 2000;
+        rec = window.__nfPoints;
+        if (rec && rec.count > 0) return rec.count | 0;
+        return 12000;
       }
 
       function rand() {
@@ -1019,8 +1059,63 @@
         vy[i] = gauss() * sig * slow;
       }
 
+      function hexRgb(hex) {
+        return [
+          parseInt(hex.slice(1, 3), 16),
+          parseInt(hex.slice(3, 5), 16),
+          parseInt(hex.slice(5, 7), 16)
+        ];
+      }
+
+      function lumY(rgb) {
+        return (0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]) / 255;
+      }
+
+      function layoutContain() {
+        var rec = window.__nfPoints;
+        var s;
+        srcW = rec && rec.w > 0 ? rec.w : 1;
+        srcH = rec && rec.h > 0 ? rec.h : 1;
+        s = Math.min(cssW / srcW, cssH / srcH);
+        fitW = srcW * s;
+        fitH = srcH * s;
+        fitX = (cssW - fitW) * 0.5;
+        fitY = (cssH - fitH) * 0.5;
+      }
+
+      function mapPaintingX(px) {
+        return fitX + px * fitW;
+      }
+
+      function mapPaintingY(py) {
+        return fitY + py * fitH;
+      }
+
+      function publishRenderInfo() {
+        renderInfo.n = N;
+        renderInfo.running = running;
+        renderInfo.mode = mode;
+        renderInfo.frozen = frozen;
+        renderInfo.activeCount = activeCount;
+        renderInfo.tickCount = tickCount;
+        renderInfo.dpr = dpr;
+        renderInfo.atlasCtor = atlasBmp ? atlasBmp.constructor.name : "";
+        renderInfo.atlasIsImageBitmap = !!(atlasBmp && typeof ImageBitmap !== "undefined" && atlasBmp instanceof ImageBitmap);
+        renderInfo.atlasCell = atlasCell;
+        renderInfo.atlasPalN = atlasPalN;
+        renderInfo.fxLite = fxLite;
+        renderInfo.contain.x = fitX;
+        renderInfo.contain.y = fitY;
+        renderInfo.contain.w = fitW;
+        renderInfo.contain.h = fitH;
+        renderInfo.contain.srcW = srcW;
+        renderInfo.contain.srcH = srcH;
+        renderInfo.imageSmoothingEnabled = ctx.imageSmoothingEnabled;
+        window.__nfRender = renderInfo;
+      }
+
       function makeSprite(cssPx, pixelRatio, c0, c1) {
-        var pixel = Math.max(16, Math.round(cssPx * 3 * pixelRatio));
+        var pixel = Math.max(16, Math.round(cssPx * ATLAS_PAD * pixelRatio));
         var off = document.createElement("canvas");
         off.width = pixel;
         off.height = pixel;
@@ -1036,6 +1131,109 @@
         g.arc(c, c, radius, 0, Math.PI * 2);
         g.fill();
         return { canvas: off, css: cssPx };
+      }
+
+      function paintSoftDot(g, cell, rgb, cssPx, pixelRatio) {
+        var c = cell * 0.5;
+        var radius = Math.max(1.5, cssPx * pixelRatio * 1.55);
+        var col = (rgb[0] | 0) + "," + (rgb[1] | 0) + "," + (rgb[2] | 0);
+        var grd = g.createRadialGradient(c, c, 0, c, c, radius);
+        grd.addColorStop(0, "rgba(" + col + ",0.85)");
+        grd.addColorStop(0.5, "rgba(" + col + ",0.36)");
+        grd.addColorStop(1, "rgba(" + col + ",0)");
+        g.fillStyle = grd;
+        g.beginPath();
+        g.arc(c, c, radius, 0, Math.PI * 2);
+        g.fill();
+      }
+
+      function assignPaletteSizes(palette) {
+        var n = palette.length;
+        var ys = [];
+        var i, rgb, yv, sorted, t1, t2;
+        palSize = new Uint8Array(n);
+        for (i = 0; i < n; i++) {
+          rgb = hexRgb(palette[i]);
+          yv = lumY(rgb);
+          ys.push(yv);
+        }
+        sorted = ys.slice().sort(function (a, b) { return a - b; });
+        t1 = sorted[(sorted.length * 0.33) | 0];
+        t2 = sorted[(sorted.length * 0.66) | 0];
+        for (i = 0; i < n; i++) {
+          if (ys[i] <= t1) palSize[i] = 0;
+          else if (ys[i] <= t2) palSize[i] = 1;
+          else palSize[i] = 2;
+        }
+      }
+
+      function closeAtlas() {
+        if (atlasBmp && typeof atlasBmp.close === "function") {
+          atlasBmp.close();
+        }
+        atlasBmp = null;
+      }
+
+      function buildPaletteAtlas() {
+        var rec = window.__nfPoints;
+        var palette = rec && rec.palette ? rec.palette : PLACEHOLDER_PALETTE;
+        var palN = palette.length;
+        var cell = Math.max(16, Math.round(SIZES[2] * ATLAS_PAD * dpr));
+        var sheet = document.createElement("canvas");
+        var g;
+        var row, col, rgb;
+        atlasPalN = palN;
+        atlasCell = cell;
+        assignPaletteSizes(palette);
+        bucketCount = new Uint16Array(palN);
+        bucketPrefix = new Uint32Array(palN + 1);
+        sheet.width = palN * cell;
+        sheet.height = SIZES.length * cell;
+        g = sheet.getContext("2d");
+        g.clearRect(0, 0, sheet.width, sheet.height);
+        for (row = 0; row < SIZES.length; row++) {
+          for (col = 0; col < palN; col++) {
+            rgb = hexRgb(palette[col]);
+            g.save();
+            g.translate(col * cell, row * cell);
+            paintSoftDot(g, cell, rgb, SIZES[row], dpr);
+            g.restore();
+          }
+        }
+        if (typeof createImageBitmap !== "function") {
+          return Promise.reject(new Error("createImageBitmap unavailable"));
+        }
+        var gen = ++atlasGen;
+        return createImageBitmap(sheet).then(function (bmp) {
+          if (gen !== atlasGen) {
+            if (typeof bmp.close === "function") bmp.close();
+            return atlasBmp;
+          }
+          closeAtlas();
+          atlasBmp = bmp;
+          return bmp;
+        });
+      }
+
+      function rebuildBuckets() {
+        var i, pal, p;
+        if (!atlasPalN || !N) return;
+        if (!bucketIndex || bucketIndex.length !== N) bucketIndex = new Uint16Array(N);
+        for (p = 0; p < atlasPalN; p++) bucketCount[p] = 0;
+        for (i = 0; i < N; i++) {
+          pal = pid[i];
+          if (pal >= atlasPalN) pal = 0;
+          bucketCount[pal]++;
+        }
+        bucketPrefix[0] = 0;
+        for (p = 0; p < atlasPalN; p++) bucketPrefix[p + 1] = bucketPrefix[p] + bucketCount[p];
+        for (p = 0; p < atlasPalN; p++) bucketCount[p] = bucketPrefix[p];
+        for (i = 0; i < N; i++) {
+          pal = pid[i];
+          if (pal >= atlasPalN) pal = 0;
+          bucketIndex[bucketCount[pal]] = i;
+          bucketCount[pal]++;
+        }
       }
 
       function mixRgb(a, b, t) {
@@ -1153,17 +1351,20 @@
         sid = new Uint8Array(n);
         gid = new Uint8Array(n);
         tid = new Uint8Array(n);
+        pid = new Uint16Array(n);
+        bucketIndex = new Uint16Array(n);
       }
 
       function toPx() {
         var i;
+        layoutContain();
         for (i = 0; i < N; i++) {
           x[i] = nx[i] * cssW;
           y[i] = ny[i] * cssH;
           hx[i] = nhx[i] * cssW;
           hy[i] = nhy[i] * cssH;
-          tx[i] = ntx[i] * cssW;
-          ty[i] = nty[i] * cssH;
+          tx[i] = mapPaintingX(ntx[i]);
+          ty[i] = mapPaintingY(nty[i]);
         }
       }
 
@@ -1193,25 +1394,32 @@
       }
 
       function formTargets(points) {
-        var i, p;
+        var i, p, pal;
         if (points && points.length) {
           for (i = 0; i < N; i++) {
             p = points[i % points.length];
             ntx[i] = p.x;
             nty[i] = p.y;
-            tx[i] = ntx[i] * cssW;
-            ty[i] = nty[i] * cssH;
+            pal = p.i | 0;
+            if (pal < 0) pal = 0;
+            if (atlasPalN && pal >= atlasPalN) pal = pal % atlasPalN;
+            pid[i] = pal;
+            sid[i] = palSize ? palSize[pal] : (i % 3);
+            tx[i] = mapPaintingX(ntx[i]);
+            ty[i] = mapPaintingY(nty[i]);
           }
-          assignGlyphTint();
+          rebuildBuckets();
           return;
         }
         for (i = 0; i < N; i++) {
           ntx[i] = spawnNormX();
           nty[i] = rand();
-          tx[i] = ntx[i] * cssW;
-          ty[i] = nty[i] * cssH;
+          pid[i] = i % Math.max(1, atlasPalN);
+          sid[i] = palSize ? palSize[pid[i]] : (i % 3);
+          tx[i] = mapPaintingX(ntx[i]);
+          ty[i] = mapPaintingY(nty[i]);
         }
-        assignGlyphTint();
+        rebuildBuckets();
       }
 
       function placeNow(fromTargets) {
@@ -1471,7 +1679,7 @@
       }
 
       function finishPlaceholder(t0, reason) {
-        var rec = placeholderRecord(capCount(), reason);
+        var rec = placeholderRecord(engineCount(), reason);
         var timings = {
           href: POINTS_HREF,
           source: "placeholder",
@@ -1511,8 +1719,13 @@
         canvas.width = cssW * dpr;
         canvas.height = cssH * dpr;
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        ctx.imageSmoothingEnabled = true;
-        if (firstSprites || dprChanged) buildSprites();
+        if (firstSprites) buildSprites();
+        if ((firstSprites || dprChanged) && window.__nfPoints) {
+          buildPaletteAtlas().then(function () {
+            if (N) render();
+            publishRenderInfo();
+          });
+        }
         if (N) {
           toPx();
           var i;
@@ -1547,11 +1760,15 @@
         var term = V_TERM * radiusOf(i) * radiusOf(i);
         var fl;
         var amp;
+        var formedIdle = mode === "formed" && hasGlyph && !pointerLive() && !frozen;
         if (useFlow) {
           fl = curlVel(x[i], y[i], lastT * 0.001);
           amp = (mode === "formed" ? (hasGlyph ? 0.04 : IDLE) : 0.42 + z[i] * 0.58);
           vx[i] = vx[i] * rho + (1 - rho) * fl.ux * amp + gauss() * sig * amp;
           vy[i] = vy[i] * rho + (1 - rho) * (fl.uy * amp + term * amp) + gauss() * sig * amp;
+        } else if (formedIdle) {
+          vx[i] *= rho;
+          vy[i] *= rho;
         } else {
           vx[i] = vx[i] * rho + gauss() * sig * 0.22;
           vy[i] = vy[i] * rho + gauss() * sig * 0.22;
@@ -1602,10 +1819,11 @@
         var formed = mode === "formed";
         var dispersing = mode === "disperse";
         var settled = 0;
-        var i, dx, dy, dist, f, inv, kSpring;
+        var i, dx, dy, dist, f, inv, kSpring, unlocked;
         mx += (mxT - mx) * POINTER_LERP;
         my += (myT - my) * POINTER_LERP;
         kSpring = formed && !hasGlyph ? SPRING * 0.55 : SPRING;
+        activeCount = 0;
         for (i = 0; i < N; i++) {
           dx = x[i] - mx;
           dy = y[i] - my;
@@ -1634,6 +1852,22 @@
           }
           integrate(i, mode === "chaos" || (formed && (!hasGlyph || live)));
           healParticle(i, assembling || formed);
+          unlocked = true;
+          if (formed && hasGlyph && !live && !frozen) {
+            if (
+              Math.abs(tx[i] - x[i]) < STOP_PX &&
+              Math.abs(ty[i] - y[i]) < STOP_PX &&
+              Math.abs(vx[i]) < STOP_V &&
+              Math.abs(vy[i]) < STOP_V
+            ) {
+              x[i] = tx[i];
+              y[i] = ty[i];
+              vx[i] = 0;
+              vy[i] = 0;
+              unlocked = false;
+            }
+          }
+          if (unlocked) activeCount++;
         }
         toNorm();
         if (assembling && N > 0 && settled / N >= 0.97) {
@@ -1649,37 +1883,38 @@
       }
 
       function render(now) {
-        var i, s, spr, dx, dy, sc, a, tintK, tinted;
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        ctx.imageSmoothingEnabled = true;
-        ctx.clearRect(0, 0, cssW, cssH);
-        tintK = glyphTintK(now);
-        for (s = 0; s < sprites.length; s++) {
-          spr = sprites[s];
-          for (i = 0; i < N; i++) {
-            if (sid[i] !== s) continue;
-            sc = spr.css * (0.52 + z[i] * 0.7);
-            a = 0.32 + z[i] * 0.68;
-            dx = Math.floor(x[i] - sc * 0.5);
-            dy = Math.floor(y[i] - sc * 0.5);
-            if (tintK <= 0) {
-              ctx.globalAlpha = a;
-              ctx.drawImage(spr.canvas, dx, dy, sc, sc);
-            } else {
-              tinted = tintSprites[s][gid[i] * TINT_STEPS + tid[i]];
-              if (tintK >= 1) {
-                ctx.globalAlpha = a;
-                ctx.drawImage(tinted.canvas, dx, dy, sc, sc);
-              } else {
-                ctx.globalAlpha = a * (1 - tintK);
-                ctx.drawImage(spr.canvas, dx, dy, sc, sc);
-                ctx.globalAlpha = a * tintK;
-                ctx.drawImage(tinted.canvas, dx, dy, sc, sc);
-              }
-            }
+        var p, k, i, start, end, row, sx, sy, dx, dy, half;
+        var cell = atlasCell;
+        tickCount++;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (!atlasBmp || !N || !cell) {
+          publishRenderInfo();
+          return;
+        }
+        half = cell * 0.5;
+        ctx.globalAlpha = 1;
+        for (p = 0; p < atlasPalN; p++) {
+          start = bucketPrefix[p];
+          end = bucketPrefix[p + 1];
+          if (start === end) continue;
+          row = palSize ? palSize[p] : 0;
+          sx = p * cell;
+          sy = row * cell;
+          for (k = start; k < end; k++) {
+            i = bucketIndex[k];
+            dx = (x[i] * dpr - half) | 0;
+            dy = (y[i] * dpr - half) | 0;
+            ctx.drawImage(atlasBmp, sx, sy, cell, cell, dx, dy, cell, cell);
           }
         }
-        ctx.globalAlpha = 1;
+        publishRenderInfo();
+      }
+
+      function shouldStopLoop() {
+        if (frozen) return true;
+        if (mode === "formed" && hasGlyph && activeCount === 0 && !pointerLive()) return true;
+        return false;
       }
 
       function tick(now) {
@@ -1700,14 +1935,27 @@
           setMode("chaos");
         }
         render(now);
+        if (shouldStopLoop()) {
+          stopLoop();
+          return;
+        }
         raf = requestAnimationFrame(tick);
       }
 
       function startLoop() {
         if (running || reduced || !booted) return;
-        running = true;
-        acc = 0;
         lastT = performance.now();
+        acc = 0;
+        running = true;
+        raf = requestAnimationFrame(tick);
+      }
+
+      function wakeLoop() {
+        if (reduced || !booted || frozen) return;
+        if (running) return;
+        lastT = performance.now();
+        acc = 0;
+        running = true;
         raf = requestAnimationFrame(tick);
       }
 
@@ -1737,6 +1985,7 @@
         dossier.setAttribute("aria-hidden", show ? "false" : "true");
         if (next === "formed" && prev !== "formed") glyphTintT0 = performance.now();
         else if (next !== "formed") glyphTintT0 = 0;
+        if (next !== "formed" || prev !== "formed") wakeLoop();
       }
 
       function appHref(path) {
@@ -1826,10 +2075,12 @@
         if (!pointerOn) snapshotHomes();
         pointerOn = true;
         pointerEver = true;
+        wakeLoop();
       }
 
       function onPointerLeave() {
         pointerOn = false;
+        wakeLoop();
       }
 
       function onPointerDown(e) {
@@ -1843,6 +2094,7 @@
           touchUntil = performance.now() + 180;
           pointerEver = true;
         }
+        wakeLoop();
       }
 
       function paintVol(finalText) {
@@ -1907,9 +2159,12 @@
       function onVisibility() {
         if (document.hidden) {
           stopLoop();
-        } else if (!reduced) {
-          startLoop();
+          return;
         }
+        lastT = performance.now();
+        acc = 0;
+        if (booted) render();
+        if (!reduced && !shouldStopLoop()) wakeLoop();
       }
 
       function onResize() {
@@ -1917,12 +2172,14 @@
         resizeTimer = setTimeout(function () {
           resizeCanvas();
           if (booted) render();
+          if (!reduced && !shouldStopLoop()) wakeLoop();
         }, 150);
       }
 
       function boot(points) {
         hasGlyph = !!(points && points.length);
-        alloc(capCount());
+        layoutContain();
+        alloc(engineCount());
         if (!sprites.length) buildSprites();
         scatterHomes();
         formTargets(points);
@@ -1933,6 +2190,7 @@
         syncReduced();
         if (!reduced) startLoop();
         if (!reduced && volEl) scrambleLine(volEl, "COSMIC PIXEL ARCHIVE · VOL. 01", 900);
+        publishRenderInfo();
       }
 
       canvas.addEventListener("pointermove", onPointerMove, { passive: true });
@@ -1985,7 +2243,11 @@
       resizeCanvas();
       paintVoid();
 
-      loadPointsRecord().then(function (points) { boot(points); });
+      loadPointsRecord().then(function (points) {
+        return buildPaletteAtlas().then(function () {
+          boot(points);
+        });
+      });
     })();
   </script>
 </body>

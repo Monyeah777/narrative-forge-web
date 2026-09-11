@@ -1,0 +1,36 @@
+{
+  "task": "B2",
+  "title": "渲染层：软边图集 + ImageBitmap + contain + 按需停帧",
+  "searched": [
+    {
+      "q": "offscreen canvas sprite pre-render / createImageBitmap canvas sprite sheet",
+      "refs": [
+        "https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API/Tutorial/Optimizing_canvas",
+        "https://developer.mozilla.org/en-US/docs/Web/API/Window/createImageBitmap",
+        "https://web.dev/articles/canvas-performance"
+      ],
+      "takeaway": "Pre-render dots offscreen; avoid shadowBlur; do not scale in drawImage; createImageBitmap is Baseline and the MDN sprite-sheet example."
+    },
+    {
+      "q": "canvas sub-pixel rendering / imageSmoothingEnabled / clearRect vs fillRect / devicePixelRatio",
+      "refs": [
+        "https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API/Tutorial/Optimizing_canvas",
+        "https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/imageSmoothingEnabled"
+      ],
+      "takeaway": "Integer drawImage coords; keep default smoothing (true) for soft dots; clearRect for transparent canvas. Handbook forbids alpha:false despite MDN tip — grid must punch through."
+    },
+    {
+      "q": "render on demand canvas / cancelAnimationFrame / dirty flag",
+      "refs": [
+        "https://developer.mozilla.org/en-US/docs/Web/API/Window/cancelAnimationFrame",
+        "https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame"
+      ],
+      "takeaway": "Cancel rAF when idle; on wake reset lastTime/acc so the pause is not caught up."
+    }
+  ],
+  "red_lines": [
+    "No per-frame ctx.arc / getImageData / WebGL / shadowBlur.",
+    "Default N=12000; only ?fx=lite is the debug cap.",
+    "Do not retune SPRING (B3). Do not start B3 animation rewrite."
+  ]
+}
