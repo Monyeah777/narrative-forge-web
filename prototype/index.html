@@ -12,6 +12,7 @@
   <link rel="preload" href="assets/fonts/press-start-2p-subset.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="assets/fonts/silkscreen-400-subset.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="assets/fonts/silkscreen-700-subset.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="assets/fonts/fusion-pixel-12-nav-subset.woff2" as="font" type="font/woff2" crossorigin />
   <style>
     :root {
       color-scheme: dark;
@@ -34,6 +35,12 @@
       font-family: 'Silkscreen';
       src: url('assets/fonts/silkscreen-700-subset.woff2') format('woff2');
       font-weight: 700;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: 'Fusion Pixel 12';
+      src: url('assets/fonts/fusion-pixel-12-nav-subset.woff2') format('woff2');
       font-display: swap;
     }
 
@@ -167,11 +174,14 @@
 
     .cursor {
       display: inline-block;
+      width: 0.28em;
+      height: 0.72em;
       margin-left: 0.08em;
-      font-family: "Courier New", Courier, monospace;
-      font-weight: 400;
-      color: #C9CFD8;
-      -webkit-text-fill-color: #C9CFD8;
+      vertical-align: 0.12em;
+      overflow: hidden;
+      line-height: 0;
+      color: transparent;
+      background-color: #C9CFD8;
       text-shadow: none;
       animation: blink 1.05s steps(1) infinite;
     }
@@ -215,8 +225,16 @@
       line-height: 1.4;
       letter-spacing: 0.15em;
       text-transform: uppercase;
-      color: #8b93a3;
+      color: #8E959D;
       text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
+    }
+
+    .vol-label {
+      color: #8E959D;
+    }
+
+    .vol-ver {
+      color: #A33B2A;
     }
 
     .channels {
@@ -271,14 +289,15 @@
       border: 0;
       background: transparent;
       color: #c8cdd6;
-      font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
-      font-size: 15px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
+      font-family: 'Fusion Pixel 12', monospace;
+      font-size: 12px;
+      font-weight: 400;
+      letter-spacing: 0.25em;
       text-transform: none;
       text-align: left;
       cursor: pointer;
-      text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
+      text-shadow: none;
+      -webkit-font-smoothing: none;
     }
 
     .nav-item::before {
@@ -286,8 +305,13 @@
       position: absolute;
       left: 0;
       top: 50%;
+      font-family: 'Fusion Pixel 12', monospace;
+      font-size: 12px;
+      font-weight: 400;
+      letter-spacing: 0;
       color: #f2f2f2;
-      text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
+      text-shadow: none;
+      -webkit-font-smoothing: none;
       opacity: 0;
       transform: translate(-10px, -50%);
       pointer-events: none;
@@ -312,13 +336,15 @@
       right: 0;
       top: 50%;
       transform: translateY(-50%);
-      font-family: "Courier New", Courier, monospace;
-      font-size: 10px;
+      font-family: 'Silkscreen', monospace;
+      font-size: 8px;
       font-weight: 400;
       letter-spacing: 0.18em;
       color: #6a7180;
       opacity: 0.55;
       pointer-events: none;
+      text-shadow: none;
+      -webkit-font-smoothing: none;
     }
 
     .nav:hover .nav-item[aria-current="page"]:not(:hover)::before {
@@ -343,22 +369,27 @@
 
     .lead {
       margin: 0;
-      font-size: 18px;
-      font-weight: 700;
-      line-height: 1.4;
+      font-family: 'Fusion Pixel 12', monospace;
+      font-size: 24px;
+      font-weight: 400;
+      line-height: 1.35;
       letter-spacing: 0.06em;
       text-transform: none;
       color: #f4f7fb;
-      text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
+      text-shadow: none;
+      -webkit-font-smoothing: none;
     }
 
     .sub {
       margin: 1.5em 0 0;
+      font-family: 'Fusion Pixel 12', monospace;
       font-size: 12px;
+      font-weight: 400;
       letter-spacing: 0.08em;
       text-transform: none;
       color: #c8cdd6;
-      text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
+      text-shadow: none;
+      -webkit-font-smoothing: none;
     }
 
     .panel {
@@ -380,11 +411,13 @@
       list-style: none;
       margin: 1.2em 0 0;
       padding: 0;
-      font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+      font-family: 'Fusion Pixel 12', monospace;
       font-size: 12px;
+      font-weight: 400;
       line-height: 1.55;
       color: #c8cdd6;
-      text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
+      text-shadow: none;
+      -webkit-font-smoothing: none;
     }
 
     .catalog li + li {
@@ -394,24 +427,28 @@
     .catalog span {
       display: block;
       margin-bottom: 0.15em;
-      font-family: "Courier New", Courier, monospace;
-      font-size: 10px;
-      letter-spacing: 0.16em;
+      font-family: 'Fusion Pixel 12', monospace;
+      font-size: 12px;
+      font-weight: 400;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
       color: #6a7180;
+      text-shadow: none;
+      -webkit-font-smoothing: none;
     }
 
     .go {
       display: inline-block;
       margin-top: 1.35em;
-      font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
-      font-size: 13px;
-      font-weight: 700;
+      font-family: 'Fusion Pixel 12', monospace;
+      font-size: 12px;
+      font-weight: 400;
       letter-spacing: 0.08em;
       color: #d8eaff;
       text-decoration: none;
       border-bottom: 1px solid transparent;
-      text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
+      text-shadow: none;
+      -webkit-font-smoothing: none;
     }
 
     .go:hover,
@@ -524,9 +561,9 @@
       <header class="mast">
         <h1 class="plate-title">
           <span class="line"><span class="cap cap-n">N</span>ARRATIVE</span>
-          <span class="line"><span class="cap cap-f">F</span>ORGE<span class="cursor" aria-hidden="true">█</span></span>
+          <span class="line"><span class="cap cap-f">F</span>ORGE<span class="cursor" aria-hidden="true"></span></span>
         </h1>
-        <p class="vol" id="vol">COSMIC PIXEL ARCHIVE · VOL. 01</p>
+        <p class="vol" id="vol"><span class="vol-label">COSMIC PIXEL ARCHIVE · </span><span class="vol-ver">VOL. 01</span></p>
       </header>
       <div class="channels">
         <a href="https://github.com/Monyeah777/NarrativeForge" rel="noopener noreferrer" target="_blank">GitHub</a>
@@ -1173,6 +1210,26 @@
         }
       }
 
+      function paintVol(finalText) {
+        var mark = "VOL. 01";
+        var at;
+        if (!volEl) return;
+        at = finalText.lastIndexOf(mark);
+        volEl.replaceChildren();
+        if (at < 0) {
+          volEl.textContent = finalText;
+          return;
+        }
+        var label = document.createElement("span");
+        label.className = "vol-label";
+        label.textContent = finalText.slice(0, at);
+        var ver = document.createElement("span");
+        ver.className = "vol-ver";
+        ver.textContent = finalText.slice(at);
+        volEl.appendChild(label);
+        volEl.appendChild(ver);
+      }
+
       function scrambleLine(el, finalText, duration) {
         var glyphs = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789· ";
         var t0 = performance.now();
@@ -1188,6 +1245,7 @@
           }
           el.textContent = out;
           if (p < 1) requestAnimationFrame(step);
+          else if (el === volEl) paintVol(finalText);
           else el.textContent = finalText;
         }
         requestAnimationFrame(step);
