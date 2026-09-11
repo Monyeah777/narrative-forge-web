@@ -1,6 +1,6 @@
 {
   "id": "poplars-dallas",
-  "title": "Poplars, Pink Effect",
+  "title": "Les peupliers (Poplars, Pink Effect)",
   "artist": "Claude Monet",
   "year": 1891,
   "museum": "Dallas Museum of Art",
@@ -19,7 +19,9 @@
   "cropNorm": null,
   "inputOrientation": 1,
   "outputOrientation": null,
-  "note": "Unique in-repo 1200px source after EXIF bake + S×0.88. Baked from painting/masters/dallas_lespeupliers_5497x7054.jpg ([5497, 7054]); HD master stays out of git.",
+  "primary": true,
+  "workNote": "W1304 · three-tree composition · current engineering source",
+  "note": "1200px engineering preview after EXIF bake + S×0.88. Baked from painting/masters/dallas_lespeupliers_5497x7054.jpg ([5497, 7054]); HD master stays out of git.",
   "master": "painting/masters/dallas_lespeupliers_5497x7054.jpg",
   "masterSize": [
     5497,

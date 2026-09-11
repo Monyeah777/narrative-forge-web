@@ -59,6 +59,117 @@ DALLAS = {
     "standIn": True,
 }
 
+# Author 素材清单 (painting/masters/_素材清单.md). HD files stay out of git.
+WORKS: list[dict] = [
+    {
+        "id": "poplars-dallas",
+        "file": "01-dallas.jpg",
+        "master": "dallas_lespeupliers_5497x7054.jpg",
+        "title": "Les peupliers (Poplars, Pink Effect)",
+        "artist": "Claude Monet",
+        "year": 1891,
+        "museum": "Dallas Museum of Art",
+        "accession": "2019.67.14.McD",
+        "objectUrl": "https://www.dma.org/art/collection/object/5327894",
+        "commonsUrl": (
+            "https://commons.wikimedia.org/wiki/File:"
+            "Claude_Monet_-_Poplars,_Pink_Effect_-_2019.67.14.McD_-_Dallas_Museum_of_Art.jpg"
+        ),
+        "license": "Public domain",
+        "note": "W1304 · three-tree composition · current engineering source",
+        "primary": True,
+    },
+    {
+        "id": "poplars-scotland",
+        "file": "02-scotland.jpg",
+        "master": "scotland_GAP_4001.jpg",
+        "title": "Poplars on the Epte",
+        "artist": "Claude Monet",
+        "year": 1891,
+        "museum": "National Galleries of Scotland",
+        "accession": None,
+        "objectUrl": "https://www.nationalgalleries.org/art-and-artists/8662",
+        "commonsUrl": (
+            "https://commons.wikimedia.org/wiki/File:"
+            "Claude_Monet_-_Poplars_on_the_Epte_-_Google_Art_Project.jpg"
+        ),
+        "license": "Public domain",
+        "note": "Google Art Project scan · square 4001×4001",
+        "primary": False,
+    },
+    {
+        "id": "poplars-philadelphia-gap",
+        "file": "03-philadelphia-gap.jpg",
+        "master": "philadelphia_GAP_4248x5353.jpg",
+        "title": "Poplars (on the Bank of the Epte River)",
+        "artist": "Claude Monet",
+        "year": 1891,
+        "museum": "Philadelphia Museum of Art",
+        "accession": None,
+        "objectUrl": "https://www.philamuseum.org/collection/object/104468",
+        "commonsUrl": (
+            "https://commons.wikimedia.org/wiki/File:"
+            "Claude_Monet,_French_-_Poplars_-_Google_Art_Project.jpg"
+        ),
+        "license": "Public domain",
+        "note": "Google Art Project scan",
+        "primary": False,
+    },
+    {
+        "id": "poplars-philadelphia-upload",
+        "file": "04-philadelphia-upload.jpg",
+        "master": "philadelphia_upload_4249x5490.jpg",
+        "title": "Poplars (Philadelphia, community scan)",
+        "artist": "Claude Monet",
+        "year": 1891,
+        "museum": "Philadelphia Museum of Art",
+        "accession": None,
+        "objectUrl": "https://www.philamuseum.org/collection/object/104468",
+        "commonsUrl": (
+            "https://commons.wikimedia.org/wiki/File:"
+            "Claude_Monet_-_Poplars,_Philadelphia.JPG"
+        ),
+        "license": "Public domain",
+        "note": "Same painting as 03 · different digitization · for对照",
+        "primary": False,
+    },
+    {
+        "id": "four-trees-met",
+        "file": "05-met-fourtrees.jpg",
+        "master": "met_fourtrees_3689x3658.jpg",
+        "title": "The Four Trees",
+        "artist": "Claude Monet",
+        "year": 1891,
+        "museum": "The Metropolitan Museum of Art",
+        "accession": "29.100.110",
+        "objectUrl": "https://www.metmuseum.org/art/collection/search/437122",
+        "commonsUrl": "https://commons.wikimedia.org/wiki/File:The_Four_Trees_MET_DT832.jpg",
+        "license": "CC0 / Public domain",
+        "note": "Met CC0 donation · 81.3 × 81.6 cm",
+        "primary": False,
+    },
+    {
+        "id": "poplars-vertical-unverified",
+        "file": "06-vertical.jpg",
+        "master": "vertical_2589.jpg",
+        "title": "Poplars on the River Epte (scan unverified)",
+        "artist": "Claude Monet",
+        "year": 1891,
+        "museum": "unverified (Tate / NG London labels mixed)",
+        "accession": None,
+        "objectUrl": None,
+        "commonsUrl": (
+            "https://commons.wikimedia.org/wiki/File:"
+            "Monet_Poplars_on_the_River_Epte.jpg"
+        ),
+        "license": "Public domain (source pending review)",
+        "note": "2589×3297 vertical · provenance not yet verified by author",
+        "primary": False,
+    },
+]
+CATALOG_JSON = PAINTING_DIR / "catalog.json"
+MASTERS_DIR = PAINTING_DIR / "masters"
+
 COMMONS_API = "https://commons.wikimedia.org/w/api.php"
 COMMONS_TITLE = (
     "File:Claude_Monet_-_Poplars,_Pink_Effect_-_2019.67.14.McD_-_Dallas_Museum_of_Art.jpg"
@@ -187,7 +298,7 @@ def discover_input(explicit: Path | None) -> tuple[Path, bool]:
     if env:
         return Path(env), False
     if PAINTING_DIR.is_dir():
-        skip = {DEFAULT_OUTPUT.name.lower(), "source.json"}
+        skip = {DEFAULT_OUTPUT.name.lower(), "source.json", "catalog.json", "b1-1-refs.json", "b1-1-batch.json"}
         found = sorted(
             p
             for p in PAINTING_DIR.iterdir()
@@ -195,6 +306,7 @@ def discover_input(explicit: Path | None) -> tuple[Path, bool]:
             and p.suffix.lower() in IMAGE_SUFFIXES
             and p.name.lower() not in skip
             and not p.name.startswith(".")
+            and not p.name[:3].isdigit()  # baked 01-…06- previews
         )
         if found:
             return found[0], False
@@ -280,9 +392,27 @@ def orientation_of(path: Path) -> int | None:
         return im.getexif().get(ExifTags.Base.Orientation)
 
 
-def write_source_json(out: Path, meta: dict) -> None:
+def work_for_output(out: Path) -> dict:
+    name = out.name
+    for work in WORKS:
+        if work["file"] == name:
+            return work
+    return {**DALLAS, "file": name, "id": DALLAS["id"], "primary": name == DEFAULT_OUTPUT.name}
+
+
+def write_source_json(out: Path, meta: dict, work: dict | None = None) -> None:
+    work = work or work_for_output(out)
     payload = {
-        **DALLAS,
+        "id": work.get("id", DALLAS["id"]),
+        "title": work.get("title", DALLAS["title"]),
+        "artist": work.get("artist", "Claude Monet"),
+        "year": work.get("year", 1891),
+        "museum": work.get("museum"),
+        "accession": work.get("accession"),
+        "objectUrl": work.get("objectUrl"),
+        "commonsUrl": work.get("commonsUrl"),
+        "license": work.get("license", "Public domain"),
+        "standIn": bool(meta.get("dallas_stand_in")),
         "file": out.name,
         "w": meta["w"],
         "h": meta["h"],
@@ -293,23 +423,44 @@ def write_source_json(out: Path, meta: dict) -> None:
         "cropNorm": meta.get("crop_norm"),
         "inputOrientation": meta.get("input_orientation"),
         "outputOrientation": meta.get("output_orientation"),
+        "primary": bool(work.get("primary")),
+        "workNote": work.get("note"),
         "note": (
             "Unique in-repo 1200px source after EXIF bake + S×0.88. "
             "Author painting/ folder was not in the cloud clone; this is the "
             "handbook Dallas stand-in. Re-run scripts/prep-painting.py --input "
             "<master> to replace."
+            if meta.get("dallas_stand_in")
+            else (
+                "1200px engineering preview after EXIF bake + S×0.88. "
+                f"Baked from {meta.get('input')} ({meta.get('input_size')}); "
+                "HD master stays out of git."
+            )
         ),
     }
     if not meta.get("dallas_stand_in"):
-        payload["standIn"] = False
-        payload["note"] = (
-            "Unique in-repo 1200px source after EXIF bake + S×0.88. "
-            f"Baked from {meta.get('input')} ({meta.get('input_size')}); "
-            "HD master stays out of git."
-        )
         payload["master"] = meta.get("input")
         payload["masterSize"] = meta.get("input_size")
-    SOURCE_JSON.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n")
+    if work.get("primary", out.name == DEFAULT_OUTPUT.name):
+        SOURCE_JSON.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n")
+    return payload
+
+
+def upsert_catalog(entry: dict) -> None:
+    catalog = {"saturationFactor": SAT_FACTOR, "width": TARGET_W, "works": []}
+    if CATALOG_JSON.exists():
+        try:
+            catalog = json.loads(CATALOG_JSON.read_text())
+        except json.JSONDecodeError:
+            pass
+    works = catalog.setdefault("works", [])
+    works = [w for w in works if w.get("id") != entry.get("id")]
+    works.append(entry)
+    order = {w["id"]: i for i, w in enumerate(WORKS)}
+    works.sort(key=lambda w: order.get(w.get("id", ""), 99))
+    catalog["works"] = works
+    catalog["count"] = len(works)
+    CATALOG_JSON.write_text(json.dumps(catalog, indent=2, ensure_ascii=False) + "\n")
 
 
 def label_font(size: int):
@@ -321,10 +472,15 @@ def label_font(size: int):
     return ImageFont.load_default()
 
 
-def write_compare(before: Image.Image, after: Image.Image, dest_dir: Path) -> None:
+def write_compare(
+    before: Image.Image,
+    after: Image.Image,
+    dest_dir: Path,
+    prefix: str = "b1_1_canvas",
+) -> None:
     dest_dir.mkdir(parents=True, exist_ok=True)
-    save_jpeg(before, dest_dir / "b1_1_canvas_before.jpg")
-    save_jpeg(after, dest_dir / "b1_1_canvas_after.jpg")
+    save_jpeg(before, dest_dir / f"{prefix}_before.jpg")
+    save_jpeg(after, dest_dir / f"{prefix}_after.jpg")
 
     gap = 16
     bar = 40
@@ -341,11 +497,10 @@ def write_compare(before: Image.Image, after: Image.Image, dest_dir: Path) -> No
         fill=(220, 220, 220),
         font=font,
     )
-    canvas.save(dest_dir / "b1_1_canvas_before_after.jpg", quality=90, optimize=True)
+    canvas.save(dest_dir / f"{prefix}_before_after.jpg", quality=90, optimize=True)
 
-    # Sky / canopy crop so the sat drop is readable without staring at the full page.
-    cw, ch = 360, 280
-    ox, oy = w // 2 - cw // 2, int(h * 0.18)
+    cw, ch = min(360, w), min(280, h)
+    ox, oy = max(0, w // 2 - cw // 2), min(max(0, int(h * 0.18)), max(0, h - ch))
     crop_b = before.crop((ox, oy, ox + cw, oy + ch))
     crop_a = after.crop((ox, oy, ox + cw, oy + ch))
     detail = Image.new("RGB", (cw * 2 + gap, ch + bar), (12, 12, 12))
@@ -354,7 +509,7 @@ def write_compare(before: Image.Image, after: Image.Image, dest_dir: Path) -> No
     d = ImageDraw.Draw(detail)
     d.text((8, 10), "BEFORE crop", fill=(220, 220, 220), font=font)
     d.text((cw + gap + 8, 10), "AFTER crop  S×0.88", fill=(220, 220, 220), font=font)
-    detail.save(dest_dir / "b1_1_canvas_sat_crop.jpg", quality=92, optimize=True)
+    detail.save(dest_dir / f"{prefix}_sat_crop.jpg", quality=92, optimize=True)
 
 
 def self_test_exif_rotate() -> None:
@@ -389,6 +544,76 @@ def self_test_exif_rotate() -> None:
         raise AssertionError(f"output still tagged orientation={orientation_of(out)}")
 
 
+def bake_one(
+    src: Path,
+    out: Path,
+    *,
+    width: int,
+    saturation: float,
+    crop: tuple[float, float, float, float] | None,
+    dallas_stand_in: bool,
+    work: dict | None,
+    compare_dir: Path | None,
+    compare_prefix: str,
+) -> dict:
+    rgb, info = load_rgb(src)
+    if crop:
+        rgb = crop_norm(rgb, crop)
+    before = resize_width(rgb, width)
+    after = desaturate(before, saturation)
+    save_jpeg(after, out)
+
+    out_orient = orientation_of(out)
+    stats_b = hsv_stats(before)
+    stats_a = hsv_stats(after)
+    sat_ratio = stats_a["mean_s"] / stats_b["mean_s"] if stats_b["mean_s"] else 0
+    hue = paired_hue_delta(before, after)
+    hue_delta = hue["mean_abs_hue_delta_deg"]
+
+    try:
+        input_rel = str(src.resolve().relative_to(ROOT))
+    except ValueError:
+        input_rel = str(src)
+    meta = {
+        "id": (work or {}).get("id"),
+        "file": out.name,
+        "w": after.size[0],
+        "h": after.size[1],
+        "input_orientation": info["exif_orientation"],
+        "output_orientation": out_orient,
+        "dallas_stand_in": dallas_stand_in,
+        "crop_norm": list(crop) if crop else None,
+        "input": input_rel,
+        "input_size": list(info["size"]),
+        "hsv_before": stats_b,
+        "hsv_after": stats_a,
+        "sat_ratio": round(sat_ratio, 4),
+        "hue_paired": hue,
+        "hue_delta_deg": round(hue_delta, 4),
+        "checks": {
+            "width_1200": after.size[0] == width,
+            "sat_0_85_0_90": 0.85 <= sat_ratio <= 0.90,
+            "hue_delta_le_2": hue_delta <= 2.0,
+            "exif_stripped": out_orient in (None, 1),
+            "v_unchanged": abs(stats_a["mean_v"] - stats_b["mean_v"]) < 1e-6,
+        },
+    }
+    payload = write_source_json(out, meta, work)
+    upsert_catalog({**payload, "checks": meta["checks"], "sat_ratio": meta["sat_ratio"], "hue_delta_deg": meta["hue_delta_deg"]})
+    if compare_dir is not None:
+        write_compare(before, after, compare_dir, prefix=compare_prefix)
+
+    if not meta["checks"]["sat_0_85_0_90"]:
+        raise SystemExit(f"{out.name}: saturation ratio {sat_ratio} outside 0.85–0.90")
+    if not meta["checks"]["hue_delta_le_2"]:
+        raise SystemExit(f"{out.name}: hue delta {hue_delta}° exceeds 2°")
+    if not meta["checks"]["width_1200"]:
+        raise SystemExit(f"{out.name}: width {after.size[0]} != {width}")
+    if not meta["checks"]["exif_stripped"]:
+        raise SystemExit(f"{out.name}: output EXIF orientation still set: {out_orient}")
+    return meta
+
+
 def run(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", type=Path, default=None)
@@ -397,6 +622,11 @@ def run(argv: list[str] | None = None) -> int:
     parser.add_argument("--saturation", type=float, default=SAT_FACTOR)
     parser.add_argument("--compare", type=Path, default=None)
     parser.add_argument("--self-test", action="store_true")
+    parser.add_argument(
+        "--all-masters",
+        action="store_true",
+        help="bake every work in WORKS from painting/masters/<master>",
+    )
     parser.add_argument(
         "--no-crop",
         action="store_true",
@@ -409,56 +639,58 @@ def run(argv: list[str] | None = None) -> int:
         print("exif_transpose fixture: ok")
         return 0
 
+    compare_dir = None
+    if args.compare:
+        compare_dir = args.compare if args.compare.is_absolute() else ROOT / args.compare
+
+    if args.all_masters:
+        results = []
+        for work in WORKS:
+            src = MASTERS_DIR / work["master"]
+            if not src.exists():
+                raise SystemExit(f"master not found: {src}")
+            out = PAINTING_DIR / work["file"]
+            prefix = f"b1_1_{work['id']}"
+            meta = bake_one(
+                src,
+                out,
+                width=args.width,
+                saturation=args.saturation,
+                crop=None,
+                dallas_stand_in=False,
+                work=work,
+                compare_dir=compare_dir,
+                compare_prefix=prefix,
+            )
+            results.append(meta)
+            print(json.dumps({k: meta[k] for k in ("id", "file", "w", "h", "sat_ratio", "hue_delta_deg", "checks")}, ensure_ascii=False))
+        (PAINTING_DIR / "b1-1-batch.json").write_text(
+            json.dumps({"count": len(results), "results": results}, indent=2, ensure_ascii=False) + "\n"
+        )
+        failed = [r["file"] for r in results if not all(r["checks"].values())]
+        if failed:
+            raise SystemExit(f"B1-1 batch checks failed: {failed}")
+        return 0
+
     src, dallas = discover_input(args.input)
     if not src.exists():
         raise SystemExit(f"input not found: {src}")
 
-    rgb, info = load_rgb(src)
     crop = DALLAS_CROP_NORM if dallas and not args.no_crop else None
-    if crop:
-        rgb = crop_norm(rgb, crop)
-    before = resize_width(rgb, args.width)
-    after = desaturate(before, args.saturation)
     out = args.output if args.output.is_absolute() else ROOT / args.output
-    save_jpeg(after, out)
-
-    out_orient = orientation_of(out)
-    stats_b = hsv_stats(before)
-    stats_a = hsv_stats(after)
-    sat_ratio = stats_a["mean_s"] / stats_b["mean_s"] if stats_b["mean_s"] else 0
-    hue = paired_hue_delta(before, after)
-    hue_delta = hue["mean_abs_hue_delta_deg"]
-
-    meta = {
-        "w": after.size[0],
-        "h": after.size[1],
-        "input_orientation": info["exif_orientation"],
-        "output_orientation": out_orient,
-        "dallas_stand_in": dallas,
-        "crop_norm": list(crop) if crop else None,
-        "input": str(src),
-        "input_size": list(info["size"]),
-        "hsv_before": stats_b,
-        "hsv_after": stats_a,
-        "sat_ratio": round(sat_ratio, 4),
-        "hue_paired": hue,
-        "hue_delta_deg": round(hue_delta, 4),
-    }
-    PAINTING_DIR.mkdir(parents=True, exist_ok=True)
-    write_source_json(out, meta)
-
-    if args.compare:
-        write_compare(before, after, args.compare)
-
+    work = work_for_output(out)
+    meta = bake_one(
+        src,
+        out,
+        width=args.width,
+        saturation=args.saturation,
+        crop=crop,
+        dallas_stand_in=dallas,
+        work=work,
+        compare_dir=compare_dir,
+        compare_prefix="b1_1_canvas",
+    )
     print(json.dumps(meta, indent=2))
-    if not (0.85 <= sat_ratio <= 0.90):
-        raise SystemExit(f"saturation ratio {sat_ratio} outside 0.85–0.90")
-    if hue_delta > 2.0:
-        raise SystemExit(f"hue delta {hue_delta}° exceeds 2°")
-    if after.size[0] != args.width:
-        raise SystemExit(f"width {after.size[0]} != {args.width}")
-    if out_orient not in (None, 1):
-        raise SystemExit(f"output EXIF orientation still set: {out_orient}")
     return 0
 
 
