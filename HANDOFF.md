@@ -10,13 +10,14 @@
 
 ## 当前进度（云端 Track A）
 
-手册 **B1-3 已完成**，停在等「继续」。不要开 B1-4（preload / 接到原型 fetch）。
+手册 **B1-4 已完成**，停在等「继续」。不要开 B2（渲染层 / 调色盘精灵 / 12k 上屏）。
 
-- 选定路径 **A**：`scripts/sample-painting.py`（Pillow + numpy）预计算 `painting/points.json`
-- 兜底路径 B：`painting/sample-browser.html` 一次性 `getImageData`（`willReadFrequently`），契约字段与 A 相同
-- 对照：`painting/b1-3-bench.json`
-- 原型仍加载 `prototype/points.json`（NF 字形），**接加载是 B1-4**
-- 本条分支：`cursor/b1-3-path-ab-52ec`（叠在 `cursor/b1-2-stipple-holes-52ec` 上）
+- 落盘 `prototype/assets/points.json`（与 `painting/points.json` 同字节，契约 v2）
+- `<link rel="preload" as="fetch" href="assets/points.json" crossorigin>` + `fetch(..., {credentials:"omit", mode:"cors"})`
+- 冻结接口：`id,w,h,count,note,palette,points`（`points` 为 `[[x,y,i],...]`）；`window.__nfPoints`
+- 数据未就绪：临时随机点，**同一套字段**（`?nf-points=placeholder` 可强制）
+- 引擎仍按宽度 cap 960/1280/1600，对 12k 目标取模，不在本步把 N 拉到 12000
+- 本条分支：`cursor/b1-4-points-load-52ec`（叠在 `cursor/b1-3-path-ab-52ec` 上）
 
 ---
 
@@ -26,8 +27,8 @@
 |---|---|
 | 本仓 | `C:\Users\mon_7\Downloads\narrative-forge-web` |
 | GitHub | `Monyeah777/narrative-forge-web` |
-| 当前分支 | 云端叠 PR 在 `cursor/b1-2-stipple-holes-52ec` |
-| 原型路径 | `prototype/index.html`（同目录 `points.json`、`gen-points.mjs`） |
+| 当前分支 | 云端叠 PR 在 `cursor/b1-4-points-load-52ec` |
+| 原型路径 | `prototype/index.html`（live fetch：`assets/points.json`；`gen-points.mjs` 仍写同目录字形 `points.json`） |
 | 画作预览 | `painting/01-dallas.jpg`（primary）+ `02`–`06`；`painting/points.json`（B1-2 v2）；高清不进 git |
 | NF 主仓 | `C:\Users\mon_7\Downloads\NarrativeForge-main` |
 | 规格 | `C:\Users\mon_7\Downloads\NF首屏_执行清单_v3.0_2026-09-10.md` |
@@ -112,10 +113,11 @@ Next.js 16，API 与训练记忆可能不同。改 Next 代码前读 `node_modul
 文件：
 
 - `prototype/index.html` 引擎
-- `prototype/points.json` `{ "points": [{x,y}, ...] }` 归一化 0..1，约 1630 点
-- `prototype/gen-points.mjs` 确定性栅格 **N / F**（mulberry32 seed `0x4e46`），落在左约 62%，避免压到报章。另有脊线+底边粉尘。
+- `prototype/assets/points.json` 契约 v2：`{id,w,h,count,note,palette,points:[[x,y,i],...]}`，12k，与 `painting/points.json` 同字节
+- `prototype/points.json` 仍是 NF 字形生成物（约 1630 `{x,y}`），**不再被 live fetch**
+- `prototype/gen-points.mjs` 确定性栅格 **N / F**（mulberry32 seed `0x4e46`）
 
-规格要作者选定的 Monet 英雄图。B1-1 六张 1200px 已齐；B1-2 已把 primary 达拉斯采成 `painting/points.json`（12k / 契约 v2，空洞格 1344→0）。**屏幕粒子仍是 NF 字母替身**，等 B1-4 才改 fetch。
+规格要作者选定的 Monet 英雄图。B1-1 六张 1200px 已齐；B1-2 采成 12k；B1-4 已接到原型 fetch。成画目标是画作点云子集（cap 取模），**调色盘上色是 B2**。
 
 数量分档：桌面 1600 / 中 1280 / 窄 960。
 
@@ -162,9 +164,9 @@ IDLE 0.14  POINTER_LERP 0.2  SIZES [4,6,8]
 ## 未完成 / 已知问题
 
 1. 轨道 B 未开始（原型未验收，不要擅自灌进 Next）。
-2. 屏幕 `prototype/points.json` 仍是像素 NF。画作 12k 点在 `painting/points.json`（B1-2）。**接进引擎是 B1-4**。
+2. 成画目标已是达拉斯 12k 点（引擎仍 cap 1600 取模）。**调色盘精灵 / 全量上屏是 B2**。不要在 B2 前改物理常数。
 3. 大厅目录在窄报章栏会按字折行。
-4. 介绍 / 大厅 / 社区成画也是同一套 NF 字形；彩蛋是首页多一条入口，不是唯一触发。若用户要把字形改成「只有彩蛋才出现」，先问再改。
+4. 介绍 / 大厅 / 社区成画共用画作点云（cap 取模）；彩蛋仍是首页多一条成画入口。字形 NF 栅格不再是 live 目标。
 5. 原型「打开完整大厅/社区页」依赖 localhost:3000。
 6. `painting/01`–`06` + `source.json` + `catalog.json` 已跟踪；`painting/masters/` gitignore。并发会话共用本仓时，禁止顺手 stash/reset。
 7. 别的对话框如果打开的是 GitHub 默认 `main`，会看不到原型。先 `git fetch` 再 `git checkout task/T-0005-community`。
@@ -174,7 +176,7 @@ IDLE 0.14  POINTER_LERP 0.2  SIZES [4,6,8]
 
 ## 设计偏差（对规格）
 
-- 成画目标图应为作者点名英雄图 → 现用确定性 NF 栅格。
+- 成画目标图应为作者点名英雄图 → B1-4 已接到达拉斯 12k 点；屏幕粒子数仍 cap 1600 取模。调色盘上色未接（B2）。
 - 物理参数已改成 Langevin/OU + curl 场，不是规格里的弹簧 0.05 / 阻尼 0.88。
 - 报章面板全透明，不是规格建议的 `rgba(20,20,23,0.78)` 档案底板（用户锁死透明）。
 - 四导航都能进「成画 + 换文案」，规格只写了介绍成画。
@@ -187,10 +189,10 @@ IDLE 0.14  POINTER_LERP 0.2  SIZES [4,6,8]
 浏览器里按真人路径点，不要只截一张静图：
 
 1. 首页星尘漂，无准星，普通指针。
-2. 点介绍 → 左侧收成 NF，右侧两句渐显。
-3. 点数据大厅 / 社区 → 字形留着，只换文案；不是只改 `aria-current`。
+2. 点介绍 → 左侧收成画作点云（cap 子集），右侧两句渐显。
+3. 点数据大厅 / 社区 → 点云留着，只换文案；不是只改 `aria-current`。
 4. 点首页 → 打散，文案隐藏。
-5. 停在首页，点页脚 NF（内容契约层左边）→ 收成 NF，导航仍是首页，介绍句不出现。
+5. 停在首页，点页脚 NF（内容契约层左边）→ 收成画作点云，导航仍是首页，介绍句不出现。
 6. GitHub/Gitee hover：字变实 + 细下划线；指针划过粒子会被拨开。
 
 ---
@@ -199,4 +201,4 @@ IDLE 0.14  POINTER_LERP 0.2  SIZES [4,6,8]
 
 1. 打开 http://localhost:8768/ 看现行原型（没有服务就在 `prototype/` 起 python http.server）。
 2. 读 `prototype/index.html` 的 CSS 报章区 + `openArchive` / `triggerEgg`，不要重写引擎。
-3. 只做用户这一次点名的事。规格里未点名的轨道 B、Fusion Pixel、Monet 重采样，先问。
+3. 只做用户这一次点名的事。规格里未点名的轨道 B、Fusion Pixel，先问。B2 渲染层等用户说「继续」。

@@ -1,0 +1,35 @@
+{
+  "task": "B1-4",
+  "title": "数据落盘与加载：assets/points.json 契约 v2",
+  "searched": [
+    {
+      "q": "MDN link rel preload as fetch crossorigin anonymous must match fetch credentials",
+      "refs": [
+        "https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/rel/preload",
+        "https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/crossorigin",
+        "https://stackoverflow.com/questions/76815365/fetch-request-for-json-file-not-hitting-link-preload"
+      ],
+      "takeaway": "as=fetch requires crossorigin. anonymous/omit credentials must match fetch() or the preload is discarded. Handbook: preload assets/points.json + fetch with credentials:omit, mode:cors."
+    },
+    {
+      "q": "PerformanceResourceTiming encodedBodySize decodedBodySize gzip",
+      "refs": [
+        "https://developer.mozilla.org/en-US/docs/Web/API/PerformanceResourceTiming/encodedBodySize",
+        "https://developer.mozilla.org/en-US/docs/Web/API/PerformanceResourceTiming/decodedBodySize"
+      ],
+      "takeaway": "encodedBodySize is the payload before removing content-codings (gzip on the wire). decodedBodySize is after. transferSize 0 on the fetch entry usually means the preload/cache was reused."
+    }
+  ],
+  "interface": {
+    "href": "assets/points.json",
+    "keys": ["id", "w", "h", "count", "note", "palette", "points"],
+    "points": "[[x, y, i], ...] x,y in 0..1; i palette index",
+    "frozen": "window.__nfPoints",
+    "placeholder": "same keys; id=placeholder-random if fetch/parse fails"
+  },
+  "red_lines": [
+    "Do not bump capCount to 12000 (B2/B4).",
+    "Do not sample or getImageData in rAF.",
+    "Do not start B2 render/palette sprites in this step."
+  ]
+}

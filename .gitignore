@@ -61,4 +61,6 @@ painting/*
 !painting/b1-3-path-b-bench.json
 !painting/sample-browser.html
 !painting/sample-browser.js
+!painting/b1-4-refs.json
+!painting/b1-4-load.json
 

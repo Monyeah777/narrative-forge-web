@@ -8,7 +8,7 @@
   <title>NarrativeForge · 宇宙像素档案</title>
   <link rel="icon" href="favicon.ico" sizes="any" />
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-  <link rel="preload" href="points.json" as="fetch" crossorigin="anonymous" />
+  <link rel="preload" as="fetch" href="assets/points.json" crossorigin />
   <link rel="preload" href="assets/fonts/press-start-2p-subset.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="assets/fonts/silkscreen-400-subset.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="assets/fonts/silkscreen-700-subset.woff2" as="font" type="font/woff2" crossorigin />
@@ -1246,18 +1246,251 @@
         }
       }
 
-      function parsePoints(data) {
-        var arr = Array.isArray(data) ? data : (data && data.points);
-        if (!arr || !arr.length) return null;
-        var out = [];
-        var i, p, px, py;
-        for (i = 0; i < arr.length; i++) {
-          p = arr[i];
-          px = typeof p.x === "number" ? p.x : p[0];
-          py = typeof p.y === "number" ? p.y : p[1];
-          if (px >= 0 && px <= 1 && py >= 0 && py <= 1) out.push({ x: px, y: py });
+      var POINTS_HREF = "assets/points.json";
+      var HEX6 = /^#[0-9A-Fa-f]{6}$/;
+      var PLACEHOLDER_PALETTE = ["#d6d2c8", "#c8cdd7", "#b0c6e0"];
+
+      function round3(n) {
+        return Math.round(n * 1000) / 1000;
+      }
+
+      function mulberry32(seed) {
+        var a = seed >>> 0;
+        return function () {
+          a |= 0;
+          a = (a + 0x6d2b79f5) | 0;
+          var t = Math.imul(a ^ (a >>> 15), 1 | a);
+          t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+      }
+
+      function parseV2(data) {
+        var pal, pts, i, c, p, x, y, idx, n;
+        if (!data || typeof data !== "object" || Array.isArray(data)) return null;
+        if (typeof data.id !== "string" || !data.id) return null;
+        if (typeof data.w !== "number" || !(data.w > 0)) return null;
+        if (typeof data.h !== "number" || !(data.h > 0)) return null;
+        if (typeof data.count !== "number" || data.count !== (data.count | 0) || data.count < 1) return null;
+        if (!Array.isArray(data.palette) || !data.palette.length) return null;
+        if (!Array.isArray(data.points) || data.points.length !== data.count) return null;
+        pal = [];
+        for (i = 0; i < data.palette.length; i++) {
+          c = data.palette[i];
+          if (!HEX6.test(c)) return null;
+          pal.push(c);
         }
-        return out.length ? out : null;
+        n = pal.length;
+        pts = [];
+        for (i = 0; i < data.points.length; i++) {
+          p = data.points[i];
+          if (!Array.isArray(p) || p.length < 3) return null;
+          x = p[0];
+          y = p[1];
+          idx = p[2];
+          if (typeof x !== "number" || typeof y !== "number") return null;
+          if (!(x >= 0 && x <= 1 && y >= 0 && y <= 1)) return null;
+          if (typeof idx !== "number" || idx !== (idx | 0) || idx < 0 || idx >= n) return null;
+          pts.push({ x: x, y: y, i: idx });
+        }
+        return {
+          id: data.id,
+          w: data.w,
+          h: data.h,
+          count: pts.length,
+          note: typeof data.note === "string" ? data.note : "",
+          palette: pal,
+          points: pts
+        };
+      }
+
+      function placeholderRecord(n, reason) {
+        var rand = mulberry32(0x4e46);
+        var pal = PLACEHOLDER_PALETTE.slice();
+        var pts = [];
+        var i;
+        for (i = 0; i < n; i++) {
+          pts.push({
+            x: Math.round(rand() * 10000) / 10000,
+            y: Math.round(rand() * 10000) / 10000,
+            i: i % pal.length
+          });
+        }
+        return {
+          id: "placeholder-random",
+          w: 1,
+          h: 1,
+          count: n,
+          note: "data not ready · temporary random · same v2 interface",
+          palette: pal,
+          points: pts,
+          source: "placeholder",
+          reason: reason || ""
+        };
+      }
+
+      function triplesOf(points) {
+        var out = [];
+        var i, p;
+        for (i = 0; i < points.length; i++) {
+          p = points[i];
+          out.push([p.x, p.y, p.i]);
+        }
+        return out;
+      }
+
+      function summarizeEntry(e) {
+        return {
+          initiatorType: e.initiatorType,
+          duration_ms: round3(e.duration),
+          transferSize: e.transferSize,
+          encodedBodySize: e.encodedBodySize,
+          decodedBodySize: e.decodedBodySize,
+          startTime: round3(e.startTime),
+          responseEnd: round3(e.responseEnd)
+        };
+      }
+
+      function resourceTimingFor(href) {
+        var abs;
+        var list;
+        var hits = [];
+        var i, e;
+        var out = { entries: 0, link: null, fetch: null };
+        try {
+          abs = new URL(href, location.href).href;
+        } catch (err) {
+          abs = href;
+        }
+        list = performance.getEntriesByType("resource");
+        for (i = 0; i < list.length; i++) {
+          e = list[i];
+          if (e.name === abs) hits.push(e);
+        }
+        out.entries = hits.length;
+        for (i = 0; i < hits.length; i++) {
+          e = hits[i];
+          if (e.initiatorType === "link") out.link = summarizeEntry(e);
+          else if (e.initiatorType === "fetch" || e.initiatorType === "xmlhttprequest") out.fetch = summarizeEntry(e);
+        }
+        if (!out.link && !out.fetch && hits.length) out.fetch = summarizeEntry(hits[hits.length - 1]);
+        return out;
+      }
+
+      function freezeLoaded(rec, timings) {
+        var frozen = Object.freeze({
+          id: rec.id,
+          w: rec.w,
+          h: rec.h,
+          count: rec.count,
+          note: rec.note,
+          palette: Object.freeze(rec.palette.slice()),
+          points: Object.freeze(triplesOf(rec.points)),
+          source: rec.source,
+          timings: Object.freeze(timings)
+        });
+        window.__nfPoints = frozen;
+        return frozen;
+      }
+
+      function logLoadList(timings) {
+        var res = timings.resource || {};
+        var body = res.fetch || res.link || {};
+        var lines = [
+          "[nf-load] " + timings.href,
+          "  source=" + timings.source,
+          "  t_fetch_start_ms=" + timings.t_fetch_start_ms,
+          "  fetch_ms=" + timings.fetch_ms,
+          "  parse_ms=" + timings.parse_ms,
+          "  total_ms=" + timings.total_ms,
+          "  count=" + timings.count,
+          "  http_status=" + timings.http_status,
+          "  encodedBodySize=" + (body.encodedBodySize == null ? "" : body.encodedBodySize),
+          "  decodedBodySize=" + (body.decodedBodySize == null ? "" : body.decodedBodySize),
+          "  transferSize=" + (body.transferSize == null ? "" : body.transferSize),
+          "  preload_link_duration_ms=" + (res.link ? res.link.duration_ms : ""),
+          "  fetch_duration_ms=" + (res.fetch ? res.fetch.duration_ms : ""),
+          "  preload_reused=" + timings.preload_reused
+        ];
+        if (timings.reason) lines.push("  reason=" + timings.reason);
+        console.log(lines.join("\n"));
+        window.__nfLoadTimings = timings;
+      }
+
+      function loadPointsRecord() {
+        var t0 = performance.now();
+        var forcePh = false;
+        try {
+          forcePh = new URLSearchParams(window.location.search).get("nf-points") === "placeholder";
+        } catch (err) {
+          forcePh = false;
+        }
+        if (forcePh) {
+          return Promise.resolve(finishPlaceholder(t0, "query nf-points=placeholder"));
+        }
+        return fetch(POINTS_HREF, { credentials: "omit", mode: "cors" })
+          .then(function (res) {
+            var tFetch = performance.now();
+            if (!res.ok) throw new Error("http " + res.status);
+            return res.json().then(function (data) {
+              var tParse = performance.now();
+              var rec = parseV2(data);
+              var resource;
+              var fetchEntry;
+              var timings;
+              var reused;
+              if (!rec) throw new Error("v2 parse failed");
+              rec.source = "fetch";
+              resource = resourceTimingFor(POINTS_HREF);
+              fetchEntry = resource.fetch || resource.link;
+              reused = !!(resource.link && resource.fetch && resource.fetch.transferSize === 0);
+              if (!reused && resource.link && !resource.fetch) reused = true;
+              timings = {
+                href: POINTS_HREF,
+                source: "fetch",
+                t_fetch_start_ms: round3(t0),
+                fetch_ms: round3(tFetch - t0),
+                parse_ms: round3(tParse - tFetch),
+                total_ms: round3(tParse - t0),
+                count: rec.count,
+                http_status: 200,
+                preload_reused: reused,
+                resource: resource,
+                encodedBodySize: fetchEntry ? fetchEntry.encodedBodySize : 0,
+                decodedBodySize: fetchEntry ? fetchEntry.decodedBodySize : 0,
+                transferSize: fetchEntry ? fetchEntry.transferSize : 0
+              };
+              freezeLoaded(rec, timings);
+              logLoadList(timings);
+              return rec.points;
+            });
+          })
+          .catch(function (err) {
+            return finishPlaceholder(t0, String(err && err.message ? err.message : err));
+          });
+      }
+
+      function finishPlaceholder(t0, reason) {
+        var rec = placeholderRecord(capCount(), reason);
+        var timings = {
+          href: POINTS_HREF,
+          source: "placeholder",
+          t_fetch_start_ms: round3(t0),
+          fetch_ms: round3(performance.now() - t0),
+          parse_ms: 0,
+          total_ms: round3(performance.now() - t0),
+          count: rec.count,
+          http_status: 0,
+          preload_reused: false,
+          resource: resourceTimingFor(POINTS_HREF),
+          encodedBodySize: 0,
+          decodedBodySize: 0,
+          transferSize: 0,
+          reason: rec.reason
+        };
+        freezeLoaded(rec, timings);
+        logLoadList(timings);
+        return rec.points;
       }
 
       function paintVoid() {
@@ -1752,10 +1985,7 @@
       resizeCanvas();
       paintVoid();
 
-      fetch("points.json")
-        .then(function (res) { return res.ok ? res.json() : null; })
-        .then(function (data) { boot(parsePoints(data)); })
-        .catch(function () { boot(null); });
+      loadPointsRecord().then(function (points) { boot(points); });
     })();
   </script>
 </body>
