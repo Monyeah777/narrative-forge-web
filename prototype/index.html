@@ -76,6 +76,15 @@
       line-height: 1.5;
     }
 
+    .fx-grid {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background-image: repeating-linear-gradient(to right, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 40px),
+        repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 40px);
+    }
+
     .stage {
       position: relative;
       z-index: 2;
@@ -568,6 +577,7 @@
   </style>
 </head>
 <body>
+  <div class="fx-grid" aria-hidden="true"></div>
   <div class="stage" id="stage" data-mode="chaos">
     <canvas id="void" role="img" aria-label="深空粒子场"></canvas>
     <div class="veil" aria-hidden="true"></div>
