@@ -591,25 +591,8 @@
       right: 8%;
       bottom: 2.75rem;
       z-index: 10000;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 0.45rem;
       margin: 0;
       pointer-events: none;
-      text-shadow: none;
-    }
-
-    .arcade-mode {
-      margin: 0;
-      min-height: 1em;
-      font-family: 'Press Start2P', monospace;
-      font-size: 8px;
-      line-height: 1;
-      letter-spacing: 0.25em;
-      text-transform: uppercase;
-      color: #8E959D;
-      white-space: nowrap;
       text-shadow: none;
     }
 
@@ -685,6 +668,11 @@
       #btn-settings:hover {
         color: #FFFFFF;
       }
+    }
+
+    #btn-settings.is-lit,
+    #btn-settings.is-lit:hover {
+      color: #6F8FAF;
     }
 
     .colophon {
@@ -844,7 +832,6 @@
     <p class="vf-readout"><span class="rec-dot"></span>REC　F/2.8　ISO400　BATT99%</p>
   </div>
   <div class="arcade">
-    <p class="arcade-mode" id="arcade-mode" aria-live="polite"></p>
     <div class="arcade-row">
       <span class="arcade-meta" aria-hidden="true">INSERT COIN</span>
       <div class="console" role="group" aria-label="控制台">
@@ -896,19 +883,8 @@
       var btnEgg = document.getElementById("btn-egg");
       var btnSave = document.getElementById("btn-save");
       var btnSettings = document.getElementById("btn-settings");
-      var arcadeMode = document.getElementById("arcade-mode");
       var saveLampTimer = 0;
-      var modeFlashTimer = 0;
-      var DRIVES = [
-        { id: "A", label: "LOW DRIFT", J: 0.18, D: 0.975, vmax: 4 },
-        { id: "B", label: "STORM", J: 0.60, D: 0.955, vmax: 12 },
-        { id: "C", label: "STILL", J: 0.02, D: 0.93, vmax: 2 }
-      ];
-      var driveIdx = 0;
-      var driveJ = DRIVES[0].J;
-      var driveD = DRIVES[0].D;
-      var driveVmax = DRIVES[0].vmax;
-      var isFrozen = false;
+      var settingsLitTimer = 0;
       var navItems = stage.querySelectorAll(".nav-item");
       if (!ctx) return;
 
@@ -1209,9 +1185,9 @@
 
       function capSpeed(i) {
         var s = Math.sqrt(vx[i] * vx[i] + vy[i] * vy[i]);
-        if (s > driveVmax) {
-          vx[i] *= driveVmax / s;
-          vy[i] *= driveVmax / s;
+        if (s > VMAX) {
+          vx[i] *= VMAX / s;
+          vy[i] *= VMAX / s;
         }
       }
 
@@ -1240,8 +1216,6 @@
           vy[i] = vy[i] * rho + gauss() * sig * 0.22;
           walls(i);
         }
-        vx[i] *= driveD;
-        vy[i] *= driveD;
         capSpeed(i);
         x[i] += vx[i];
         y[i] += vy[i];
@@ -1254,8 +1228,8 @@
       }
 
       function springTo(i, gx, gy) {
-        vx[i] += (gx - x[i]) * driveJ;
-        vy[i] += (gy - y[i]) * driveJ;
+        vx[i] += (gx - x[i]) * SPRING;
+        vy[i] += (gy - y[i]) * SPRING;
       }
 
       function healParticle(i, toGlyph) {
@@ -1290,12 +1264,12 @@
         var i, dx, dy, dist, f, inv, kSpring;
         mx += (mxT - mx) * POINTER_LERP;
         my += (myT - my) * POINTER_LERP;
-        kSpring = formed && !hasGlyph ? driveJ * 0.55 : driveJ;
+        kSpring = formed && !hasGlyph ? SPRING * 0.55 : SPRING;
         for (i = 0; i < N; i++) {
           dx = x[i] - mx;
           dy = y[i] - my;
           dist = Math.sqrt(dx * dx + dy * dy);
-          if (!isFrozen && live && dist < REPEL_R && dist > 0.0001) {
+          if (live && dist < REPEL_R && dist > 0.0001) {
             inv = 1 / dist;
             f = (1 - dist / REPEL_R) * REPEL;
             vx[i] += dx * inv * f;
@@ -1355,12 +1329,6 @@
 
       function tick(now) {
         if (!running) return;
-        if (isFrozen) {
-          lastT = now;
-          render();
-          raf = requestAnimationFrame(tick);
-          return;
-        }
         var ft = (now - lastT) / 1000;
         lastT = now;
         if (ft > FRAME_CLAMP) ft = FRAME_CLAMP;
@@ -1411,34 +1379,6 @@
         lastT = performance.now();
         var show = next === "formed" && currentView !== "home";
         dossier.setAttribute("aria-hidden", show ? "false" : "true");
-      }
-
-      function setFrozen(next) {
-        if (isFrozen === next) return;
-        isFrozen = next;
-        acc = 0;
-        lastT = performance.now();
-        if (next) stage.setAttribute("data-frozen", "true");
-        else stage.removeAttribute("data-frozen");
-      }
-
-      function applyDrive(idx) {
-        driveIdx = (idx + DRIVES.length) % DRIVES.length;
-        driveJ = DRIVES[driveIdx].J;
-        driveD = DRIVES[driveIdx].D;
-        driveVmax = DRIVES[driveIdx].vmax;
-        stage.dataset.drive = DRIVES[driveIdx].id;
-        acc = 0;
-        lastT = performance.now();
-      }
-
-      function flashMode() {
-        if (!arcadeMode) return;
-        arcadeMode.textContent = "> MODE: " + DRIVES[driveIdx].label;
-        window.clearTimeout(modeFlashTimer);
-        modeFlashTimer = window.setTimeout(function () {
-          arcadeMode.textContent = "";
-        }, 1000);
       }
 
       function appHref(path) {
@@ -1493,7 +1433,6 @@
       }
 
       function assemble() {
-        if (isFrozen) setFrozen(false);
         pointerEver = false;
         setMode("assemble");
         if (reduced) {
@@ -1506,7 +1445,6 @@
       }
 
       function disperse() {
-        if (isFrozen) setFrozen(false);
         scatterHomes();
         pointerEver = false;
         setMode("disperse");
@@ -1632,8 +1570,6 @@
         formTargets(points);
         placeNow(false);
         setMode("chaos");
-        applyDrive(0);
-        setFrozen(false);
         booted = true;
         render();
         syncReduced();
@@ -1672,8 +1608,13 @@
       }
       if (btnSettings) {
         btnSettings.addEventListener("click", function () {
-          applyDrive(driveIdx + 1);
-          flashMode();
+          btnSettings.classList.add("is-lit");
+          btnSettings.style.color = "#6F8FAF";
+          window.clearTimeout(settingsLitTimer);
+          settingsLitTimer = window.setTimeout(function () {
+            btnSettings.classList.remove("is-lit");
+            btnSettings.style.color = "";
+          }, 1000);
         });
       }
 
