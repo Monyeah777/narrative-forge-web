@@ -1,0 +1,21 @@
+{
+  "id": "exhibit-v1",
+  "note": "自动放映 manifest · 运行时不得掷骰子 · 回退见附录 A",
+  "autoplay": { "enabled": true },
+  "motion": { "discipline": "v2" },
+  "dwellMs": 10000,
+  "transitionMs": 3000,
+  "introRevealMs": 2400,
+  "idleResumeMs": 30000,
+  "hoverResumeMs": 1500,
+  "captionSwapMs": 300,
+  "seed": 20166,
+  "catalog": ["INTRO", "HALL", "COMMUNITY"],
+  "interlude": "none",
+  "control": { "pause": "text" },
+  "transition": { "group": "develop", "arc": "on" },
+  "seedMode": "uniform",
+  "pixelBlock": { "enabled": false, "size": 2 },
+  "frameScale": 1.0,
+  "colorVersion": "v1"
+}
