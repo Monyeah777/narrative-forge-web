@@ -1,0 +1,345 @@
+{
+  "task": "S0 \u73b0\u72b6\u8bca\u65ad",
+  "handbook": "docs/NF_\u5f84\u5411\u91cd\u6620\u5c04_\u603b\u7ed3\u7248\u6700\u7ec8\u65b9\u6848_v2.0.md",
+  "timestamp_note": "read-only; no resample",
+  "current_pipeline": {
+    "weight": "0.6 + 0.4*L^1.2",
+    "radial_W_r": null,
+    "refine": "3-round L-scaled repulsion + 16px eligible hole fill",
+    "dart_thinning": false,
+    "live_count": 100000,
+    "handbook_count": 50000,
+    "palette": "k=256 OKLab, unchanged this step",
+    "physics_live": "SPRING 0.055 / DAMP 0.90 / vmax 10 (Pixi H1 lock)",
+    "physics_handbook_s3": "k(r)/c(r) smoothstep field \u2014 not applied"
+  },
+  "frame_baseline_existing": {
+    "b4_1_dwell_12k_p95_ms": 0.2,
+    "b4_1_dwell_hz": 24,
+    "b4_chaos_12k_work_p95_ms": 5.3,
+    "this_vm_pixi_100k_fps": "4-15 software GL; not author-device bar",
+    "author_pc_100k": "prior session claimed 60fps; not re-measured this step",
+    "handbook_dwell_budget_delta_ms": 1.0
+  },
+  "cases": [
+    {
+      "name": "intro-dallas-100k-bin",
+      "count": 100000,
+      "field": {
+        "analysis_wh": [
+          1200,
+          1540
+        ],
+        "c_star": [
+          0.5,
+          0.5
+        ],
+        "R95": 0.599042,
+        "eligible_n": 1847999,
+        "dark_L": 0.19,
+        "dark_cull_pct": 0.0001
+      },
+      "radial": {
+        "bands": [
+          "0.0-0.3",
+          "0.3-0.6",
+          "0.6-0.85",
+          "0.85-1.0"
+        ],
+        "points": [
+          10052,
+          30758,
+          40454,
+          18736
+        ],
+        "eligible_px": [
+          187492,
+          562508,
+          746519,
+          351480
+        ],
+        "density_pts_per_eligible_px": [
+          0.05361295,
+          0.05468011,
+          0.05419018,
+          0.05330602
+        ],
+        "center_over_edge": 1.0058,
+        "design_W0_over_W1": 3.7641,
+        "pass_ge_2x": false
+      },
+      "nn_px": {
+        "n": 100000,
+        "cell_px": 1.9345,
+        "mean": 2.9918,
+        "median": 2.8931,
+        "p95": 3.8933,
+        "p99": 4.8911,
+        "max": 7.5062,
+        "p99_over_median": 1.6906,
+        "pass_p99_le_1_8_median": true,
+        "note": "5x5 hash neighborhood; distances in source pixels of the analysis image"
+      },
+      "holes_16px": {
+        "cell_px": 16,
+        "grid": [
+          75,
+          96
+        ],
+        "eligible_cells": 7200,
+        "empty_eligible": 0,
+        "empty_eligible_frac": 0.0,
+        "max_count": 27,
+        "mean_count_eligible": 13.8889,
+        "p90_count_eligible": 18.0
+      },
+      "source_image": "painting/01-dallas.jpg",
+      "live_default": true,
+      "kind": "bin",
+      "bin": "prototype/pixi-cloud/dallas-100k.bin",
+      "fileSha256": "6406d7012e7f637ad2e31661a85f619ebd14b85bb48a6341a1ec9c3a2dbcea82",
+      "payloadSha256": "1499db850a9da7856763f974ec79ff1d14be42503a66ab7fb8193954711f1880"
+    },
+    {
+      "name": "hall-scotland-100k-bin",
+      "count": 100000,
+      "field": {
+        "analysis_wh": [
+          1200,
+          1200
+        ],
+        "c_star": [
+          0.5,
+          0.5
+        ],
+        "R95": 0.599053,
+        "eligible_n": 1439999,
+        "dark_L": 0.19,
+        "dark_cull_pct": 0.0001
+      },
+      "radial": {
+        "bands": [
+          "0.0-0.3",
+          "0.3-0.6",
+          "0.6-0.85",
+          "0.85-1.0"
+        ],
+        "points": [
+          10040,
+          30603,
+          40426,
+          18931
+        ],
+        "eligible_px": [
+          146072,
+          438292,
+          581764,
+          273871
+        ],
+        "density_pts_per_eligible_px": [
+          0.06873323,
+          0.06982331,
+          0.06948866,
+          0.06912378
+        ],
+        "center_over_edge": 0.9943,
+        "design_W0_over_W1": 3.7641,
+        "pass_ge_2x": false
+      },
+      "nn_px": {
+        "n": 100000,
+        "cell_px": 1.7076,
+        "mean": 2.683,
+        "median": 2.6414,
+        "p95": 3.3986,
+        "p99": 4.2909,
+        "max": 6.7074,
+        "p99_over_median": 1.6245,
+        "pass_p99_le_1_8_median": true,
+        "note": "5x5 hash neighborhood; distances in source pixels of the analysis image"
+      },
+      "holes_16px": {
+        "cell_px": 16,
+        "grid": [
+          75,
+          75
+        ],
+        "eligible_cells": 5625,
+        "empty_eligible": 0,
+        "empty_eligible_frac": 0.0,
+        "max_count": 33,
+        "mean_count_eligible": 17.7778,
+        "p90_count_eligible": 23.0
+      },
+      "source_image": "painting/02-scotland.jpg",
+      "live_default": true,
+      "kind": "bin",
+      "bin": "prototype/pixi-hall/scotland-100k.bin",
+      "fileSha256": "bbeab899140521bad56e82766f92a3d63305b8bc8f802de22db804fad3bfcf5f",
+      "payloadSha256": "4d161d39bbf9b500e423926017287db32b2133a1f40c06b4b6fd390c7a7f0571"
+    },
+    {
+      "name": "community-met-100k-bin",
+      "count": 100000,
+      "field": {
+        "analysis_wh": [
+          1200,
+          1190
+        ],
+        "c_star": [
+          0.501449,
+          0.500991
+        ],
+        "R95": 0.592304,
+        "eligible_n": 1392676,
+        "dark_L": 0.19,
+        "dark_cull_pct": 2.4737
+      },
+      "radial": {
+        "bands": [
+          "0.0-0.3",
+          "0.3-0.6",
+          "0.6-0.85",
+          "0.85-1.0"
+        ],
+        "points": [
+          10239,
+          30071,
+          40734,
+          18956
+        ],
+        "eligible_px": [
+          141638,
+          424968,
+          562730,
+          263340
+        ],
+        "density_pts_per_eligible_px": [
+          0.07228992,
+          0.07076062,
+          0.0723864,
+          0.07198299
+        ],
+        "center_over_edge": 1.0043,
+        "design_W0_over_W1": 3.7641,
+        "pass_ge_2x": false
+      },
+      "nn_px": {
+        "n": 100000,
+        "cell_px": 1.7005,
+        "mean": 2.6592,
+        "median": 2.62,
+        "p95": 3.3764,
+        "p99": 4.2292,
+        "max": 6.5316,
+        "p99_over_median": 1.6142,
+        "pass_p99_le_1_8_median": true,
+        "note": "5x5 hash neighborhood; distances in source pixels of the analysis image"
+      },
+      "holes_16px": {
+        "cell_px": 16,
+        "grid": [
+          75,
+          74
+        ],
+        "eligible_cells": 5491,
+        "empty_eligible": 0,
+        "empty_eligible_frac": 0.0,
+        "max_count": 35,
+        "mean_count_eligible": 18.1688,
+        "p90_count_eligible": 24.0
+      },
+      "source_image": "painting/05-met-fourtrees.jpg",
+      "live_default": true,
+      "kind": "bin",
+      "bin": "prototype/pixi-community/met-100k.bin",
+      "fileSha256": "3144fdb9144d95cb0afe30f28629ec1e065bfa5022400a80e1c8e93129779a45",
+      "payloadSha256": "2e99463230c73af13e3a3b902ebe9f72034d681515a424a66afa914b52388c52"
+    },
+    {
+      "name": "intro-dallas-12k-json",
+      "count": 12000,
+      "field": {
+        "analysis_wh": [
+          1200,
+          1540
+        ],
+        "c_star": [
+          0.5,
+          0.5
+        ],
+        "R95": 0.599042,
+        "eligible_n": 1847999,
+        "dark_L": 0.19,
+        "dark_cull_pct": 0.0001
+      },
+      "radial": {
+        "bands": [
+          "0.0-0.3",
+          "0.3-0.6",
+          "0.6-0.85",
+          "0.85-1.0"
+        ],
+        "points": [
+          1252,
+          3642,
+          4847,
+          2259
+        ],
+        "eligible_px": [
+          187492,
+          562508,
+          746519,
+          351480
+        ],
+        "density_pts_per_eligible_px": [
+          0.00667762,
+          0.00647457,
+          0.0064928,
+          0.00642711
+        ],
+        "center_over_edge": 1.039,
+        "design_W0_over_W1": 3.7641,
+        "pass_ge_2x": false
+      },
+      "nn_px": {
+        "n": 12000,
+        "cell_px": 5.5844,
+        "mean": 8.8622,
+        "median": 8.5213,
+        "p95": 11.9244,
+        "p99": 14.2354,
+        "max": 21.0261,
+        "p99_over_median": 1.6706,
+        "pass_p99_le_1_8_median": true,
+        "note": "5x5 hash neighborhood; distances in source pixels of the analysis image"
+      },
+      "holes_16px": {
+        "cell_px": 16,
+        "grid": [
+          75,
+          96
+        ],
+        "eligible_cells": 7200,
+        "empty_eligible": 4,
+        "empty_eligible_frac": 0.000556,
+        "max_count": 5,
+        "mean_count_eligible": 1.6667,
+        "p90_count_eligible": 3.0
+      },
+      "source_image": "painting/01-dallas.jpg",
+      "live_default": false,
+      "kind": "json",
+      "json": "prototype/assets/points_poplars.json",
+      "fileSha256": "d35cae4c65a1c17ebbb609176b908750ff7aef5479aa7c563e7a1faf4e68d134"
+    }
+  ],
+  "cause": {
+    "weight_mismatch": "live samples by luminance, not W(r)=0.2+0.8*exp(-2.5*r)",
+    "refine_mismatch": "no dart-thinning / WSE / circle packing",
+    "hole_metric_mismatch": "live hole = empty 16px eligible cells; handbook hole = NN p99 and visible empty circles",
+    "count_conflict": "handbook S2 output 50k vs live/Pixi I-2 baseline 100k \u2014 S0 does not change count",
+    "physics_conflict": "handbook \u00a74 is not the locked spring; S3 must not silently retune 0.055"
+  },
+  "preview": "/opt/cursor/artifacts/radial_s0_dallas_bands.png"
+}
