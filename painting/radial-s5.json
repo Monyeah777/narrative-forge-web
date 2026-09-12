@@ -1,0 +1,255 @@
+{
+  "task": "S5 总验收",
+  "handbook": "docs/NF_径向重映射_总结版最终方案_v2.0.md",
+  "timestamp_note": "isolation acceptance; re-read S2c/S3/S4; #9 phases; 15s video; no live write; E not enabled",
+  "seed": 1395871795,
+  "runner": "scripts/radial-s5-accept.mjs",
+  "live_count_unchanged": 100000,
+  "palette_unchanged": true,
+  "spring_unchanged": true,
+  "wired_into_live_ticker": false,
+  "live_pixi_replaced": false,
+  "menu_E_enabled": false,
+  "locked_sources": {
+    "s2c": "painting/radial-s2c.json",
+    "s3": "painting/radial-s3.json",
+    "s4": "painting/radial-s4.json",
+    "dallas_u16": "painting/radial-s2b-dallas-50k.u16",
+    "dallas_u16_sha256": "f6df3397eb97fef511377cdf903a89544860086a78d07c1eb0191f6ff4f3add6"
+  },
+  "section8": {
+    "1_density": true,
+    "2_holes": true,
+    "3_drift": true,
+    "4_smear": true,
+    "5_reset": true,
+    "6_rate": true,
+    "7_perf_under_budget": false,
+    "7_perf_protocol": true,
+    "8_hash": true,
+    "9_phases": true,
+    "10_spectrum_optional": true
+  },
+  "s2c_table": [
+    {
+      "name": "dallas",
+      "n": 50601,
+      "center_over_edge": 2.4241,
+      "pass_8_1": true,
+      "nn_p99_over_median": 1.457,
+      "pass_8_2": true,
+      "holes_16px": 0,
+      "hash_match_s2b": true,
+      "mid_axis_over_off": 0.868,
+      "mid_pass_no_grid_spike": true
+    },
+    {
+      "name": "scotland",
+      "n": 50441,
+      "center_over_edge": 2.6127,
+      "pass_8_1": true,
+      "nn_p99_over_median": 1.55,
+      "pass_8_2": true,
+      "holes_16px": 0,
+      "hash_match_s2b": true,
+      "mid_axis_over_off": 0.7269,
+      "mid_pass_no_grid_spike": true
+    },
+    {
+      "name": "met",
+      "n": 50471,
+      "center_over_edge": 2.6351,
+      "pass_8_1": true,
+      "nn_p99_over_median": 1.5532,
+      "pass_8_2": true,
+      "holes_16px": 0,
+      "hash_match_s2b": true,
+      "mid_axis_over_off": 0.7391,
+      "mid_pass_no_grid_spike": true
+    }
+  ],
+  "s3_highlights": {
+    "center_sleep_s": 0.41666666666666663,
+    "edge_sleep_s": 1.0333333333333345,
+    "smear_p99": 0.037348403396840556,
+    "dual": true
+  },
+  "s4_highlights": {
+    "abcd_script_p95_ms": 6.47758154999998,
+    "increment_vs_b41_ms": 6.277581549999979,
+    "petition_E": {
+      "needed": true,
+      "enabled": false,
+      "options": [
+        "cut isolation count",
+        "WebGL / keep live Pixi"
+      ],
+      "reason": "A–D still over §5 +1.0ms increment and/or 修订包 2ms dwell on this VM; needs author 拍板. Did not cut N. Did not enable E. Did not rewrite live Pixi."
+    }
+  },
+  "phase9": {
+    "gating": {
+      "intro": {
+        "max": 0,
+        "center_mean": 0,
+        "edge_mean": 0,
+        "asleep": 50601
+      },
+      "handover": {
+        "max": 0,
+        "center_mean": 0,
+        "edge_mean": 0,
+        "asleep": 50601
+      },
+      "dwell": {
+        "max": 5.804337386966561,
+        "center_mean": 0,
+        "edge_mean": 2.5493099457662978,
+        "asleep": 50601
+      },
+      "repel": {
+        "max": 2.9021686934832807,
+        "center_mean": 0,
+        "edge_mean": 1.2746549728831489,
+        "asleep": 50601
+      },
+      "repel_over_dwell": 0.5,
+      "pass_intro_still": true,
+      "pass_handover_still": true,
+      "pass_dwell_edge": true,
+      "pass_repel_half": true
+    },
+    "wake": {
+      "asleep_after_dwell": 50601,
+      "asleep_after_repel": 0,
+      "asleep_after_intro": 0,
+      "pass": true
+    },
+    "reassemble": {
+      "offset_px": 24,
+      "center_sleep_s": 0.4166666666666667,
+      "edge_sleep_s": 1,
+      "pass": true
+    }
+  },
+  "dual_run": {
+    "a": "1ca653c929a8aa4d70c7fc65c430480c70cb0cdb62ba4d3c4fa477dd4e3d747e",
+    "b": "1ca653c929a8aa4d70c7fc65c430480c70cb0cdb62ba4d3c4fa477dd4e3d747e",
+    "match": true
+  },
+  "artifacts": {
+    "video": "painting/radial-s5-dwell-15s.mp4",
+    "full": "painting/radial-s5-full.png",
+    "zoom_center": "painting/radial-s5-zoom-center.png",
+    "zoom_edge": "painting/radial-s5-zoom-edge.png",
+    "frametime": "painting/radial-s5-frametime.svg",
+    "video_meta": {
+      "seconds": 15,
+      "fps": 30,
+      "frames": 450,
+      "size": "960x512",
+      "crop": {
+        "center_r": 0.299831265561689,
+        "edge_r": 1,
+        "cx": 573.4950789654383,
+        "cy": 1044.5023270008394,
+        "ex": 1113.4996566720074,
+        "ey": 1494.5061417563134
+      },
+      "edge_frames_differ": true,
+      "script_p95_ms": 14.047073999999157
+    }
+  },
+  "rollback": [
+    {
+      "key": "live.count",
+      "default": "100k bin",
+      "rollback": "keep 100k; ?bin=0 → 12k JSON. 50k isolation stays off live"
+    },
+    {
+      "key": "live.spring",
+      "default": "SPRING_SHARP=0.055",
+      "rollback": "do not load nf-radial-physics.js from index.html"
+    },
+    {
+      "key": "live.renderer",
+      "default": "Pixi ParticleContainer",
+      "rollback": "do not load nf-radial-render.js from index.html"
+    },
+    {
+      "key": "refine.mode",
+      "default": "thinning",
+      "rollback": "② WSE / ③ packing / ⑤ LEC stay dormant"
+    },
+    {
+      "key": "physics.criticalDamp",
+      "default": true,
+      "rollback": "false restores handbook c(r) (center rings)"
+    },
+    {
+      "key": "physics.drift / gating / sleep / interpolate",
+      "default": "on",
+      "rollback": "flip isolation switches only; live ticker unwired"
+    },
+    {
+      "key": "render.A-D",
+      "default": "all on in isolation",
+      "rollback": "isolation-only; live Pixi unchanged"
+    },
+    {
+      "key": "render.E",
+      "default": "petition, disabled",
+      "rollback": "do not cut N or swap live to Canvas2D without 拍板"
+    }
+  ],
+  "deviation": [
+    {
+      "item": "count",
+      "handbook": "50k",
+      "isolation": "50k u16",
+      "live": "100k NFPT bin (unchanged)"
+    },
+    {
+      "item": "spring",
+      "handbook": "k(r)/c(r) field",
+      "isolation": "k(r) + discrete c*(k)",
+      "live": "0.055 / 0.90 / vmax 10"
+    },
+    {
+      "item": "clock",
+      "handbook": "h=1/60, clamp 50ms",
+      "isolation": "handbook 50ms",
+      "live": "0.25s clamp, MAX_STEPS=2"
+    },
+    {
+      "item": "render",
+      "handbook": "ImageData A–D",
+      "isolation": "software framebuffer A–D",
+      "live": "Pixi 8.20.1"
+    },
+    {
+      "item": "E",
+      "handbook": "拍板",
+      "isolation": "petition booked, disabled",
+      "live": "already WebGL; count not cut"
+    }
+  ],
+  "c2_golden": {
+    "sha256": "dc1f16092d775ee1462c94eb964bb95523470bd7fd7770b1efab02c6940f320a",
+    "match": true
+  },
+  "live_sha256": {
+    "prototype/pixi-cloud/dallas-100k.bin": "6406d7012e7f637ad2e31661a85f619ebd14b85bb48a6341a1ec9c3a2dbcea82",
+    "prototype/pixi-hall/scotland-100k.bin": "bbeab899140521bad56e82766f92a3d63305b8bc8f802de22db804fad3bfcf5f",
+    "prototype/pixi-community/met-100k.bin": "3144fdb9144d95cb0afe30f28629ec1e065bfa5022400a80e1c8e93129779a45",
+    "painting/points.json": "d35cae4c65a1c17ebbb609176b908750ff7aef5479aa7c563e7a1faf4e68d134",
+    "prototype/assets/points.json": "d35cae4c65a1c17ebbb609176b908750ff7aef5479aa7c563e7a1faf4e68d134"
+  },
+  "live_index_spring_sharp_present": true,
+  "booked": {
+    "live_ticker": "S5 does not wire isolation physics/render into prototype/index.html",
+    "count": "50k stays isolation; live overwrite needs an extra explicit sentence",
+    "E": "S4 petition stands; S5 does not enable E",
+    "upgrade": "②/③/⑤ stay dormant"
+  }
+}

@@ -106,4 +106,10 @@ painting/*
 !painting/radial-s2c.json
 !painting/radial-s3.json
 !painting/radial-s4.json
+!painting/radial-s5.json
+!painting/radial-s5-dwell-15s.mp4
+!painting/radial-s5-full.png
+!painting/radial-s5-zoom-center.png
+!painting/radial-s5-zoom-edge.png
+!painting/radial-s5-frametime.svg
 
