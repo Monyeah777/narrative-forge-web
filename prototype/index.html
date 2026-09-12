@@ -1041,6 +1041,11 @@
          Physics firewall: tick() still calls physics(). C9 rollback = git, not ?pixi=0. */
       var pixiTrack = true;
       var pixiReady = false;
+      var radialWorld = null;
+      var radialTmp = [0, 0];
+      var radialCssW = 0;
+      var radialCssH = 0;
+      var radialPaintKey = "";
       var btnHome = document.getElementById("btn-home");
       var btnIntro = document.getElementById("btn-intro");
       var btnHall = document.getElementById("btn-hall");
@@ -1630,6 +1635,7 @@
         } else {
           window.__nfPixiLive = { track: pixiTrack, ready: false, n: N, mode: mode };
         }
+        publishRadial();
         window.__nfGetPerf = perfStats;
         animInfo.spring = SPRING;
         animInfo.damp = DAMP;
@@ -2093,6 +2099,7 @@
           z[i] = 0.18 + seedCloudRand(rng) * 0.82;
           seedVel(i, nx[i]);
         }
+        syncRadialFromLive(true);
       }
 
       function seedStats() {
@@ -2144,6 +2151,7 @@
           }
           applyPaintingTargets();
           rebuildBuckets();
+          rebuildRadialWorld();
           return;
         }
         for (i = 0; i < N; i++) {
@@ -2154,6 +2162,7 @@
         }
         applyPaintingTargets();
         rebuildBuckets();
+        rebuildRadialWorld();
       }
 
       function placeNow(fromTargets) {
@@ -2176,6 +2185,7 @@
           z[i] = 0.18 + rand() * 0.82;
           seedVel(i, nx[i]);
         }
+        syncRadialFromLive(true);
       }
 
       function snapshotHomes() {
@@ -2706,12 +2716,150 @@
       }
 
       function usesPointsBin() {
-        /* == RENDERER-SWAP == INTRO + HALL + COMMUNITY default = v3 100k bin. ?bin=0 keeps 12k JSON. */
+        /* == RENDERER-SWAP == INTRO + HALL + COMMUNITY default = v3 bin. ?bin=0 keeps 12k JSON. */
         try {
           return new URLSearchParams(window.location.search).get("bin") !== "0";
         } catch (errBin) {
           return true;
         }
+      }
+
+      function usesRadial() {
+        /* Handbook on the live site: dart-thinned 50k + §4 physics. ?radial=0 keeps 100k + 0.055. */
+        if (!usesPointsBin()) return false;
+        try {
+          return new URLSearchParams(window.location.search).get("radial") !== "0";
+        } catch (errRadial) {
+          return true;
+        }
+      }
+
+      function radialPaintingKey() {
+        if (!currentTarget || currentTarget.type === "text") return "";
+        if (currentTarget === TARGETS.INTRO || currentTarget.path === "points_poplars.json") return "dallas";
+        if (currentTarget === TARGETS.HALL || currentTarget.path === "points_artwork_b.json") return "scotland";
+        if (currentTarget === TARGETS.COMMUNITY || currentTarget.path === "points_artwork_c.json") return "met";
+        return "";
+      }
+
+      function radialR95(key) {
+        if (key === "dallas") return 0.599042;
+        if (key === "scotland") return 0.599053;
+        if (key === "met") return 0.592304;
+        return 0.6;
+      }
+
+      function radialBinPaths(kind) {
+        if (usesRadial()) {
+          if (kind === "dallas") return { bin: "pixi-cloud/dallas-radial-50k.bin", meta: "pixi-cloud/meta-radial.json" };
+          if (kind === "scotland") return { bin: "pixi-hall/scotland-radial-50k.bin", meta: "pixi-hall/meta-radial.json" };
+          return { bin: "pixi-community/met-radial-50k.bin", meta: "pixi-community/meta-radial.json" };
+        }
+        if (kind === "dallas") return { bin: "pixi-cloud/dallas-100k.bin", meta: "pixi-cloud/meta.json" };
+        if (kind === "scotland") return { bin: "pixi-hall/scotland-100k.bin", meta: "pixi-hall/meta.json" };
+        return { bin: "pixi-community/met-100k.bin", meta: "pixi-community/meta.json" };
+      }
+
+      function publishRadial() {
+        window.__nfRadial = {
+          on: !!radialWorld,
+          wanted: usesRadial(),
+          n: radialWorld ? radialWorld.n : 0,
+          liveN: N,
+          phase: radialWorld ? radialWorld.phase : "",
+          painting: radialPaintKey,
+          r95: radialPaintKey ? radialR95(radialPaintKey) : 0,
+          springSharp: SPRING_SHARP,
+          renderModule: false
+        };
+      }
+
+      function destroyRadialWorld() {
+        radialWorld = null;
+        radialCssW = 0;
+        radialCssH = 0;
+        radialPaintKey = "";
+        publishRadial();
+      }
+
+      function radialWanted() {
+        return !!(usesRadial() && window.NFRadialPhysics && radialPaintingKey() && N > 0 && !reduced);
+      }
+
+      function rebuildRadialWorld() {
+        var key = radialPaintingKey();
+        var api = window.NFRadialPhysics;
+        var nx;
+        var ny;
+        var i;
+        var cx;
+        var cy;
+        if (!radialWanted() || !key) {
+          destroyRadialWorld();
+          return;
+        }
+        layoutContain();
+        nx = new Float64Array(N);
+        ny = new Float64Array(N);
+        for (i = 0; i < N; i++) {
+          nx[i] = ntx[i];
+          ny[i] = nty[i];
+        }
+        cx = cssW > 0 ? (fitX + fitW * 0.5) / cssW : 0.5;
+        cy = cssH > 0 ? (fitY + fitH * 0.5) / cssH : 0.5;
+        radialWorld = api.createWorld({
+          n: N,
+          width: cssW,
+          height: cssH,
+          cx: cx,
+          cy: cy,
+          R95: radialR95(key),
+          seed: 0x53335033,
+          phase: api.PHASE.INTRO,
+          tx: tx,
+          ty: ty,
+          x: x,
+          y: y,
+          vx: vx,
+          vy: vy,
+          normX: nx,
+          normY: ny
+        });
+        radialCssW = cssW;
+        radialCssH = cssH;
+        radialPaintKey = key;
+        publishRadial();
+      }
+
+      function ensureRadialWorld() {
+        if (!radialWanted()) {
+          if (radialWorld) destroyRadialWorld();
+          return false;
+        }
+        if (
+          !radialWorld ||
+          radialWorld.n !== N ||
+          radialCssW !== cssW ||
+          radialCssH !== cssH ||
+          radialPaintKey !== radialPaintingKey()
+        ) {
+          rebuildRadialWorld();
+        }
+        return !!radialWorld;
+      }
+
+      function syncRadialFromLive(wake) {
+        var i;
+        if (!radialWorld || radialWorld.n !== N) return;
+        for (i = 0; i < N; i++) {
+          radialWorld.x[i] = x[i];
+          radialWorld.y[i] = y[i];
+          radialWorld.vx[i] = vx[i];
+          radialWorld.vy[i] = vy[i];
+          radialWorld.tx[i] = tx[i];
+          radialWorld.ty[i] = ty[i];
+        }
+        if (wake) radialWorld.wakeAll();
       }
 
       function recordFromPointsBin(meta, buffer) {
@@ -2774,15 +2922,18 @@
       }
 
       function loadIntroBin(t0) {
-        return loadPointsBinRecord("pixi-cloud/dallas-100k.bin", "pixi-cloud/meta.json", t0);
+        var p = radialBinPaths("dallas");
+        return loadPointsBinRecord(p.bin, p.meta, t0);
       }
 
       function loadHallBin(t0) {
-        return loadPointsBinRecord("pixi-hall/scotland-100k.bin", "pixi-hall/meta.json", t0);
+        var p = radialBinPaths("scotland");
+        return loadPointsBinRecord(p.bin, p.meta, t0);
       }
 
       function loadCommunityBin(t0) {
-        return loadPointsBinRecord("pixi-community/met-100k.bin", "pixi-community/meta.json", t0);
+        var p = radialBinPaths("met");
+        return loadPointsBinRecord(p.bin, p.meta, t0);
       }
 
       function loadTargetRecord(target) {
@@ -2960,6 +3111,7 @@
             vx[i] = 0;
             vy[i] = 0;
           }
+          rebuildRadialWorld();
         }
         paintVoid();
         if (booted) placeDust();
@@ -3032,6 +3184,7 @@
         for (i = 0; i < N; i++) lockTo(i, tx[i], ty[i]);
         toNorm();
         activeCount = 0;
+        syncRadialFromLive(true);
       }
 
       function handoverEnabled() {
@@ -3219,6 +3372,7 @@
         handoverLive = false;
         publishHandover(true);
         if (window.__nfHandover) window.__nfHandover.tail_locks = tail;
+        syncRadialFromLive(true);
         setMode("formed");
       }
 
@@ -3446,6 +3600,67 @@
         vy[i] += (dy / dist) * f;
       }
 
+      function applyRadialPhysics(live, assembling, formed) {
+        var i;
+        var phase;
+        var settled = 0;
+        var unlocked;
+        if (!ensureRadialWorld()) return false;
+        phase = live ? "REPEL" : (assembling ? "INTRO" : "DWELL");
+        radialWorld.setPhase(phase);
+        for (i = 0; i < N; i++) {
+          radialWorld.tx[i] = tx[i];
+          radialWorld.ty[i] = ty[i];
+          x[i] = radialWorld.x[i];
+          y[i] = radialWorld.y[i];
+          vx[i] = radialWorld.vx[i];
+          vy[i] = radialWorld.vy[i];
+        }
+        if (live) {
+          for (i = 0; i < N; i++) applyRepel(i, true);
+          for (i = 0; i < N; i++) {
+            radialWorld.x[i] = x[i];
+            radialWorld.y[i] = y[i];
+            radialWorld.vx[i] = vx[i];
+            radialWorld.vy[i] = vy[i];
+          }
+          radialWorld.wakeAll();
+        }
+        radialWorld.drain(DT);
+        activeCount = 0;
+        for (i = 0; i < N; i++) {
+          radialWorld.renderXY(i, radialTmp);
+          x[i] = radialTmp[0];
+          y[i] = radialTmp[1];
+          vx[i] = radialWorld.vx[i];
+          vy[i] = radialWorld.vy[i];
+          healParticle(i);
+          unlocked = true;
+          if (assembling && !live) {
+            if (
+              Math.abs(radialWorld.tx[i] - radialWorld.x[i]) < STOP_PX &&
+              Math.abs(radialWorld.ty[i] - radialWorld.y[i]) < STOP_PX &&
+              Math.abs(radialWorld.vx[i]) < STOP_V &&
+              Math.abs(radialWorld.vy[i]) < STOP_V
+            ) {
+              settled++;
+              unlocked = false;
+            }
+          }
+          if (unlocked) activeCount++;
+        }
+        if (formed) activeCount = N;
+        phaseElapsed += DT;
+        if (assembling && N > 0) {
+          if (phaseElapsed >= assembleBudgetS || (phaseElapsed >= Math.min(ASSEMBLE_MIN_S, assembleBudgetS) && settled / N >= 0.97)) {
+            snapAllToTargets();
+            setMode("formed");
+          }
+        }
+        publishRadial();
+        return true;
+      }
+
       function physics() {
         var live;
         var assembling;
@@ -3466,6 +3681,9 @@
         mx += (mxT - mx) * POINTER_LERP;
         my += (myT - my) * POINTER_LERP;
         refreshCurlGrid(lastT * 0.001);
+        if ((assembling || formed) && applyRadialPhysics(live, assembling, formed)) {
+          return;
+        }
         activeCount = 0;
         for (i = 0; i < N; i++) {
           applyRepel(i, live);
@@ -3518,6 +3736,7 @@
       function shouldStopLoop() {
         if (frozen || reduced) return true;
         if (pixiTrack) {
+          if (radialWorld && (mode === "formed" || mode === "assemble")) return false;
           if (mode === "formed" && activeCount === 0 && !pointerLive() && !handoverLive) return true;
           return false;
         }
@@ -3786,6 +4005,7 @@
 
       function beginAssemble() {
         handoverLive = false;
+        syncRadialFromLive(true);
         if (exhibit.phase === "intro" && exhibitManifest.transition && exhibitManifest.transition.group === "develop") {
           assembleBudgetS = (exhibitManifest.introRevealMs || 2400) / 1000;
         } else {
@@ -3993,6 +4213,13 @@
         });
       }
 
+      function ensureRadialPhysics() {
+        if (!usesRadial()) return Promise.resolve();
+        return loadScriptOnce("pixi-physics/nf-radial-physics.js").catch(function (err) {
+          console.warn("[nf-radial] physics module failed", err);
+        });
+      }
+
       function ensurePixi() {
         if (!pixiTrack) return Promise.resolve();
         return loadScriptOnce("vendor/pixi.min.js")
@@ -4144,7 +4371,7 @@
         freezeLoaded(coerced, timings);
         publishTarget(TARGETS.INTRO, coerced);
         return buildPaletteAtlas().then(function () {
-          return ensurePixi();
+          return Promise.all([ensurePixi(), ensureRadialPhysics()]);
         }).then(function () {
           boot(coerced.points);
         }).catch(function (err) {

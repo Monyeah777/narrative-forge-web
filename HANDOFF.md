@@ -10,7 +10,7 @@
 
 ## 当前进度（云端 Track A）
 
-手册 **§5 已完成**（真机试炼 / bench.html 协议）。B4 / B4.1 已过闸。自动放映修订包 §9.0–§9.6 已交付。作者点名《PixiJS v8 迁移总手册》最高严谨模式：现网默认 Pixi + ticker。现网三幅画作默认都是 **100k bin**（介绍 Dallas / 大厅 Scotland / 社区 Met）。NF 彩蛋仍 12k JSON。`?bin=0` 回滚介绍+大厅+社区 12k。弹簧 / physics **未改**。现网 Canvas2D 粒子 blit / worker 启动已拆除（`render-worker.js` 文件仍留仓）。150k/250k 仍只在隔离对照页。2026-09-12 已批准：原生 DPR≤3、`points.bin` 文件头 9B（`NFPT` + u8=3 + u32le count）、点数终值按作者 PC+手机双端 60fps 定档。现网仍 100k，不以云 VM 软件 GL 改档。径向重映射 **S0–S5 已落盘**（隔离总验收）。§8#1–#6/#8/#10 过；#7 预算未进、E 申议未启用；#9 只验隔离相位门控，未挂现网 ticker。现网仍 100k / 弹簧 0.055 / Pixi。手册五闸已齐。未点名不得写现网 50k、启用 E、或把隔离模块挂进 `index.html`。只说「继续」也不够改现网点数量。其它待点名：§0.9 白名单 / 无 WebGL 文案 / PC 实验性 API / 作者机双端 60fps 数字后改现网点数量。
+手册 **§5 已完成**（真机试炼 / bench.html 协议）。B4 / B4.1 已过闸。自动放映修订包 §9.0–§9.6 已交付。作者点名《PixiJS v8 迁移总手册》最高严谨模式：现网默认 Pixi + ticker。作者再点名「在网站的基础上执行」手册后，介绍/大厅/社区默认 S2b dart-thinning **50k NFPT** + §4 径向物理；100k bin 仍留仓。NF 彩蛋仍 12k JSON。`?radial=0` 回 100k + `applySpring` 0.055；`?bin=0` 回 12k JSON。`SPRING_SHARP = 0.055` / C2 黄金未改。现网 Canvas2D 粒子 blit / worker 启动已拆除（`render-worker.js` 文件仍留仓）。150k/250k 仍只在隔离对照页。2026-09-12 已批准：原生 DPR≤3、`points.bin` 文件头 9B（`NFPT` + u8=3 + u32le count）。径向重映射 **S0–S5 隔离闸已齐**；现网接线在 `cursor/radial-live-wire-84d9`（叠在 `cursor/radial-s5-accept-84d9` 上）。Pixi 仍画；**不**加载 `nf-radial-render.js`；E 申议未启用。证据 `painting/radial-live.json`。其它待点名：§0.9 白名单 / 无 WebGL 文案 / PC 实验性 API / 作者机双端 60fps 数字后改档 / 启用 E。
 
 - 凌厉弹簧 0.055 / 阻尼 0.90 / vmax 10；临界停止 0.6px / 0.06；驱离 100px 平方反比
 - 成画 1.5s（最早 1.2s）、回退 1.1s；相位时间走固定步长，冻结不计入
@@ -55,7 +55,8 @@
 - 径向重映射 S2c：分支 `cursor/radial-s2c-qc-84d9`（叠在 `cursor/radial-s2b-thinning-84d9` 上）。复读 S2b u16。§8#1/#2/#8 过；可选频谱中带方窗无栅格峰。不触发 ②/⑤。现网 sha 未变。证据 `painting/radial-s2c.json`。
 - 径向重映射 S3：分支 `cursor/radial-s3-physics-84d9`（叠在 `cursor/radial-s2c-qc-84d9` 上）。隔离 `nf-radial-physics.js`，全开关，60/120Hz。#3/#4/#5/#6/#8 过。#5 用离散临界 `c*(k)`；手册 `c(r)` 对照仍振荡。现网弹簧 / ticker / 100k 未动。证据 `painting/radial-s3.json`。
 - 径向重映射 S4：分支 `cursor/radial-s4-render-84d9`（叠在 `cursor/radial-s3-physics-84d9` 上）。隔离 `nf-radial-render.js`，菜单 A→D 每步 bench。A–D 后脚本 p95 6.48ms，超 +1.0ms / 2ms，**申议 E 未启用**。未替换现网 Pixi。证据 `painting/radial-s4.json`。
-- 径向重映射 S5：本条分支 `cursor/radial-s5-accept-84d9`（叠在 `cursor/radial-s4-render-84d9` 上）。隔离总验收：§8 全表、15s 录像、放大、帧时、回退清单。未挂现网 ticker，未写 50k，未启用 E。证据 `painting/radial-s5.json`。
+- 径向重映射 S5：分支 `cursor/radial-s5-accept-84d9`（叠在 `cursor/radial-s4-render-84d9` 上）。隔离总验收：§8 全表、15s 录像、放大、帧时、回退清单。证据 `painting/radial-s5.json`。
+- 现网径向接线：本条分支 `cursor/radial-live-wire-84d9`（叠在 `cursor/radial-s5-accept-84d9` 上）。默认 50k + §4 物理 + Pixi。回退 `?radial=0`。不加载隔离 ImageData 渲染。证据 `painting/radial-live.json`。
 
 ---
 
@@ -163,12 +164,13 @@ Next.js 16，API 与训练记忆可能不同。改 Next 代码前读 `node_modul
 - `prototype/index.html` 引擎
 - `prototype/assets/points.json` 仍保留 Dallas 12k（与 `painting/points.json` 同字节，兼容旧链接）
 - `prototype/assets/points_poplars.json` INTRO；`points_artwork_b.json` HALL；`points_artwork_c.json` COMMUNITY；`points_nf.json` EGG（v2，`#C9CFD8`/`#6F8FAF`）
+- 现网默认 bin：`prototype/pixi-cloud/dallas-radial-50k.bin`、`pixi-hall/scotland-radial-50k.bin`、`pixi-community/met-radial-50k.bin`（S2b u16 原样拷进 NFPT；100k bin 仍留仓）
 - `prototype/points.json` 仍是 NF 字形生成物（约 1630 `{x,y}`），**不再被 live fetch**
 - `prototype/gen-points.mjs` 确定性栅格 **N / F**（mulberry32 seed `0x4e46`）
 
 规格要作者选定的 Monet 英雄图。B1-1 六张 1200px 已齐；B1-2 采成 12k；B1-4 接到 fetch；B2 已 12k 调色盘上屏（contain）；B3 已改凌厉弹簧与可打断时序。
 
-数量：默认 **12,000** 全量；`?fx=lite` 才降到 2000 做评测对照。
+数量：介绍/大厅/社区默认径向 **~50k**（Dallas 50601 / Scotland 50441 / Met 50471）；`?radial=0` 回 100k；`?bin=0` 回 12k JSON；`?fx=lite` 才降到 2000 做评测对照。彩蛋仍约 12k 字形 JSON。
 
 物理常量（B3 凌厉组 · 默认）：
 
@@ -180,7 +182,7 @@ STOP_PX 0.6  STOP_V 0.06  ASSEMBLE 1.5s  DISPERSE 1.1s
 POINTER_LERP 0.2  SIZES [2,3,4]
 ```
 
-成画停留：自动放映开启且 `motion.discipline=v2` 时按三态纪律（停留用超时器推进、可见才走 rAF）；classic / 手动且无指针时仍可停 rAF。指针靠近仍驱离（半径 100px，冻结关闭）。混沌态环面包裹。SETTINGS 可切 A/B/C。
+成画停留：径向默认开时停留继续走 ticker（边缘漂移是渲染位，不写入积分器）。`?radial=0` 时仍可在 settled 后停 ticker。指针靠近仍走现网驱离（半径 100px，冻结关闭）。混沌 / 交接 / 彩蛋仍走原弹簧。SETTINGS 可切 A/B/C（只作用于回退弹簧路径）。
 
 精灵：调色板软边图集（中心 α≈0.85），ImageBitmap，按亮度 2/3/4px，按色分桶绘制。
 
@@ -261,4 +263,4 @@ POINTER_LERP 0.2  SIZES [2,3,4]
 
 1. 打开 http://localhost:8768/ 看现行原型（没有服务就在 `prototype/` 起 python http.server）。
 2. 读 `prototype/index.html` 的 CSS 报章区 + `openArchive` / `triggerEgg`，不要重写引擎。
-3. 只做用户这一次点名的事。现网默认 Pixi，介绍/大厅/社区默认 100k bin。`points.bin` 现有 9B `NFPT` 头。不要改弹簧。不要删 `physics()` / `applySpring`。径向重映射 S0–S5 已落盘。未点名不得写现网 50k、启用 E、或挂隔离模块进现网。
+3. 只做用户这一次点名的事。现网默认 Pixi + 径向 50k（介绍/大厅/社区）。`?radial=0` 回 100k + 弹簧 0.055。`?bin=0` 回 12k JSON。`points.bin` 现有 9B `NFPT` 头。不要改 `SPRING_SHARP`。不要删 `physics()` / `applySpring`。不要启用 E，不要把现网换成 S4 ImageData。

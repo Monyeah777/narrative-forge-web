@@ -1,12 +1,16 @@
 /**
- * NF radial physics for S3 (isolation only).
+ * NF radial physics (S3 isolation + live Pixi wire).
  *
  * Handbook §4: fixed h=1/60, k(r)/c(r) field, optional anisotropy,
  * Simplex drift (render-only), 64×64 @30Hz LUT, sleep, state gating.
  *
- * Does NOT replace live applySpring (0.055 / 0.90 / vmax 10 / C2 golden).
- * Do not load this from prototype/index.html unless a later gate wires a
- * default-off switch. This file is the isolated physics module.
+ * Isolation defaults are unchanged. Optional `normX`/`normY` (or setNorm)
+ * let live compute r in painting-normalized 0–1 while x/T stay CSS pixels.
+ * Without those arrays, r still uses tx/width and ty/height (S3 hashes).
+ *
+ * Live: prototype/index.html loads this when radial is on (default).
+ * Rollback `?radial=0` keeps applySpring 0.055 / 100k bins / C2 golden.
+ * Do not load nf-radial-render.js on the live path (S4 over budget; E off).
  *
  * Clock: Gaffer accumulator + handbook 50ms clamp (not live 0.25s / MAX_STEPS=2).
  * k,c are 1/60-step coefficients. Never scale them by display dt.
@@ -304,21 +308,37 @@
     prevX.set(x);
     prevY.set(y);
 
+    var normX = opts.normX || null;
+    var normY = opts.normY || null;
+
     function refreshR() {
       var k;
       var nx;
       var ny;
       var d;
       var v;
+      var useNorm = !!(normX && normY);
       for (k = 0; k < n; k++) {
-        nx = tx[k] / width;
-        ny = ty[k] / height;
-        d = Math.hypot(nx - cx, ny - cy);
+        if (useNorm) {
+          nx = normX[k];
+          ny = normY[k];
+          d = Math.hypot(nx - 0.5, ny - 0.5);
+        } else {
+          nx = tx[k] / width;
+          ny = ty[k] / height;
+          d = Math.hypot(nx - cx, ny - cy);
+        }
         v = d / r95;
         if (v < 0) v = 0;
         if (v > 1) v = 1;
         rr[k] = v;
       }
+    }
+
+    function setNorm(nextX, nextY) {
+      normX = nextX || null;
+      normY = nextY || null;
+      refreshR();
     }
 
     refreshR();
@@ -616,6 +636,7 @@
         return acc;
       },
       setPhase: setPhase,
+      setNorm: setNorm,
       wakeAll: wakeAll,
       refreshR: refreshR,
       stepFixed: stepFixed,
