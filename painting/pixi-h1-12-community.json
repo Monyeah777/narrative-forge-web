@@ -1,0 +1,318 @@
+{
+  "task": "H1-⑫ live COMMUNITY 100k Met v3 bin",
+  "handbook": "docs/NF_PixiJS迁移总手册_整合版_v1_2026-09-11.md",
+  "timestamp": "2026-09-12T09:30:27.015Z",
+  "vendorSha": "9948591083793305468d73915a3ea85032dcf8e32eee7a1328585050d7a14d53",
+  "golden": {
+    "command": "dc1f16092d775ee1462c94eb964bb95523470bd7fd7770b1efab02c6940f320a  /workspace/prototype/pixi-physics/golden-1000.f64",
+    "frozenSha": "dc1f16092d775ee1462c94eb964bb95523470bd7fd7770b1efab02c6940f320a",
+    "runSha": "dc1f16092d775ee1462c94eb964bb95523470bd7fd7770b1efab02c6940f320a",
+    "pass": true
+  },
+  "bins": {
+    "dallas": {
+      "file": "prototype/pixi-cloud/dallas-100k.bin",
+      "command": {
+        "sha256sum": "1499db850a9da7856763f974ec79ff1d14be42503a66ab7fb8193954711f1880  /workspace/prototype/pixi-cloud/dallas-100k.bin",
+        "wc": "500000 /workspace/prototype/pixi-cloud/dallas-100k.bin",
+        "gzip9": "498860"
+      },
+      "sha": "1499db850a9da7856763f974ec79ff1d14be42503a66ab7fb8193954711f1880",
+      "sidecarSha": "1499db850a9da7856763f974ec79ff1d14be42503a66ab7fb8193954711f1880",
+      "bytes": 500000,
+      "gzip9": 498860,
+      "count": 100000,
+      "pass": true
+    },
+    "scotland": {
+      "file": "prototype/pixi-hall/scotland-100k.bin",
+      "command": {
+        "sha256sum": "4d161d39bbf9b500e423926017287db32b2133a1f40c06b4b6fd390c7a7f0571  /workspace/prototype/pixi-hall/scotland-100k.bin",
+        "wc": "500000 /workspace/prototype/pixi-hall/scotland-100k.bin",
+        "gzip9": "500116"
+      },
+      "sha": "4d161d39bbf9b500e423926017287db32b2133a1f40c06b4b6fd390c7a7f0571",
+      "sidecarSha": "4d161d39bbf9b500e423926017287db32b2133a1f40c06b4b6fd390c7a7f0571",
+      "bytes": 500000,
+      "gzip9": 500116,
+      "count": 100000,
+      "pass": true
+    },
+    "met": {
+      "file": "prototype/pixi-community/met-100k.bin",
+      "command": {
+        "sha256sum": "2e99463230c73af13e3a3b902ebe9f72034d681515a424a66afa914b52388c52  /workspace/prototype/pixi-community/met-100k.bin",
+        "wc": "500000 /workspace/prototype/pixi-community/met-100k.bin",
+        "gzip9": "499755"
+      },
+      "sha": "2e99463230c73af13e3a3b902ebe9f72034d681515a424a66afa914b52388c52",
+      "sidecarSha": "2e99463230c73af13e3a3b902ebe9f72034d681515a424a66afa914b52388c52",
+      "bytes": 500000,
+      "gzip9": 499755,
+      "count": 100000,
+      "pass": true
+    }
+  },
+  "grepPage": {
+    "hits": {
+      "at_pixi": false,
+      "sprite": false,
+      "addChild_particle": false,
+      "beginFill": false,
+      "app_view": false,
+      "ctor_options": false,
+      "second_raf": false
+    },
+    "required": {
+      "addParticle": true,
+      "particle": true,
+      "boundsArea": true,
+      "update": true,
+      "soft128": true,
+      "scale_3_128": true,
+      "hook": true
+    },
+    "pass": true
+  },
+  "liveGrep": {
+    "has_physics": true,
+    "has_apply_spring": true,
+    "spring": true,
+    "no_raf_tick": true,
+    "uses_dallas": true,
+    "uses_scotland": true,
+    "uses_met": true,
+    "no_150k_live": true,
+    "no_250k_live": true,
+    "dataview_bridge": true,
+    "rollback": true,
+    "egg_json": true,
+    "pass": true
+  },
+  "isolated": {
+    "community": {
+      "ok": true,
+      "version": "8.20.1",
+      "rendererName": "webgl",
+      "count": 100000,
+      "id": "four-trees-met",
+      "stageChildren": 1,
+      "usedAddParticle": true,
+      "usedSprite": false,
+      "softDot": 128,
+      "view": {
+        "w": 640,
+        "h": 635
+      },
+      "sha256": "2e99463230c73af13e3a3b902ebe9f72034d681515a424a66afa914b52388c52",
+      "ticks": 23,
+      "fps": 20,
+      "tickerStarted": true,
+      "errors": []
+    },
+    "pageErrors": [],
+    "screenshot": "/opt/cursor/artifacts/pixi_h1_12_community_iso_100k.png"
+  },
+  "live": {
+    "intro": {
+      "live": {
+        "ready": true,
+        "version": "8.20.1",
+        "rendererName": "webgl",
+        "count": 100000,
+        "tickerStarted": true,
+        "fps": 8.57632933104642,
+        "priority": "HIGH",
+        "contextLost": false,
+        "usedCanvas": true,
+        "softDot": 128,
+        "track": true,
+        "ok": true,
+        "usedSecondRaf": false,
+        "workerBlit": false,
+        "n": 100000,
+        "mode": "chaos",
+        "ticks": 181,
+        "spring": 0.055,
+        "livePhysics": true
+      },
+      "points": {
+        "id": "poplars-dallas",
+        "count": 100000,
+        "source": "bin",
+        "w": 2400,
+        "h": 3080
+      },
+      "target": {
+        "key": "INTRO",
+        "type": "image",
+        "path": "points_poplars.json",
+        "palette": "source",
+        "text": "",
+        "id": "poplars-dallas"
+      },
+      "mode": "chaos",
+      "n": 100000
+    },
+    "hall": {
+      "live": {
+        "ready": true,
+        "version": "8.20.1",
+        "rendererName": "webgl",
+        "count": 100000,
+        "tickerStarted": false,
+        "fps": 11.990407673860702,
+        "priority": "HIGH",
+        "contextLost": false,
+        "usedCanvas": true,
+        "softDot": 128,
+        "track": true,
+        "ok": true,
+        "usedSecondRaf": false,
+        "workerBlit": false,
+        "n": 100000,
+        "mode": "formed",
+        "ticks": 260,
+        "spring": 0.055,
+        "livePhysics": true
+      },
+      "points": {
+        "id": "poplars-scotland",
+        "count": 100000,
+        "source": "bin",
+        "w": 2400,
+        "h": 2400
+      },
+      "target": {
+        "key": "HALL",
+        "type": "image",
+        "path": "points_artwork_b.json",
+        "palette": "source",
+        "text": "",
+        "id": "poplars-scotland"
+      },
+      "mode": "formed",
+      "n": 100000
+    },
+    "community": {
+      "live": {
+        "ready": true,
+        "version": "8.20.1",
+        "rendererName": "webgl",
+        "count": 100000,
+        "tickerStarted": false,
+        "fps": 10,
+        "priority": "HIGH",
+        "contextLost": false,
+        "usedCanvas": true,
+        "softDot": 128,
+        "track": true,
+        "ok": true,
+        "usedSecondRaf": false,
+        "workerBlit": false,
+        "n": 100000,
+        "mode": "formed",
+        "ticks": 306,
+        "spring": 0.055,
+        "livePhysics": true
+      },
+      "points": {
+        "id": "four-trees-met",
+        "count": 100000,
+        "source": "bin",
+        "w": 2420,
+        "h": 2400
+      },
+      "target": {
+        "key": "COMMUNITY",
+        "type": "image",
+        "path": "points_artwork_c.json",
+        "palette": "source",
+        "text": "",
+        "id": "four-trees-met"
+      },
+      "mode": "formed",
+      "n": 100000
+    },
+    "rollbackCommunity": {
+      "live": {
+        "ready": true,
+        "version": "8.20.1",
+        "rendererName": "webgl",
+        "count": 12000,
+        "tickerStarted": false,
+        "fps": 59.88023952095792,
+        "priority": "HIGH",
+        "contextLost": false,
+        "usedCanvas": true,
+        "softDot": 128,
+        "track": true,
+        "ok": true,
+        "usedSecondRaf": false,
+        "workerBlit": false,
+        "n": 12000,
+        "mode": "formed",
+        "ticks": 85,
+        "spring": 0.055,
+        "livePhysics": true
+      },
+      "points": {
+        "id": "four-trees-met",
+        "count": 12000,
+        "source": "fetch",
+        "w": 1200,
+        "h": 1190
+      },
+      "target": {
+        "key": "COMMUNITY",
+        "type": "image",
+        "path": "points_artwork_c.json",
+        "palette": "source",
+        "text": "",
+        "id": "four-trees-met"
+      },
+      "mode": "formed",
+      "n": 12000
+    },
+    "introErrors": [],
+    "rollbackErrors": []
+  },
+  "screenshots": {
+    "iso_100k": "/opt/cursor/artifacts/pixi_h1_12_community_iso_100k.png",
+    "live_intro_100k": "/opt/cursor/artifacts/pixi_h1_12_live_intro_100k.png",
+    "live_hall_100k": "/opt/cursor/artifacts/pixi_h1_12_live_hall_100k.png",
+    "live_community_100k": "/opt/cursor/artifacts/pixi_h1_12_live_community_100k.png",
+    "live_bin0_community_12k": "/opt/cursor/artifacts/pixi_h1_12_live_bin0_community_12k.png"
+  },
+  "note": {
+    "intro": "Dallas 100k bin unchanged",
+    "hall": "Scotland 100k bin unchanged",
+    "community": "Met 100k bin is live default; ?bin=0 keeps 12k JSON",
+    "egg": "still points_nf.json",
+    "fps": "this-VM software GL is not the author-device 60fps bar"
+  },
+  "acceptance": {
+    "vendor_lock": true,
+    "golden_sha": true,
+    "dallas_frozen": true,
+    "scotland_frozen": true,
+    "met_bin": true,
+    "grep_page": true,
+    "live_grep": true,
+    "iso_ok": true,
+    "iso_webgl": true,
+    "iso_version": true,
+    "iso_no_pageerror": true,
+    "intro_dallas": true,
+    "hall_scotland": true,
+    "community_met": true,
+    "community_formed": true,
+    "community_target": true,
+    "rollback_community_12k": true,
+    "no_pageerror_live": true,
+    "no_pageerror_rollback": true,
+    "physics_kept": true,
+    "spring_lock": true,
+    "pass": true
+  }
+}
