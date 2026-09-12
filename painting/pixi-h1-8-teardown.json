@@ -1,0 +1,115 @@
+{
+  "task": "H1-⑧ teardown old Canvas2D clock/render exit",
+  "handbook": "docs/NF_PixiJS迁移总手册_整合版_v1_2026-09-11.md",
+  "timestamp": "2026-09-12T08:55:55.173Z",
+  "vendorSha": "9948591083793305468d73915a3ea85032dcf8e32eee7a1328585050d7a14d53",
+  "golden": {
+    "command": "dc1f16092d775ee1462c94eb964bb95523470bd7fd7770b1efab02c6940f320a  /workspace/prototype/pixi-physics/golden-1000.f64",
+    "frozenSha": "dc1f16092d775ee1462c94eb964bb95523470bd7fd7770b1efab02c6940f320a",
+    "runSha": "dc1f16092d775ee1462c94eb964bb95523470bd7fd7770b1efab02c6940f320a",
+    "pass": true
+  },
+  "liveGrep": {
+    "has_physics": true,
+    "has_apply_spring": true,
+    "spring": true,
+    "no_raf_tick": true,
+    "ticker_start": true,
+    "renderer_swap": true,
+    "worker_file_kept": true,
+    "pass": true
+  },
+  "default": {
+    "live": {
+      "ready": true,
+      "version": "8.20.1",
+      "rendererName": "webgl",
+      "count": 12000,
+      "tickerStarted": false,
+      "fps": 59.88023952095792,
+      "priority": "HIGH",
+      "contextLost": false,
+      "usedCanvas": true,
+      "softDot": 128,
+      "track": true,
+      "ok": true,
+      "usedSecondRaf": false,
+      "workerBlit": false,
+      "n": 12000,
+      "mode": "formed",
+      "ticks": 84,
+      "spring": 0.055,
+      "livePhysics": true
+    },
+    "mode": "formed",
+    "runtime": {
+      "pixi": "object",
+      "version": "8.20.1",
+      "workerBlit": false,
+      "scripts": [
+        "http://127.0.0.1:8785/vendor/pixi.min.js",
+        "http://127.0.0.1:8785/renderer.pixi.js",
+        ""
+      ]
+    },
+    "pageErrors": []
+  },
+  "pixi0_ignored": {
+    "live": {
+      "ready": true,
+      "version": "8.20.1",
+      "rendererName": "webgl",
+      "count": 12000,
+      "tickerStarted": false,
+      "fps": 59.88023952095792,
+      "priority": "HIGH",
+      "contextLost": false,
+      "usedCanvas": true,
+      "softDot": 128,
+      "track": true,
+      "ok": true,
+      "usedSecondRaf": false,
+      "workerBlit": false,
+      "n": 12000,
+      "mode": "formed",
+      "ticks": 87,
+      "spring": 0.055,
+      "livePhysics": true
+    },
+    "mode": "formed",
+    "runtime": {
+      "pixi": "object",
+      "version": "8.20.1",
+      "workerBlit": false,
+      "scripts": [
+        "http://127.0.0.1:8785/vendor/pixi.min.js",
+        "http://127.0.0.1:8785/renderer.pixi.js",
+        ""
+      ]
+    },
+    "pageErrors": []
+  },
+  "screenshots": {
+    "default": "/opt/cursor/artifacts/pixi_h1_8_teardown_default.png",
+    "pixi0_ignored": "/opt/cursor/artifacts/pixi_h1_8_teardown_pixi0_ignored.png"
+  },
+  "acceptance": {
+    "vendor_lock": true,
+    "golden_sha": true,
+    "live_grep": true,
+    "no_raf_tick": true,
+    "physics_kept": true,
+    "default_pixi": true,
+    "default_webgl": true,
+    "default_high": true,
+    "default_count": true,
+    "default_formed": true,
+    "default_no_worker": true,
+    "default_no_second_raf": true,
+    "default_no_pageerror": true,
+    "pixi0_still_pixi": true,
+    "pixi0_formed": true,
+    "pixi0_no_pageerror": true,
+    "pass": true
+  }
+}
