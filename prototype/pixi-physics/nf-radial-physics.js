@@ -10,6 +10,10 @@
  *
  * Clock: Gaffer accumulator + handbook 50ms clamp (not live 0.25s / MAX_STEPS=2).
  * k,c are 1/60-step coefficients. Never scale them by display dt.
+ *
+ * #5 settle: the handbook pair (k=0.10, c=0.92) is discrete-underdamped.
+ * Default `criticalDamp` uses the unique c*(k)=1/(1+√k)² of THIS integrator
+ * (discriminant of λ²−(1+c−ck)λ+c set to 0). Handbook c(r) stays as a switch.
  */
 (function (root) {
   "use strict";
@@ -40,6 +44,7 @@
   var SWITCH_DEFAULTS = {
     field: true,
     anisotropy: true,
+    criticalDamp: true,
     drift: true,
     noiseLut: true,
     sleep: true,
@@ -78,6 +83,18 @@
 
   function cOfS(s) {
     return C0 - C_SPAN * s;
+  }
+
+  /** Discrete-critical multiplier for v←(v+k·(T−x))·c at one fixed step. */
+  function cCrit(k) {
+    if (!(k > 0)) return 1;
+    var s = Math.sqrt(k);
+    return 1 / ((1 + s) * (1 + s));
+  }
+
+  function discKc(k, c) {
+    var tr = 1 + c - c * k;
+    return tr * tr - 4 * c;
   }
 
   function aOfR(r) {
@@ -428,6 +445,7 @@
         k = K0;
         c = C0;
       }
+      if (sw.criticalDamp) c = cCrit(k);
 
       vx[idx] += (tx[idx] - x[idx]) * k;
       vy[idx] += (ty[idx] - y[idx]) * k;
@@ -445,6 +463,11 @@
           delta = DELTA0 * S;
           cr = c + delta;
           ct = c - delta;
+          if (sw.criticalDamp) {
+            var cc = cCrit(k);
+            if (cr > cc) cr = cc;
+            if (ct > cc) ct = cc;
+          }
           vx[idx] = vrad * rx * cr + vtx * ct;
           vy[idx] = vrad * ry * cr + vty * ct;
         } else {
@@ -622,6 +645,8 @@
     smoothstep: smoothstep,
     kOfS: kOfS,
     cOfS: cOfS,
+    cCrit: cCrit,
+    discKc: discKc,
     aOfR: aOfR,
     mergeSwitches: mergeSwitches,
     makeSimplex: makeSimplex,

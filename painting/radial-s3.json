@@ -1,7 +1,7 @@
 {
   "task": "S3 物理层",
   "handbook": "docs/NF_径向重映射_总结版最终方案_v2.0.md",
-  "timestamp_note": "isolation module + 60/120Hz regression; no live write; live spring 0.055 untouched",
+  "timestamp_note": "isolation module + 60/120Hz; default discrete-critical c*(k); no live write; live 0.055 untouched",
   "seed": 1395871795,
   "module": "prototype/pixi-physics/nf-radial-physics.js",
   "runner": "scripts/radial-s3-physics.mjs",
@@ -26,6 +26,7 @@
   "switches_default": {
     "field": true,
     "anisotropy": true,
+    "criticalDamp": true,
     "drift": true,
     "noiseLut": true,
     "sleep": true,
@@ -38,61 +39,296 @@
       "r": 0,
       "S": 0,
       "k": 0.1,
-      "c": 0.92,
+      "c_handbook": 0.92,
+      "c_crit": 0.577215,
+      "D_handbook": -0.338416,
+      "D_crit": 0,
       "A": 0
     },
     {
       "r": 0.5,
       "S": 0,
       "k": 0.1,
-      "c": 0.92,
+      "c_handbook": 0.92,
+      "c_crit": 0.577215,
+      "D_handbook": -0.338416,
+      "D_crit": 0,
       "A": 0
     },
     {
       "r": 0.69,
       "S": 0.5,
       "k": 0.06,
-      "c": 0.85,
+      "c_handbook": 0.85,
+      "c_crit": 0.645204,
+      "D_handbook": -0.163599,
+      "D_crit": 0,
       "A": 1.605828
     },
     {
       "r": 0.88,
       "S": 1,
       "k": 0.02,
-      "c": 0.78,
+      "c_handbook": 0.78,
+      "c_crit": 0.767552,
+      "D_handbook": -0.006893,
+      "D_crit": 0,
       "A": 4.837325
     },
     {
       "r": 1,
       "S": 1,
       "k": 0.02,
-      "c": 0.78,
+      "c_handbook": 0.78,
+      "c_crit": 0.767552,
+      "D_handbook": -0.006893,
+      "D_crit": 0,
       "A": 5
     }
   ],
   "section8": {
     "3_drift": true,
     "4_smear": true,
-    "5_reset": false,
-    "5_reset_sleep": false,
-    "5_reset_stay": false,
+    "5_reset": true,
+    "5_reset_sleep": true,
+    "5_reset_stay": true,
     "6_rate": true,
     "8_hash": true,
     "1_2_sampling": "S2c locked; S3 does not resample",
     "7_9_live": "S4/S5; live ticker not wired"
   },
   "dual_run": {
-    "a": "5377356c8d9d371040e067038be132c1a28271e7976d0b93bb907fc40d95a91e",
-    "b": "5377356c8d9d371040e067038be132c1a28271e7976d0b93bb907fc40d95a91e",
+    "a": "cdff787751379eca069c205dbeb730f7b34a13e85c9902dee0959acee143aa19",
+    "b": "cdff787751379eca069c205dbeb730f7b34a13e85c9902dee0959acee143aa19",
     "match": true
   },
   "hz_state_match_after_1s": true,
   "reset": {
     "ic_px": 24,
-    "ic_note": "handbook §8#5 does not specify the start offset; S3 locks +Y 24px from T on the r-ring (tangential, so c_tan enters). Official #5 clock = sleep (and stay-in-0.5). Do not retune k/c.",
+    "ic_note": "handbook §8#5 does not specify the start offset; S3 locks +Y 24px from T on the r-ring. Default uses discrete-critical c*(k)=1/(1+√k)². Official #5 clock = sleep and stay-in-0.5.",
     "center_r": 0.1,
     "edge_r": 0.95,
     "hz60": {
+      "center": {
+        "seconds_sleep": 0.41666666666666663,
+        "seconds_first_in_0_5": 0.35,
+        "seconds_stay_in_0_5": 0.35,
+        "seconds_last_out_1_0": 0.2833333333333333,
+        "frames": 35,
+        "steps": 35,
+        "err": 0.09643131095754143,
+        "r": 0.09999999999999995,
+        "k": 0.1,
+        "c_handbook": 0.92,
+        "c_used": 0.5772153925510174,
+        "crossings": 0,
+        "max_abs_err": 24,
+        "slept": true
+      },
+      "edge": {
+        "seconds_sleep": 1.0333333333333345,
+        "seconds_first_in_0_5": 1.0333333333333345,
+        "seconds_stay_in_0_5": 1.0333333333333345,
+        "seconds_last_out_1_0": 0.8333333333333343,
+        "frames": 77,
+        "steps": 77,
+        "err": 0.3769822860703806,
+        "r": 0.9499999999999997,
+        "k": 0.020000000000000004,
+        "c_handbook": 0.78,
+        "c_used": 0.7675523610218461,
+        "crossings": 0,
+        "max_abs_err": 24,
+        "slept": true
+      }
+    },
+    "hz120": {
+      "center": {
+        "seconds_sleep": 0.41666666666666713,
+        "seconds_first_in_0_5": 0.35000000000000026,
+        "seconds_stay_in_0_5": 0.35000000000000026,
+        "seconds_last_out_1_0": 0.29166666666666674,
+        "frames": 71,
+        "steps": 35,
+        "err": 0.09643131095754143,
+        "r": 0.09999999999999995,
+        "k": 0.1,
+        "c_handbook": 0.92,
+        "c_used": 0.5772153925510174,
+        "crossings": 0,
+        "max_abs_err": 24,
+        "slept": true
+      },
+      "edge": {
+        "seconds_sleep": 1.033333333333332,
+        "seconds_first_in_0_5": 1.033333333333332,
+        "seconds_stay_in_0_5": 1.033333333333332,
+        "seconds_last_out_1_0": 0.8416666666666661,
+        "frames": 154,
+        "steps": 77,
+        "err": 0.3769822860703806,
+        "r": 0.9499999999999997,
+        "k": 0.020000000000000004,
+        "c_handbook": 0.78,
+        "c_used": 0.7675523610218461,
+        "crossings": 0,
+        "max_abs_err": 24,
+        "slept": true
+      }
+    },
+    "sensitivity_60hz": [
+      {
+        "offset_px": 8,
+        "center": {
+          "seconds_sleep": 0.3333333333333333,
+          "seconds_first_in_0_5": 0.26666666666666666,
+          "seconds_stay_in_0_5": 0.26666666666666666,
+          "seconds_last_out_1_0": 0.19999999999999998,
+          "frames": 31,
+          "steps": 31,
+          "err": 0.09913973424659162,
+          "r": 0.09999999999999995,
+          "k": 0.1,
+          "c_handbook": 0.92,
+          "c_used": 0.5772153925510174,
+          "crossings": 0,
+          "max_abs_err": 8,
+          "slept": true
+        },
+        "edge": {
+          "seconds_sleep": 0.7500000000000007,
+          "seconds_first_in_0_5": 0.7500000000000007,
+          "seconds_stay_in_0_5": 0.7500000000000007,
+          "seconds_last_out_1_0": 0.5666666666666668,
+          "frames": 59,
+          "steps": 59,
+          "err": 0.40544870027992863,
+          "r": 0.9499999999999997,
+          "k": 0.020000000000000004,
+          "c_handbook": 0.78,
+          "c_used": 0.7675523610218461,
+          "crossings": 0,
+          "max_abs_err": 8,
+          "slept": true
+        }
+      },
+      {
+        "offset_px": 16,
+        "center": {
+          "seconds_sleep": 0.39999999999999997,
+          "seconds_first_in_0_5": 0.31666666666666665,
+          "seconds_stay_in_0_5": 0.31666666666666665,
+          "seconds_last_out_1_0": 0.24999999999999997,
+          "frames": 34,
+          "steps": 34,
+          "err": 0.08171545350182896,
+          "r": 0.09999999999999995,
+          "k": 0.1,
+          "c_handbook": 0.92,
+          "c_used": 0.5772153925510174,
+          "crossings": 0,
+          "max_abs_err": 16,
+          "slept": true
+        },
+        "edge": {
+          "seconds_sleep": 0.9333333333333346,
+          "seconds_first_in_0_5": 0.9333333333333346,
+          "seconds_stay_in_0_5": 0.9333333333333346,
+          "seconds_last_out_1_0": 0.733333333333334,
+          "frames": 71,
+          "steps": 71,
+          "err": 0.3780628926962957,
+          "r": 0.9499999999999997,
+          "k": 0.020000000000000004,
+          "c_handbook": 0.78,
+          "c_used": 0.7675523610218461,
+          "crossings": 0,
+          "max_abs_err": 16,
+          "slept": true
+        }
+      },
+      {
+        "offset_px": 24,
+        "center": {
+          "seconds_sleep": 0.41666666666666663,
+          "seconds_first_in_0_5": 0.35,
+          "seconds_stay_in_0_5": 0.35,
+          "seconds_last_out_1_0": 0.2833333333333333,
+          "frames": 35,
+          "steps": 35,
+          "err": 0.09643131095754143,
+          "r": 0.09999999999999995,
+          "k": 0.1,
+          "c_handbook": 0.92,
+          "c_used": 0.5772153925510174,
+          "crossings": 0,
+          "max_abs_err": 24,
+          "slept": true
+        },
+        "edge": {
+          "seconds_sleep": 1.0333333333333345,
+          "seconds_first_in_0_5": 1.0333333333333345,
+          "seconds_stay_in_0_5": 1.0333333333333345,
+          "seconds_last_out_1_0": 0.8333333333333343,
+          "frames": 77,
+          "steps": 77,
+          "err": 0.3769822860703806,
+          "r": 0.9499999999999997,
+          "k": 0.020000000000000004,
+          "c_handbook": 0.78,
+          "c_used": 0.7675523610218461,
+          "crossings": 0,
+          "max_abs_err": 24,
+          "slept": true
+        }
+      },
+      {
+        "offset_px": 40,
+        "center": {
+          "seconds_sleep": 0.44999999999999996,
+          "seconds_first_in_0_5": 0.3833333333333333,
+          "seconds_stay_in_0_5": 0.3833333333333333,
+          "seconds_last_out_1_0": 0.31666666666666665,
+          "frames": 37,
+          "steps": 37,
+          "err": 0.09913168235641479,
+          "r": 0.09999999999999995,
+          "k": 0.1,
+          "c_handbook": 0.92,
+          "c_used": 0.5772153925510174,
+          "crossings": 0,
+          "max_abs_err": 40,
+          "slept": true
+        },
+        "edge": {
+          "seconds_sleep": 1.1500000000000008,
+          "seconds_first_in_0_5": 1.1500000000000008,
+          "seconds_stay_in_0_5": 1.1500000000000008,
+          "seconds_last_out_1_0": 0.966666666666668,
+          "frames": 84,
+          "steps": 84,
+          "err": 0.3901073030277951,
+          "r": 0.9499999999999997,
+          "k": 0.020000000000000004,
+          "c_handbook": 0.78,
+          "c_used": 0.7675523610218461,
+          "crossings": 0,
+          "max_abs_err": 40,
+          "slept": true
+        }
+      }
+    ],
+    "rate_rel": {
+      "center": 0,
+      "edge": 0
+    },
+    "pass_8_5_sleep": true,
+    "pass_8_5_stay": true,
+    "pass_8_5": true,
+    "center_rings": false,
+    "pass_8_6": true,
+    "handbook_c_control": {
+      "note": "same IC, criticalDamp=off (verbatim §4 c(r)); not the default",
       "center": {
         "seconds_sleep": 1.6833333333333322,
         "seconds_first_in_0_5": 0.08333333333333333,
@@ -103,7 +339,8 @@
         "err": 0.17430513710189643,
         "r": 0.09999999999999995,
         "k": 0.1,
-        "c": 0.92,
+        "c_handbook": 0.92,
+        "c_used": 0.92,
         "crossings": 10,
         "max_abs_err": 24,
         "slept": true
@@ -118,187 +355,15 @@
         "err": 0.38868470997645693,
         "r": 0.9499999999999997,
         "k": 0.020000000000000004,
-        "c": 0.78,
+        "c_handbook": 0.78,
+        "c_used": 0.78,
         "crossings": 0,
         "max_abs_err": 24,
         "slept": true
       }
     },
-    "hz120": {
-      "center": {
-        "seconds_sleep": 1.6833333333333298,
-        "seconds_first_in_0_5": 0.08333333333333333,
-        "seconds_stay_in_0_5": 1.549999999999997,
-        "seconds_last_out_1_0": 1.2083333333333315,
-        "frames": 216,
-        "steps": 108,
-        "err": 0.17430513710189643,
-        "r": 0.09999999999999995,
-        "k": 0.1,
-        "c": 0.92,
-        "crossings": 10,
-        "max_abs_err": 24,
-        "slept": true
-      },
-      "edge": {
-        "seconds_sleep": 0.9333333333333325,
-        "seconds_first_in_0_5": 0.9333333333333325,
-        "seconds_stay_in_0_5": 0.9333333333333325,
-        "seconds_last_out_1_0": 0.7749999999999997,
-        "frames": 142,
-        "steps": 71,
-        "err": 0.38868470997645693,
-        "r": 0.9499999999999997,
-        "k": 0.020000000000000004,
-        "c": 0.78,
-        "crossings": 0,
-        "max_abs_err": 24,
-        "slept": true
-      }
-    },
-    "sensitivity_60hz": [
-      {
-        "offset_px": 8,
-        "center": {
-          "seconds_sleep": 1.183333333333334,
-          "seconds_first_in_0_5": 0.08333333333333333,
-          "seconds_stay_in_0_5": 1.0500000000000012,
-          "seconds_last_out_1_0": 0.7166666666666672,
-          "frames": 78,
-          "steps": 78,
-          "err": 0.21002772865381303,
-          "r": 0.09999999999999995,
-          "k": 0.1,
-          "c": 0.92,
-          "crossings": 7,
-          "max_abs_err": 8,
-          "slept": true
-        },
-        "edge": {
-          "seconds_sleep": 0.7000000000000005,
-          "seconds_first_in_0_5": 0.7000000000000005,
-          "seconds_stay_in_0_5": 0.7000000000000005,
-          "seconds_last_out_1_0": 0.5333333333333333,
-          "frames": 56,
-          "steps": 56,
-          "err": 0.38306173892028167,
-          "r": 0.9499999999999997,
-          "k": 0.020000000000000004,
-          "c": 0.78,
-          "crossings": 0,
-          "max_abs_err": 8,
-          "slept": true
-        }
-      },
-      {
-        "offset_px": 16,
-        "center": {
-          "seconds_sleep": 1.5166666666666662,
-          "seconds_first_in_0_5": 0.08333333333333333,
-          "seconds_stay_in_0_5": 1.3833333333333333,
-          "seconds_last_out_1_0": 1.0333333333333345,
-          "frames": 98,
-          "steps": 98,
-          "err": 0.1790223482142892,
-          "r": 0.09999999999999995,
-          "k": 0.1,
-          "c": 0.92,
-          "crossings": 9,
-          "max_abs_err": 16,
-          "slept": true
-        },
-        "edge": {
-          "seconds_sleep": 0.850000000000001,
-          "seconds_first_in_0_5": 0.850000000000001,
-          "seconds_stay_in_0_5": 0.850000000000001,
-          "seconds_last_out_1_0": 0.6833333333333338,
-          "frames": 66,
-          "steps": 66,
-          "err": 0.37968264563695464,
-          "r": 0.9499999999999997,
-          "k": 0.020000000000000004,
-          "c": 0.78,
-          "crossings": 0,
-          "max_abs_err": 16,
-          "slept": true
-        }
-      },
-      {
-        "offset_px": 24,
-        "center": {
-          "seconds_sleep": 1.6833333333333322,
-          "seconds_first_in_0_5": 0.08333333333333333,
-          "seconds_stay_in_0_5": 1.5499999999999994,
-          "seconds_last_out_1_0": 1.2000000000000006,
-          "frames": 108,
-          "steps": 108,
-          "err": 0.17430513710189643,
-          "r": 0.09999999999999995,
-          "k": 0.1,
-          "c": 0.92,
-          "crossings": 10,
-          "max_abs_err": 24,
-          "slept": true
-        },
-        "edge": {
-          "seconds_sleep": 0.9333333333333346,
-          "seconds_first_in_0_5": 0.9333333333333346,
-          "seconds_stay_in_0_5": 0.9333333333333346,
-          "seconds_last_out_1_0": 0.7666666666666674,
-          "frames": 71,
-          "steps": 71,
-          "err": 0.38868470997645693,
-          "r": 0.9499999999999997,
-          "k": 0.020000000000000004,
-          "c": 0.78,
-          "crossings": 0,
-          "max_abs_err": 24,
-          "slept": true
-        }
-      },
-      {
-        "offset_px": 40,
-        "center": {
-          "seconds_sleep": 1.8499999999999983,
-          "seconds_first_in_0_5": 0.08333333333333333,
-          "seconds_stay_in_0_5": 1.733333333333332,
-          "seconds_last_out_1_0": 1.3833333333333333,
-          "frames": 119,
-          "steps": 119,
-          "err": 0.17054259578810615,
-          "r": 0.09999999999999995,
-          "k": 0.1,
-          "c": 0.92,
-          "crossings": 11,
-          "max_abs_err": 40,
-          "slept": true
-        },
-        "edge": {
-          "seconds_sleep": 1.0500000000000012,
-          "seconds_first_in_0_5": 1.0500000000000012,
-          "seconds_stay_in_0_5": 1.0500000000000012,
-          "seconds_last_out_1_0": 0.8833333333333344,
-          "frames": 78,
-          "steps": 78,
-          "err": 0.3792925787277753,
-          "r": 0.9499999999999997,
-          "k": 0.020000000000000004,
-          "c": 0.78,
-          "crossings": 0,
-          "max_abs_err": 40,
-          "slept": true
-        }
-      }
-    ],
-    "rate_rel": {
-      "center": 0,
-      "edge": 0
-    },
-    "pass_8_5_sleep": false,
-    "pass_8_5_stay": false,
-    "pass_8_5": false,
-    "center_rings": true,
-    "pass_8_6": true
+    "c_center_crit": 0.5772153925510174,
+    "c_edge_crit": 0.7675523610218461
   },
   "dwell": {
     "n": 50601,
@@ -340,6 +405,14 @@
       },
       {
         "key": "anisotropy",
+        "phase": "INTRO",
+        "defaultOn": true,
+        "flippedTo": false,
+        "physicsChanged": true,
+        "renderChanged": true
+      },
+      {
+        "key": "criticalDamp",
         "phase": "INTRO",
         "defaultOn": true,
         "flippedTo": false,
@@ -399,6 +472,7 @@
     "expect": {
       "field_physics": true,
       "anisotropy_physics": true,
+      "criticalDamp_physics": true,
       "sleep_physics": true,
       "drift_render": true,
       "noiseLut_render": true,
@@ -409,6 +483,7 @@
     "got": {
       "field_physics": true,
       "anisotropy_physics": true,
+      "criticalDamp_physics": true,
       "sleep_physics": true,
       "drift_render": true,
       "noiseLut_render": true,
@@ -447,6 +522,6 @@
     "gaffer_clamp": "Gaffer article clamps frameTime at 0.25s; handbook §4 says 50ms — S3 follows handbook",
     "vmax": "handbook §4 has no vmax; isolation module does not invent one",
     "reset_ic": "§8#5 start offset unspecified; locked at +Y 24px for this gate",
-    "section8_5_center_ring": "§4 center k=0.10 / c=0.92 is underdamped: 24px first |e|<0.5 at ~0.08s but rings (stay-in-0.5 ~1.55s, sleep ~1.68s). Edge overdamped, sleep=stay. Did not retune k/c."
+    "handbook_c_underdamped": "verbatim §4 (k=0.10,c=0.92) has D<0; sleep 1.68s. Default now c*=1/(1+√k)² of this integrator. k(r) unchanged. Live 0.055 unchanged."
   }
 }

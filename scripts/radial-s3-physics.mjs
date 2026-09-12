@@ -179,7 +179,10 @@ function resetTrace(r, offsetPx, displayHz, switches) {
     err: Math.hypot(world.tx[0] - world.x[0], world.ty[0] - world.y[0]),
     r: world.r[0],
     k: physics.kOfS(S),
-    c: physics.cOfS(S),
+    c_handbook: physics.cOfS(S),
+    c_used: (switches && switches.criticalDamp === false)
+      ? physics.cOfS(S)
+      : physics.cCrit(physics.kOfS(S)),
     crossings: crosses,
     max_abs_err: maxAbs,
     slept: tSleep != null,
@@ -269,6 +272,7 @@ function switchMatrix() {
   const rows = [
     row("field", "INTRO", 0.5, buildIntro),
     row("anisotropy", "INTRO", 0.5, buildIntro),
+    row("criticalDamp", "INTRO", 0.5, buildIntro),
     row("sleep", "INTRO", 2.0, buildIntro),
     row("drift", "DWELL", 1.0, buildDwell),
     row("noiseLut", "DWELL", 1.0, buildDwell),
@@ -326,6 +330,7 @@ function switchMatrix() {
   const expect = {
     field_physics: true,
     anisotropy_physics: true,
+    criticalDamp_physics: true,
     sleep_physics: true,
     drift_render: true,
     noiseLut_render: true,
@@ -336,6 +341,7 @@ function switchMatrix() {
   const got = {
     field_physics: rows.find((r) => r.key === "field").physicsChanged,
     anisotropy_physics: rows.find((r) => r.key === "anisotropy").physicsChanged,
+    criticalDamp_physics: rows.find((r) => r.key === "criticalDamp").physicsChanged,
     sleep_physics: rows.find((r) => r.key === "sleep").physicsChanged,
     drift_render: rows.find((r) => r.key === "drift").renderChanged,
     noiseLut_render: rows.find((r) => r.key === "noiseLut").renderChanged,
@@ -464,11 +470,17 @@ function main() {
 
   const fieldTable = [0, 0.5, 0.69, 0.88, 1].map((r) => {
     const S = physics.smoothstep(0.5, 0.88, r);
+    const k = physics.kOfS(S);
+    const cH = physics.cOfS(S);
+    const cStar = physics.cCrit(k);
     return {
       r,
       S: Number(S.toFixed(6)),
-      k: Number(physics.kOfS(S).toFixed(6)),
-      c: Number(physics.cOfS(S).toFixed(6)),
+      k: Number(k.toFixed(6)),
+      c_handbook: Number(cH.toFixed(6)),
+      c_crit: Number(cStar.toFixed(6)),
+      D_handbook: Number(physics.discKc(k, cH).toFixed(6)),
+      D_crit: Number(physics.discKc(k, cStar).toFixed(12)),
       A: Number(physics.aOfR(r).toFixed(6)),
     };
   });
@@ -476,7 +488,7 @@ function main() {
   const reset = {
     ic_px: RESET_OFFSET_PX,
     ic_note:
-      "handbook §8#5 does not specify the start offset; S3 locks +Y 24px from T on the r-ring (tangential, so c_tan enters). Official #5 clock = sleep (and stay-in-0.5). Do not retune k/c.",
+      "handbook §8#5 does not specify the start offset; S3 locks +Y 24px from T on the r-ring. Default uses discrete-critical c*(k)=1/(1+√k)². Official #5 clock = sleep and stay-in-0.5.",
     center_r: 0.1,
     edge_r: 0.95,
     hz60: {},
@@ -515,6 +527,13 @@ function main() {
   reset.pass_8_5 = reset.pass_8_5_sleep && reset.pass_8_5_stay;
   reset.center_rings = reset.hz60.center.crossings > 0;
   reset.pass_8_6 = dtCenter <= 0.1 && dtEdge <= 0.1;
+  reset.handbook_c_control = {
+    note: "same IC, criticalDamp=off (verbatim §4 c(r)); not the default",
+    center: resetTrace(0.1, RESET_OFFSET_PX, 60, { criticalDamp: false }),
+    edge: resetTrace(0.95, RESET_OFFSET_PX, 60, { criticalDamp: false }),
+  };
+  reset.c_center_crit = physics.cCrit(physics.kOfS(physics.smoothstep(0.5, 0.88, 0.1)));
+  reset.c_edge_crit = physics.cCrit(physics.kOfS(physics.smoothstep(0.5, 0.88, 0.95)));
 
   const buildGrid = (switches) => {
     const f = fieldDallas();
@@ -573,7 +592,7 @@ function main() {
     task: "S3 物理层",
     handbook: HANDBOOK,
     timestamp_note:
-      "isolation module + 60/120Hz regression; no live write; live spring 0.055 untouched",
+      "isolation module + 60/120Hz; default discrete-critical c*(k); no live write; live 0.055 untouched",
     seed: SEED,
     module: "prototype/pixi-physics/nf-radial-physics.js",
     runner: "scripts/radial-s3-physics.mjs",
@@ -630,8 +649,8 @@ function main() {
         "Gaffer article clamps frameTime at 0.25s; handbook §4 says 50ms — S3 follows handbook",
       vmax: "handbook §4 has no vmax; isolation module does not invent one",
       reset_ic: "§8#5 start offset unspecified; locked at +Y 24px for this gate",
-      section8_5_center_ring:
-        "§4 center k=0.10 / c=0.92 is underdamped: 24px first |e|<0.5 at ~0.08s but rings (stay-in-0.5 ~1.55s, sleep ~1.68s). Edge overdamped, sleep=stay. Did not retune k/c.",
+      handbook_c_underdamped:
+        "verbatim §4 (k=0.10,c=0.92) has D<0; sleep 1.68s. Default now c*=1/(1+√k)² of this integrator. k(r) unchanged. Live 0.055 unchanged.",
     },
   };
 
@@ -644,9 +663,12 @@ function main() {
   if (!dwell.pass_8_3) failed.push("§8#3 drift");
   if (!dwell.pass_8_4) failed.push("§8#4 smear");
   if (!reset.pass_8_6) failed.push("§8#6 rate");
+  if (!reset.pass_8_5) failed.push("§8#5 reset");
   if (!switches.pass) failed.push("switch matrix");
   if (!indexHasSharp) failed.push("live SPRING_SHARP missing");
-  if (!reset.pass_8_5) booked.push("§8#5 reset (center ring; k/c not retuned)");
+  if (reset.handbook_c_control.center.crossings === 0) {
+    booked.push("handbook-c control unexpectedly no longer rings");
+  }
   console.log(
     JSON.stringify(
       {
