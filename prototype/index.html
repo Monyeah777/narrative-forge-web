@@ -2488,7 +2488,6 @@
         if (!target) target = TARGETS.INTRO;
         currentTarget = target;
         if (target.type === "image") lastImageTarget = target;
-        publishTarget(target, null);
         return loadTargetRecord(target).then(function (rec) {
           var coerced;
           var timings;
