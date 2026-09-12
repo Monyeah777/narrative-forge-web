@@ -1,0 +1,103 @@
+{
+  "task": "§9.5 B4.1",
+  "method": "short puppeteer 2–3s/phase (pack DevTools 30s×3 not run in this VM)",
+  "viewport": {
+    "w": 1440,
+    "h": 900,
+    "dpr": 1
+  },
+  "spring": {
+    "SPRING": 0.055,
+    "locked": true
+  },
+  "transition": {
+    "mode": "assemble",
+    "phase": "intro",
+    "hz": 41.5,
+    "work": {
+      "n": 83,
+      "mean": 0.8963855425097856,
+      "p50": 0.6999999992549419,
+      "p95": 1.9000000022351742,
+      "fps": 1115.5913974249347
+    },
+    "longtaskCount": 0,
+    "longtask_gt_50": false
+  },
+  "dwell": {
+    "mode": "formed",
+    "phase": "dwell",
+    "stayQuiet": true,
+    "running": true,
+    "hz": 24,
+    "work": {
+      "n": 47,
+      "mean": 0.13617021265499135,
+      "p50": 0.10000000149011612,
+      "p95": 0.20000000298023224,
+      "fps": 7343.750005984475
+    },
+    "tickDelta": 0,
+    "checksumSame": true,
+    "lastPhysMs": 0
+  },
+  "hidden": {
+    "rafBefore": 189,
+    "rafAfter": 189,
+    "rafDelta": 0,
+    "running": false,
+    "hiddenAt": 6653.400000002235,
+    "phase": "dwell",
+    "thawed": {
+      "running": true,
+      "b41running": true,
+      "hiddenAt": 0,
+      "clockOffsetGrew": true,
+      "phase": "dwell"
+    }
+  },
+  "reduce": {
+    "first": {
+      "mode": "formed",
+      "running": false,
+      "reduced": true,
+      "phase": "paused-control",
+      "index": 0,
+      "rafCount": 0
+    },
+    "later": {
+      "mode": "formed",
+      "running": false,
+      "phase": "paused-control",
+      "index": 0,
+      "rafCount": 0
+    }
+  },
+  "classic": {
+    "mode": "formed",
+    "running": false,
+    "ticksBefore": 72,
+    "ticksAfter": 72,
+    "held": true,
+    "discipline": "classic"
+  },
+  "screenshots": {
+    "transition": "/opt/cursor/artifacts/b41_transition_assemble_2.png",
+    "dwell": "/opt/cursor/artifacts/b41_dwell_30hz_2.png",
+    "reduce": "/opt/cursor/artifacts/b41_reduced_static_2.png"
+  },
+  "acceptance": {
+    "transition_work_p95_le_12": true,
+    "transition_no_longtask_50": true,
+    "dwell_hz_le_32": true,
+    "dwell_work_p95_le_2": true,
+    "dwell_zero_recompute": true,
+    "hidden_raf_0": true,
+    "thaw_no_catchup": true,
+    "reduce_static": true,
+    "thaw_resumes": true,
+    "classic_idle_stop": true,
+    "spring_locked": true,
+    "pass": true
+  }
+}

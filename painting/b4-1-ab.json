@@ -1,0 +1,98 @@
+{
+  "task": "§9.5 A/B",
+  "color": {
+    "version": "v1",
+    "v2_v3": "待拍板，未做"
+  },
+  "soft_vs_block": {
+    "soft": {
+      "cell": 16,
+      "block": false,
+      "shot": "/opt/cursor/artifacts/b41_ab_soft_2.png"
+    },
+    "block2": {
+      "cell": 2,
+      "size": 2,
+      "shot": "/opt/cursor/artifacts/b41_ab_block2_2.png"
+    },
+    "block3": {
+      "cell": 3,
+      "size": 3,
+      "shot": "/opt/cursor/artifacts/b41_ab_block3_2.png"
+    }
+  },
+  "frame": {
+    "s09": {
+      "scale": 0.9,
+      "contain": {
+        "x": 283.44090909090903,
+        "y": 166.5,
+        "w": 441.8181818181818,
+        "h": 567,
+        "srcW": 1200,
+        "srcH": 1540,
+        "cx": 0.35,
+        "hFrac": 0.7,
+        "scale": 0.9
+      },
+      "cx": 504.3499999999999,
+      "shot": "/opt/cursor/artifacts/b41_ab_frame09_2.png"
+    },
+    "s10": {
+      "scale": 1,
+      "contain": {
+        "x": 258.8954545454545,
+        "y": 135,
+        "w": 490.90909090909093,
+        "h": 630,
+        "srcW": 1200,
+        "srcH": 1540,
+        "cx": 0.35,
+        "hFrac": 0.7,
+        "scale": 1
+      },
+      "cx": 504.35,
+      "shot": "/opt/cursor/artifacts/b41_ab_frame10_2.png"
+    },
+    "s11": {
+      "scale": 1.1,
+      "contain": {
+        "x": 234.34999999999997,
+        "y": 103.5,
+        "w": 540,
+        "h": 693,
+        "srcW": 1200,
+        "srcH": 1540,
+        "cx": 0.35,
+        "hFrac": 0.7,
+        "scale": 1.1
+      },
+      "cx": 504.34999999999997,
+      "shot": "/opt/cursor/artifacts/b41_ab_frame11_2.png"
+    },
+    "center_delta_px": 1.1368683772161603e-13
+  },
+  "group": {
+    "develop": {
+      "shot": "/opt/cursor/artifacts/b41_ab_develop_mid_2.png",
+      "phase": "handover",
+      "group": "develop",
+      "t": 0.7166666666666672
+    },
+    "sharp": {
+      "shot": "/opt/cursor/artifacts/b41_ab_sharp_mid_2.png",
+      "phase": "handover",
+      "group": "sharp",
+      "t": 0.733333333333334
+    }
+  },
+  "acceptance": {
+    "soft_cell_16": true,
+    "block2_cell_2": true,
+    "block3_cell_3": true,
+    "frame_center_stable": true,
+    "frame_size_scales": true,
+    "groups_named": true,
+    "pass": true
+  }
+}

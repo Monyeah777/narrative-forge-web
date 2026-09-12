@@ -272,8 +272,10 @@ async function main() {
     await sleep(200);
     const thawed = await trans.page.evaluate((offset0) => {
       const e = window.__nfExhibit;
+      const b = window.__nfB41;
       return {
         running: window.__nfRender.running,
+        b41running: !!(b && b.running),
         hiddenAt: e.hiddenAt,
         clockOffsetGrew: e.clockOffset > offset0,
         phase: e.phase,
@@ -304,6 +306,30 @@ async function main() {
     }));
     const reduceShot = await snap(reduce.page, "b41_reduced_static.png");
     await reduce.page.close();
+
+    const classic = await openPage(browser, "?dpr=1&autoplay=0&discipline=classic");
+    await classic.page.click("#btn-intro");
+    await leavePointer(classic.page);
+    await waitFor(
+      classic.page,
+      () => {
+        const r = window.__nfRender;
+        return { ok: !!(r && r.mode === "formed" && r.running === false), mode: r && r.mode, running: r && r.running };
+      },
+      8000,
+      "classic-idle"
+    );
+    const classicTicks = await classic.page.evaluate(() => window.__nfRender.tickCount);
+    await sleep(400);
+    const classicIdle = await classic.page.evaluate((held) => ({
+      mode: window.__nfRender.mode,
+      running: window.__nfRender.running,
+      ticksBefore: held,
+      ticksAfter: window.__nfRender.tickCount,
+      held: window.__nfRender.tickCount === held && window.__nfRender.running === false,
+      discipline: window.__nfB41 && window.__nfB41.discipline,
+    }), classicTicks);
+    await classic.page.close();
 
     async function formedShot(query, name) {
       const { page } = await openPage(browser, query);
@@ -393,6 +419,7 @@ async function main() {
       },
       hidden: { ...hidden, thawed },
       reduce: { first: reduce0, later: reduce1 },
+      classic: classicIdle,
       screenshots: {
         transition: transShot,
         dwell: dwellShot,
@@ -407,6 +434,8 @@ async function main() {
         hidden_raf_0: hidden.running === false && hidden.rafDelta === 0,
         thaw_no_catchup: thawed.clockOffsetGrew === true,
         reduce_static: reduce0.reduced === true && reduce0.running === false && reduce1.index === reduce0.index && reduce1.rafCount === reduce0.rafCount,
+        thaw_resumes: thawed.b41running === true || thawed.running === true,
+        classic_idle_stop: classicIdle.held === true,
         spring_locked: dwell.spring === 0.055,
       },
     };

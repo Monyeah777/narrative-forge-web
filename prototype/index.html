@@ -3631,6 +3631,12 @@
           lastPhysMs = 0;
           lastDrawMs = performance.now() - tDraw;
           recordWork(lastDrawMs);
+          renderInfo.running = running;
+          renderInfo.stayQuiet = true;
+          renderInfo.rafCount = rafCount;
+          renderInfo.mode = mode;
+          renderInfo.tickCount = tickCount;
+          window.__nfRender = renderInfo;
           publishB41();
           if (shouldStopLoop()) {
             stopLoop();
@@ -3682,6 +3688,8 @@
         syncCrtIdleHint();
         if (raf) cancelAnimationFrame(raf);
         raf = requestAnimationFrame(tick);
+        renderInfo.running = true;
+        window.__nfRender = renderInfo;
       }
 
       function wakeLoop() {
@@ -3694,6 +3702,8 @@
         syncCrtIdleHint();
         if (raf) cancelAnimationFrame(raf);
         raf = requestAnimationFrame(tick);
+        renderInfo.running = true;
+        window.__nfRender = renderInfo;
       }
 
       function stopLoop() {
