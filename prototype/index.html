@@ -2854,6 +2854,76 @@
         };
       }
 
+      function introUsesBin() {
+        /* == RENDERER-SWAP == default INTRO density = v3 100k bin. ?bin=0 keeps 12k JSON. */
+        try {
+          return new URLSearchParams(window.location.search).get("bin") !== "0";
+        } catch (errBin) {
+          return true;
+        }
+      }
+
+      function recordFromDallasBin(meta, buffer) {
+        var raw = NFPointsBin.readPointsBin(buffer, meta.count);
+        var pts = [];
+        var i;
+        for (i = 0; i < raw.length; i++) {
+          pts.push({
+            x: raw[i].x / 65535,
+            y: raw[i].y / 65535,
+            i: raw[i].idx
+          });
+        }
+        return {
+          id: meta.id,
+          w: meta.w,
+          h: meta.h,
+          count: pts.length,
+          note: "v3 points.bin 100k",
+          palette: meta.palette.slice(),
+          points: pts,
+          source: "bin"
+        };
+      }
+
+      function loadIntroBin(t0) {
+        var href = "pixi-cloud/dallas-100k.bin";
+        var metaHref = "pixi-cloud/meta.json";
+        var cached = recordCache[href];
+        if (cached) return Promise.resolve(cached);
+        return loadScriptOnce("pixi-bridge/points-bin.js").then(function () {
+          if (!window.NFPointsBin) throw new Error("NFPointsBin missing");
+          return Promise.all([
+            fetch(metaHref, { credentials: "omit", mode: "cors" }).then(function (res) {
+              if (!res.ok) throw new Error("http " + res.status);
+              return res.json();
+            }),
+            fetch(href, { credentials: "omit", mode: "cors" }).then(function (res) {
+              if (!res.ok) throw new Error("http " + res.status);
+              return res.arrayBuffer();
+            })
+          ]);
+        }).then(function (pair) {
+          var rec = recordFromDallasBin(pair[0], pair[1]);
+          var t1 = performance.now();
+          rec._timings = {
+            href: href,
+            source: "bin",
+            t_fetch_start_ms: round3(t0),
+            fetch_ms: round3(t1 - t0),
+            parse_ms: 0,
+            total_ms: round3(t1 - t0),
+            count: rec.count,
+            http_status: 200,
+            preload_reused: false,
+            resource: resourceTimingFor(href)
+          };
+          recordCache[href] = rec;
+          logLoadList(rec._timings);
+          return rec;
+        });
+      }
+
       function loadTargetRecord(target) {
         var href = targetHref(target);
         var t0 = performance.now();
@@ -2866,6 +2936,11 @@
         }
         if (forcePh) {
           return Promise.resolve(finishPlaceholder(t0, "query nf-points=placeholder"));
+        }
+        if (introUsesBin() && target && (target === TARGETS.INTRO || target.path === "points_poplars.json")) {
+          return loadIntroBin(t0).catch(function (err) {
+            return finishPlaceholder(t0, String(err && err.message ? err.message : err));
+          });
         }
         cached = recordCache[href];
         if (cached) return Promise.resolve(cached);
@@ -4102,6 +4177,11 @@
 
       function loadScriptOnce(src) {
         return new Promise(function (resolve, reject) {
+          var found = document.querySelector('script[src="' + src + '"]');
+          if (found) {
+            resolve();
+            return;
+          }
           var el = document.createElement("script");
           el.src = src;
           el.onload = function () { resolve(); };
