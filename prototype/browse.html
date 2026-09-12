@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <title>NarrativeForge · 正在打开</title>
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: #050505;
+      color: #e8eef6;
+      font-family: "Courier New", Courier, monospace;
+    }
+    #st { padding: 24px; line-height: 1.6; max-width: 42em; }
+    a { color: #9eb6d4; }
+  </style>
+</head>
+<body>
+  <p id="st">正在从 CDN 加载展示站（约 6MB 资源）…</p>
+  <script>
+    (function () {
+      var BASE = "https://cdn.jsdelivr.net/gh/Monyeah777/narrative-forge-web@cursor/radial-strict-opt-84d9/prototype/";
+      var st = document.getElementById("st");
+      fetch(BASE + "index.html", { mode: "cors", credentials: "omit" })
+        .then(function (res) {
+          if (!res.ok) throw new Error("http " + res.status);
+          return res.text();
+        })
+        .then(function (html) {
+          html = html.replace(/<head([^>]*)>/i, function (tag) {
+            return tag + '\n<base href="' + BASE + '">\n';
+          });
+          document.open();
+          document.write(html);
+          document.close();
+        })
+        .catch(function (err) {
+          st.innerHTML =
+            "CDN 加载失败：" + String(err) +
+            "。<br>可改开本目录的 <a href=\"./index.html?autoplay=0\">index.html?autoplay=0</a>。";
+        });
+    })();
+  </script>
+</body>
+</html>
