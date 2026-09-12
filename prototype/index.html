@@ -79,26 +79,27 @@
     .crt-shell {
       position: fixed;
       inset: 0;
-      z-index: 0;
+      z-index: 10000;
       box-sizing: border-box;
-      overflow: hidden;
       border: 14px solid #1a1a1a;
       border-radius: 2.5% / 4%;
-      background: #050505;
+      background: transparent;
       box-shadow:
         inset 0 0 120px rgba(0, 0, 0, 0.9),
         inset 0 0 30px rgba(255, 255, 255, 0.04);
       transform: perspective(2500px) rotateX(0.6deg);
       transform-origin: 50% 50%;
-      will-change: transform;
       pointer-events: none;
+    }
+
+    .crt-shell.is-idle {
+      will-change: transform;
     }
 
     .crt-shell::before {
       content: "";
       position: absolute;
       inset: 0;
-      z-index: 10001;
       pointer-events: none;
       border-radius: inherit;
       background: radial-gradient(1100px 620px at 18% 8%, rgba(255, 255, 255, 0.04), transparent 62%);
@@ -107,6 +108,17 @@
     @supports (clip-path: inset(0 round 2%)) {
       .crt-shell {
         clip-path: inset(0 round 2.5% / 4%);
+      }
+    }
+
+    @supports not (clip-path: inset(0 round 2%)) {
+      .crt-shell {
+        transform: none;
+        will-change: auto;
+        border-radius: 0;
+      }
+      .fx-crt {
+        border-radius: 0;
       }
     }
 
@@ -127,6 +139,7 @@
       position: fixed;
       inset: 0;
       z-index: 10002;
+      border-radius: 2.5% / 4%;
       pointer-events: none;
       background:
         radial-gradient(720px 400px at 78% -8%, rgba(255, 255, 255, 0.14), transparent 55%),
@@ -627,10 +640,10 @@
       position: fixed;
       right: 8%;
       bottom: 2.75rem;
-      z-index: 10000;
+      z-index: 10001;
       margin: 0;
       pointer-events: none;
-      text-shadow: none;
+      text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
     }
 
     .arcade-row {
@@ -650,7 +663,7 @@
       pointer-events: none;
       user-select: none;
       white-space: nowrap;
-      text-shadow: none;
+      text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
     }
 
     .console {
@@ -683,7 +696,7 @@
       color: #8A8A8A;
       cursor: pointer;
       pointer-events: auto;
-      text-shadow: none;
+      text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
     }
 
     #btn-start {
@@ -723,6 +736,7 @@
       color: #8E959D;
       text-align: right;
       pointer-events: none;
+      text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
     }
 
     .colophon {
@@ -829,7 +843,6 @@
   </style>
 </head>
 <body>
-  <div class="crt-shell">
   <div class="fx-grid" aria-hidden="true"></div>
   <div class="stage" id="stage" data-mode="chaos">
     <canvas id="void" role="img" aria-label="深空粒子场"></canvas>
@@ -877,7 +890,6 @@
       <p class="colophon"><button type="button" class="egg" id="btn-egg" aria-label="像素 NF">NF</button> · 内容契约层 · 定内容，不定模型</p>
     </aside>
   </div>
-  <div class="fx-crt" aria-hidden="true"></div>
   <div class="viewfinder" aria-hidden="true">
     <span class="vf-corner vf-tl"></span>
     <span class="vf-corner vf-tr"></span>
@@ -897,7 +909,8 @@
       <span class="arcade-meta" aria-hidden="true">CREDIT 01</span>
     </div>
   </div>
-  </div>
+  <div class="crt-shell is-idle" aria-hidden="true"></div>
+  <div class="fx-crt" aria-hidden="true"></div>
 
   <script>
     (function () {
@@ -960,6 +973,7 @@
 
       var stage = document.getElementById("stage");
       var canvas = document.getElementById("void");
+      var crtShell = document.querySelector(".crt-shell");
       var dossier = document.getElementById("dossier");
       var volEl = document.getElementById("vol");
       var ctx = canvas.getContext("2d");
@@ -1145,7 +1159,7 @@
       function seedVel(i, nx) {
         var rho = dampOf(i);
         var sig = thermalSig(i, rho);
-        var slow = nx < LEFT_BAND ? 0.55 : 1;
+        var slow = LEFT_WEIGHT > 0 && nx < LEFT_BAND ? 0.55 : 1;
         vx[i] = gauss() * sig * slow;
         vy[i] = gauss() * sig * slow;
       }
@@ -1188,6 +1202,15 @@
 
       function mapPaintingY(py) {
         return fitY + py * fitH;
+      }
+
+      function applyPaintingTargets() {
+        var i;
+        layoutContain();
+        for (i = 0; i < N; i++) {
+          tx[i] = mapPaintingX(ntx[i]);
+          ty[i] = mapPaintingY(nty[i]);
+        }
       }
 
       function publishRenderInfo() {
@@ -1495,8 +1518,6 @@
           ny[i] = y[i] * ih;
           nhx[i] = hx[i] * iw;
           nhy[i] = hy[i] * ih;
-          ntx[i] = tx[i] * iw;
-          nty[i] = ty[i] * ih;
         }
       }
 
@@ -1522,9 +1543,8 @@
             if (atlasPalN && pal >= atlasPalN) pal = pal % atlasPalN;
             pid[i] = pal;
             sid[i] = palSize ? palSize[pal] : (i % 3);
-            tx[i] = mapPaintingX(ntx[i]);
-            ty[i] = mapPaintingY(nty[i]);
           }
+          applyPaintingTargets();
           rebuildBuckets();
           return;
         }
@@ -1533,9 +1553,8 @@
           nty[i] = rand();
           pid[i] = i % Math.max(1, atlasPalN);
           sid[i] = palSize ? palSize[pid[i]] : (i % 3);
-          tx[i] = mapPaintingX(ntx[i]);
-          ty[i] = mapPaintingY(nty[i]);
         }
+        applyPaintingTargets();
         rebuildBuckets();
       }
 
@@ -1543,10 +1562,10 @@
         var i;
         for (i = 0; i < N; i++) {
           if (fromTargets) {
-            nx[i] = ntx[i];
-            ny[i] = nty[i];
             x[i] = tx[i];
             y[i] = ty[i];
+            nx[i] = cssW ? x[i] / cssW : ntx[i];
+            ny[i] = cssH ? y[i] / cssH : nty[i];
           } else {
             nx[i] = nhx[i];
             ny[i] = nhy[i];
@@ -2071,11 +2090,18 @@
         raf = requestAnimationFrame(tick);
       }
 
+      function syncCrtIdleHint() {
+        if (!crtShell) return;
+        if (running) crtShell.classList.remove("is-idle");
+        else crtShell.classList.add("is-idle");
+      }
+
       function startLoop() {
         if (running || reduced || !booted || frozen) return;
         lastT = performance.now();
         acc = 0;
         running = true;
+        syncCrtIdleHint();
         raf = requestAnimationFrame(tick);
       }
 
@@ -2085,6 +2111,7 @@
         lastT = performance.now();
         acc = 0;
         running = true;
+        syncCrtIdleHint();
         raf = requestAnimationFrame(tick);
       }
 
@@ -2093,6 +2120,7 @@
         acc = 0;
         if (raf) cancelAnimationFrame(raf);
         raf = 0;
+        syncCrtIdleHint();
         publishRenderInfo();
       }
 
