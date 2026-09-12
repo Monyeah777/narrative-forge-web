@@ -1,0 +1,80 @@
+{
+  "task": "现网径向重映射接线",
+  "handbook": "docs/NF_径向重映射_总结版最终方案_v2.0.md",
+  "timestamp_note": "live Pixi + S2b 50k NFPT + §4 physics; 100k bins kept; ImageData renderer not loaded; E off",
+  "seed": 1395871795,
+  "default_on": true,
+  "rollback": "?radial=0 → 100k + applySpring 0.055; ?bin=0 → 12k JSON",
+  "live_100k_unchanged": true,
+  "spring_unchanged": true,
+  "isolation_s3_hash": {
+    "a": "cdff787751379eca069c205dbeb730f7b34a13e85c9902dee0959acee143aa19",
+    "b": "cdff787751379eca069c205dbeb730f7b34a13e85c9902dee0959acee143aa19",
+    "match": true
+  },
+  "norm_r": {
+    "changed": true,
+    "base": [
+      1,
+      0.8642069343110748,
+      0.7100908470331249,
+      0.5615588587302108
+    ],
+    "live": [
+      0.9443168007405794,
+      0.7082376005554344,
+      0.7082376005554346,
+      0.9443168007405794
+    ]
+  },
+  "cases": [
+    {
+      "name": "dallas",
+      "count": 50601,
+      "sha256": "2f891e9cad64bf3a4fa24af07b85d202f22ae53c690dd40a9a15e04abd1a8e9d",
+      "coord_copy": true,
+      "palette_n": 256,
+      "R95": 0.599042
+    },
+    {
+      "name": "scotland",
+      "count": 50441,
+      "sha256": "b981908b660dbcc6da95c6938a1a05afa49f87b184469d7798e190465b6dfcd1",
+      "coord_copy": true,
+      "palette_n": 256,
+      "R95": 0.599053
+    },
+    {
+      "name": "met",
+      "count": 50471,
+      "sha256": "87291116edfc25a73dd3a20ef99b15a0b98a92305248135cadac5e208c326c4b",
+      "coord_copy": true,
+      "palette_n": 256,
+      "R95": 0.592304
+    }
+  ],
+  "live_sha256": {
+    "prototype/pixi-cloud/dallas-100k.bin": "6406d7012e7f637ad2e31661a85f619ebd14b85bb48a6341a1ec9c3a2dbcea82",
+    "prototype/pixi-hall/scotland-100k.bin": "bbeab899140521bad56e82766f92a3d63305b8bc8f802de22db804fad3bfcf5f",
+    "prototype/pixi-community/met-100k.bin": "3144fdb9144d95cb0afe30f28629ec1e065bfa5022400a80e1c8e93129779a45"
+  },
+  "u16_sha256": {
+    "painting/radial-s2b-dallas-50k.u16": "f6df3397eb97fef511377cdf903a89544860086a78d07c1eb0191f6ff4f3add6",
+    "painting/radial-s2b-scotland-50k.u16": "700e9d525a731766fd17f4c4872754138c81a09ca40db1928dfc5865b97d914f",
+    "painting/radial-s2b-met-50k.u16": "a4f4a7a1579858445140595b08883829237f466df1eb781efaed02c12b1efc46"
+  },
+  "index": {
+    "SPRING_SHARP": true,
+    "loads_nf_radial_physics": true,
+    "loads_nf_radial_render": false,
+    "radial_query_default_on": true,
+    "pixi_draw": true
+  },
+  "booked": {
+    "E": "S4 petition stays booked; not enabled",
+    "render": "live stays Pixi ParticleContainer; no ImageData swap",
+    "egg": "NF glyph stays JSON / not radially sampled"
+  },
+  "pass": true,
+  "failed": []
+}
