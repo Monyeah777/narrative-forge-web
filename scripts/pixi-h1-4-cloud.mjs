@@ -181,10 +181,22 @@ async function main() {
     await live.evaluate(() => {
       if (typeof window.assemble === "function") window.assemble();
     });
-    await new Promise((r) => setTimeout(r, 1800));
+    const formedUntil = Date.now() + 8000;
+    let liveMode = "";
+    let liveN = 0;
+    while (Date.now() < formedUntil) {
+      const snap = await live.evaluate(() => ({
+        n: (window.__nfRender && window.__nfRender.n) || 0,
+        mode: (window.__nfRender && window.__nfRender.mode) || "",
+      }));
+      liveN = snap.n;
+      liveMode = snap.mode;
+      if (snap.mode === "formed" && snap.n === 12000) break;
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    await new Promise((r) => setTimeout(r, 250));
     const shot12k = uniqueArt("pixi_h1_4_live_12k_ref.png");
     if (fs.existsSync(ART)) await live.screenshot({ path: shot12k, fullPage: false });
-    const liveN = await live.evaluate(() => (window.__nfRender && window.__nfRender.n) || 0);
 
     const report = {
       task: "H1-④ 100k cloud",
@@ -196,6 +208,7 @@ async function main() {
       pageErrors,
       screenshots: { pixi_100k: shot100k, live_12k: shot12k },
       live_n: liveN,
+      live_mode: liveMode,
       live_exhibit_untouched: !fs
         .readFileSync(path.join(PROTO, "index.html"), "utf8")
         .includes("pixi.min.js"),
