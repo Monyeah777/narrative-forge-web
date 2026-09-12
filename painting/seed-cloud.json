@@ -1,0 +1,57 @@
+{
+  "task": "§9.1 seed-cloud",
+  "viewport": { "w": 1440, "h": 900 },
+  "sigma": 0.26,
+  "query": {
+    "uniform": "?autoplay=0&seed=uniform",
+    "cloud": "?autoplay=0&seed=cloud",
+    "autoplay": "?seed=cloud"
+  },
+  "uniform": {
+    "mode": "uniform",
+    "n": 12000,
+    "median_px": 508.583,
+    "p95_px": 981.358,
+    "mean_px": 525.707,
+    "inside_frac": 0.239,
+    "contain": { "x": 258.545, "y": 135, "w": 490.909, "h": 630 }
+  },
+  "cloud": {
+    "mode": "cloud",
+    "n": 12000,
+    "median_px": 261.728,
+    "p95_px": 509.69,
+    "mean_px": 271.735,
+    "inside_frac": 0.894,
+    "contain": { "x": 258.545, "y": 135, "w": 490.909, "h": 630 }
+  },
+  "ratio": 0.5146,
+  "threshold": 0.6,
+  "home_after_cloud": {
+    "mode": "chaos",
+    "inside_frac": 0.239,
+    "median_px": 479.144
+  },
+  "autoplay": {
+    "boot_mode": "assemble",
+    "formed_mode": "formed",
+    "phase": "dwell",
+    "key": "INTRO"
+  },
+  "spring": { "SPRING": 0.055, "DAMP": 0.9, "VMAX": 10 },
+  "acceptance": {
+    "median_cloud_le_uniform_x_0_6": true,
+    "cloud_more_inside": true,
+    "home_disperse_not_cloud": true,
+    "spring_locked": true,
+    "autoplay_formed": true,
+    "pass": true
+  },
+  "screenshots": {
+    "uniform": "/opt/cursor/artifacts/seed_01_uniform_full_viewport.png",
+    "cloud": "/opt/cursor/artifacts/seed_02_cloud_painting_area.png",
+    "home": "/opt/cursor/artifacts/seed_03_home_still_full_viewport.png",
+    "assemble": "/opt/cursor/artifacts/seed_04_autoplay_cloud_assemble.png",
+    "formed": "/opt/cursor/artifacts/seed_05_autoplay_intro_formed.png"
+  }
+}
