@@ -10,7 +10,7 @@
 
 ## 当前进度（云端 Track A）
 
-手册 **§5 已完成**（真机试炼 / bench.html 协议）。B4 / B4.1 已过闸。自动放映修订包 §9.0–§9.6 已交付。作者点名《PixiJS v8 迁移总手册》最高严谨模式：H1 隔离 + 默认 Pixi 已过闸。当前只做 **拆除旧轨**（现网物理时钟 = ticker；Canvas2D worker / rAF 画口退役）。`physics()` / `applySpring` **未删**（C2 防火墙）。ctx 旧画函数仍留在源码里未调用。下一刀是 100k 默认点数或删除死掉的 ctx 函数（或用户改口）。
+手册 **§5 已完成**（真机试炼 / bench.html 协议）。B4 / B4.1 已过闸。自动放映修订包 §9.0–§9.6 已交付。作者点名《PixiJS v8 迁移总手册》最高严谨模式：现网默认 Pixi + ticker。当前只做 **INTRO 100k 默认点数**（复用 H1-④ `dallas-100k.bin`，不重采样）。大厅 / 社区 / NF 仍 12k JSON。`?bin=0` 回滚介绍 12k。弹簧 / physics **未改**。下一刀是 150k/250k、HALL 100k 或清 ctx 死代码（或用户改口）。
 
 - 凌厉弹簧 0.055 / 阻尼 0.90 / vmax 10；临界停止 0.6px / 0.06；驱离 100px 平方反比
 - 成画 1.5s（最早 1.2s）、回退 1.1s；相位时间走固定步长，冻结不计入
@@ -41,7 +41,8 @@
 - Pixi H1-⑤：分支 `cursor/pixi-h1-physics-52ec`。隔离 assemble 弹簧挂 `app.ticker` `UPDATE_PRIORITY.HIGH`；C2 黄金 `prototype/pixi-physics/golden-1000.f64`。证据 `painting/pixi-h1-5-physics.json`。
 - 现网双轨切轨：分支 `cursor/pixi-h1-live-52ec`。`?pixi=1` 才走 Pixi。证据 `painting/pixi-h1-6-live.json`。
 - 默认切轨：分支 `cursor/pixi-h1-default-52ec`。证据 `painting/pixi-h1-7-default.json`。
-- 拆除旧轨：本条分支 `cursor/pixi-h1-teardown-52ec`（叠在 `cursor/pixi-h1-default-52ec` 上）。现网唯一时钟 = `app.ticker`；`requestAnimationFrame(tick)` 已撤。worker blit 不再启动。`?pixi=0` 不再回滚。C9 回滚 = git。C2 黄金仍是 `dc1f1609…320a`。证据 `painting/pixi-h1-8-teardown.json`。下一刀是 100k 默认点数或清 ctx 死代码（须点名）。
+- 拆除旧轨：分支 `cursor/pixi-h1-teardown-52ec`。证据 `painting/pixi-h1-8-teardown.json`。
+- INTRO 100k：本条分支 `cursor/pixi-h1-100k-52ec`（叠在 `cursor/pixi-h1-teardown-52ec` 上）。介绍默认读 `prototype/pixi-cloud/dallas-100k.bin`（v3 DataView）。`?bin=0` 回 12k JSON。大厅/社区/NF 未改。证据 `painting/pixi-h1-9-100k.json`。下一刀是 150k/250k 或 HALL 100k 或清 ctx 死代码（须点名）。
 
 ---
 
@@ -247,4 +248,4 @@ POINTER_LERP 0.2  SIZES [2,3,4]
 
 1. 打开 http://localhost:8768/ 看现行原型（没有服务就在 `prototype/` 起 python http.server）。
 2. 读 `prototype/index.html` 的 CSS 报章区 + `openArchive` / `triggerEgg`，不要重写引擎。
-3. 只做用户这一次点名的事。现网默认 Pixi，旧 rAF 画口已撤。不要删 `physics()` / `applySpring`。不要把 12k 改成 100k，除非用户点名。
+3. 只做用户这一次点名的事。现网默认 Pixi，介绍默认 100k bin。不要改弹簧。不要把大厅/社区也改成 100k，除非用户点名。

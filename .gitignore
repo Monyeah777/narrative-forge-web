@@ -88,4 +88,5 @@ painting/*
 !painting/pixi-h1-6-live.json
 !painting/pixi-h1-7-default.json
 !painting/pixi-h1-8-teardown.json
+!painting/pixi-h1-9-100k.json
 
