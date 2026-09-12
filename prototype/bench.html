@@ -122,7 +122,13 @@
         var report = { task: "B4", gates: {}, chaos: null, assemble: null, formed: null };
         try {
           await waitReady(20000);
-          await sleep(400);
+          var paintedDeadline = Date.now() + 4000;
+          while (Date.now() < paintedDeadline) {
+            var painted = win().__nfRender;
+            if (painted && (painted.workerHasFrame || painted.workerBlit === false)) break;
+            await sleep(40);
+          }
+          await sleep(200);
           var w = win();
           if (w.__nfResetPerf) w.__nfResetPerf();
           statusEl.textContent = "chaos 2s";
@@ -131,12 +137,14 @@
             n: w.__nfRender.n,
             running: w.__nfRender.running,
             mode: w.__nfRender.mode,
-            perf: JSON.parse(JSON.stringify(w.__nfPerf || w.__nfRender.perf))
+            perf: JSON.parse(JSON.stringify((w.__nfGetPerf && w.__nfGetPerf()) || w.__nfPerf || {}))
           };
           if (w.__nfResetPerf) w.__nfResetPerf();
           statusEl.textContent = "assemble";
           var t0 = performance.now();
           w.document.getElementById("btn-intro").click();
+          var voidEl = w.document.getElementById("void");
+          if (voidEl) voidEl.dispatchEvent(new PointerEvent("pointerleave", { bubbles: true }));
           var formed = null;
           var deadline = Date.now() + 5000;
           while (Date.now() < deadline) {
@@ -145,7 +153,7 @@
               running: w.__nfRender.running,
               activeCount: w.__nfRender.activeCount,
               contain: w.__nfRender.contain,
-              perf: w.__nfPerf
+              perf: w.__nfGetPerf ? w.__nfGetPerf() : w.__nfPerf
             };
             if (formed.mode === "formed" && formed.running === false) break;
             await sleep(40);

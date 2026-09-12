@@ -13,9 +13,16 @@ def luma(im: Image.Image) -> Image.Image:
     return im.convert("L")
 
 
+def pixels(im: Image.Image) -> list[int]:
+    flat = getattr(im, "get_flattened_data", None)
+    if callable(flat):
+        return list(flat())
+    return list(im.getdata())
+
+
 def ssim_windows(a: Image.Image, b: Image.Image, win: int = 8, step: int = 4) -> float:
-    pa = list(a.getdata())
-    pb = list(b.getdata())
+    pa = pixels(a)
+    pb = pixels(b)
     w, h = a.size
     c1 = (0.01 * 255) ** 2
     c2 = (0.03 * 255) ** 2

@@ -87,6 +87,38 @@ async function waitReady(page, timeoutMs) {
   throw new Error("render atlas not ready");
 }
 
+async function canvasInkFrac(page) {
+  return page.evaluate(() => {
+    const canvas = document.getElementById("void");
+    if (!canvas || !canvas.width) return 0;
+    const g = canvas.getContext("2d");
+    const data = g.getImageData(0, 0, canvas.width, canvas.height).data;
+    let ink = 0;
+    let n = 0;
+    for (let i = 0; i < data.length; i += 64) {
+      n++;
+      const r = data[i];
+      const gg = data[i + 1];
+      const b = data[i + 2];
+      const a = data[i + 3];
+      if (a > 8 && Math.abs(r - 5) + Math.abs(gg - 5) + Math.abs(b - 5) > 18) ink++;
+    }
+    return n ? ink / n : 0;
+  });
+}
+
+async function waitPainted(page, timeoutMs) {
+  const deadline = Date.now() + timeoutMs;
+  let frac = 0;
+  while (Date.now() < deadline) {
+    const info = await page.evaluate(() => window.__nfRender || null);
+    frac = await canvasInkFrac(page);
+    if (frac > 0.002 && info && (info.workerHasFrame || info.workerBlit === false)) return frac;
+    await new Promise((r) => setTimeout(r, 40));
+  }
+  return frac;
+}
+
 async function snap(page, name) {
   const dest = path.join(ART, name);
   if (fs.existsSync(ART)) await page.screenshot({ path: dest, fullPage: false });
@@ -109,11 +141,26 @@ async function main() {
   }
   let browser;
   try {
-    browser = await chromium.launch({
-      executablePath: CHROME,
-      headless: true,
-      args: ["--no-sandbox", "--disable-gpu"],
-    });
+    const launches = [
+      { headless: false, args: ["--no-sandbox", "--ignore-gpu-blocklist"] },
+      { headless: true, args: ["--no-sandbox", "--ignore-gpu-blocklist"] },
+      { headless: true, args: ["--no-sandbox", "--disable-gpu"] },
+    ];
+    let launchErr = null;
+    for (const opt of launches) {
+      try {
+        browser = await chromium.launch({
+          executablePath: CHROME,
+          headless: opt.headless,
+          args: opt.args,
+        });
+        launchErr = null;
+        break;
+      } catch (err) {
+        launchErr = err;
+      }
+    }
+    if (!browser) throw launchErr || new Error("chrome launch failed");
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
     const logs = [];
     page.on("pageerror", (err) => logs.push("PAGEERROR " + String(err)));
@@ -122,7 +169,8 @@ async function main() {
       timeout: 30_000,
     });
     const ready = await waitReady(page, 20_000);
-    await new Promise((r) => setTimeout(r, 500));
+    const chaosInk = await waitPainted(page, 4000);
+    await new Promise((r) => setTimeout(r, 200));
     await page.evaluate(() => {
       if (window.__nfResetPerf) window.__nfResetPerf();
     });
@@ -132,8 +180,11 @@ async function main() {
       running: window.__nfRender.running,
       mode: window.__nfRender.mode,
       dpr: window.__nfRender.dpr,
-      perf: window.__nfPerf,
+      workerBlit: window.__nfRender.workerBlit,
+      workerHasFrame: window.__nfRender.workerHasFrame,
+      perf: window.__nfGetPerf ? window.__nfGetPerf() : window.__nfPerf,
     }));
+    chaos.ink_frac = await waitPainted(page, 2000);
     const homeShot = await snap(page, "b4_chaos_60fps.png");
 
     await page.evaluate(() => {
@@ -141,6 +192,10 @@ async function main() {
     });
     const t0 = Date.now();
     await page.click("#btn-intro");
+    await page.evaluate(() => {
+      const el = document.getElementById("void");
+      if (el) el.dispatchEvent(new PointerEvent("pointerleave", { bubbles: true }));
+    });
     const formedDeadline = Date.now() + 5000;
     let formed = null;
     while (Date.now() < formedDeadline) {
@@ -149,7 +204,7 @@ async function main() {
         running: window.__nfRender.running,
         activeCount: window.__nfRender.activeCount,
         contain: window.__nfRender.contain,
-        perf: window.__nfPerf,
+        perf: window.__nfGetPerf ? window.__nfGetPerf() : window.__nfPerf,
       }));
       if (formed.mode === "formed" && formed.running === false) break;
       await new Promise((r) => setTimeout(r, 40));
@@ -160,6 +215,7 @@ async function main() {
       if (el) el.dispatchEvent(new PointerEvent("pointerleave", { bubbles: true }));
     });
     await new Promise((r) => setTimeout(r, 200));
+    await waitPainted(page, 2000);
     const introShot = await snap(page, "b4_formed_similarity.png");
 
     const crop = await page.evaluate(() => {
@@ -224,6 +280,7 @@ async function main() {
         work_p95_le_16_67: work.p95 <= 16.67,
         chaos_longtask_0: (chaos.perf && chaos.perf.longtaskCount) === 0,
         formed_idle: formed && formed.mode === "formed" && formed.running === false,
+        chaos_visible: (chaos.ink_frac || 0) > 0.002,
         ssim_blur_ge_0_35: similarity.ssim_blur >= 0.35,
         hist_corr_ge_0_70: similarity.hist_corr >= 0.7,
         no_getImageData_in_tick: !engineHasGetImageDataInTick(),
@@ -233,6 +290,8 @@ async function main() {
         raf_fps_headless: raf.fps,
         work_mean_ms: work.mean,
         work_p95_ms: work.p95,
+        chaos_ink_frac: chaos.ink_frac,
+        chaos_ink_warmup: chaosInk,
         gate: "60fps is work p95 ≤ 16.67ms; headless rAF Hz is informational",
       },
     };
