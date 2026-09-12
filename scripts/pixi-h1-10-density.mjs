@@ -29,6 +29,8 @@ const PORT = Number(process.env.NF_BENCH_PORT || 8787);
 const FROZEN_VENDOR = "9948591083793305468d73915a3ea85032dcf8e32eee7a1328585050d7a14d53";
 const FROZEN_GOLDEN = "dc1f16092d775ee1462c94eb964bb95523470bd7fd7770b1efab02c6940f320a";
 const FROZEN_100K = "1499db850a9da7856763f974ec79ff1d14be42503a66ab7fb8193954711f1880";
+const FROZEN_150K = "d7d709d5d3475050d6781aac63e750400e3d77c2960f195a4b98d0777a727e82";
+const FROZEN_250K = "31abff9b19b7482ca4ad43a9e3a71170945bfc3712d2ebc0ea528e26fe26e0a2";
 const CHROME =
   process.env.CHROME_PATH ||
   ["/usr/local/bin/google-chrome", "/usr/bin/google-chrome", "/usr/bin/chromium"].find((p) =>
@@ -249,7 +251,9 @@ async function main() {
   const bin100 = binRecord(CLOUD_BIN, 100000);
   bin100.pass = bin100.pass && bin100.sha === FROZEN_100K;
   const bin150 = binRecord(BIN_150, 150000);
+  bin150.pass = bin150.pass && bin150.sha === FROZEN_150K;
   const bin250 = binRecord(BIN_250, 250000);
+  bin250.pass = bin250.pass && bin250.sha === FROZEN_250K;
   const grepPage = grepDensity();
   const liveGrep = grepLive();
   if (!golden.pass) throw new Error("C2 golden failed: " + JSON.stringify(golden));
