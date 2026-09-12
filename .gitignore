@@ -115,4 +115,11 @@ painting/*
 !painting/radial-live.json
 !painting/radial-s6.json
 !painting/radial-s6-strict.json
+!painting/assembly-v3-a.json
+!painting/assembly-v3-a-w.json
+!painting/assembly-v3-a-migrate.json
+!painting/assembly-v3-a-w-dallas.png
+!painting/assembly-v3-a-w-scotland.png
+!painting/assembly-v3-a-w-met.png
+!painting/assembly-v3-a-rms.svg
 

@@ -1,0 +1,1010 @@
+{
+  "task": "assembly-v3-A-migrate-G123",
+  "volume": "docs/NF_粒子装配模块_整合总卷_v3.0.md",
+  "n_trace": 4000,
+  "modules": [
+    {
+      "id": 1,
+      "name": "时间步进",
+      "want": "h=1/60 + 累积器 + 钳 50ms + 插值 α；时间源 deltaMS",
+      "have": true,
+      "gap": "现网 ticker.elapsedMS（未封顶）+ FRAME_CLAMP=0.25 + MAX_STEPS=2，不是卷面 deltaMS / 50ms / 不限步",
+      "pass": false
+    },
+    {
+      "id": 2,
+      "name": "粒子积分",
+      "want": "半隐式欧拉 v←v+(f/m)h；x←x+vh",
+      "have": true,
+      "gap": "",
+      "pass": true
+    },
+    {
+      "id": 3,
+      "name": "空间变阻尼",
+      "want": "k(r)=0.10−0.08S；c(r)=0.92−0.14S",
+      "have": true,
+      "gap": "现网 handbookShape 把 c 改成 c* 形状混合，不是正文欠阻尼对",
+      "pass": false
+    },
+    {
+      "id": 4,
+      "name": "各向异性",
+      "want": "c_rad/c_tan = c ± 0.04·S",
+      "have": true,
+      "gap": "",
+      "pass": true
+    },
+    {
+      "id": 5,
+      "name": "无散度流场",
+      "want": "Curl-Noise w=∇×Ψ，上限 6px/s；LUT 64×64 @30Hz",
+      "have": true,
+      "gap": "径向世界 LUT 是 Simplex 位移，不是 Bridson curl 力项；旧 applySpring 才有 curl",
+      "pass": false
+    },
+    {
+      "id": 6,
+      "name": "生命周期",
+      "want": "渐入 0.6s → 保持 → 末 20%τ 渐出；τ∈[40,120]s",
+      "have": false,
+      "gap": "无 age / τ / 渐入渐出",
+      "pass": false
+    },
+    {
+      "id": 7,
+      "name": "稳态回收",
+      "want": "α≤0.01 或超 1.25·R95 → 回收重生",
+      "have": false,
+      "gap": "无回收队列",
+      "pass": false
+    },
+    {
+      "id": 8,
+      "name": "边界软化",
+      "want": "Q(r)=smoothstep(0.82,0.98)；β_max=8px/s",
+      "have": false,
+      "gap": "无 Q(r) 边界软化",
+      "pass": false
+    },
+    {
+      "id": 9,
+      "name": "驻留运动 M0–M3",
+      "want": "M0 涟漪 / M1 流场 / M2 尘埃 5% / M3 脉线逸散；渲染层叠加",
+      "have": true,
+      "gap": "有 Simplex drift + 640 尘埃（1.3% of 50k）。无 M0 涟漪公式，无 M3 脉线，无余韵斜坡",
+      "pass": false
+    },
+    {
+      "id": 10,
+      "name": "渲染合成",
+      "want": "x_render = x_phys + (x_target−c*)·s(t) + drift(t)；0→40%@2s→100%@8s",
+      "have": true,
+      "gap": "有插值+drift，无目标向心缩放余韵",
+      "pass": false
+    }
+  ],
+  "modules_pass": 2,
+  "modules_want": 10,
+  "container": {
+    "ParticleContainer": true,
+    "dynamic_position": true,
+    "addParticle": true,
+    "roundPixels_set": false,
+    "softDot_gradient": true,
+    "clock": "elapsedMS",
+    "volume_clock": "deltaMS",
+    "MAX_STEPS": 2,
+    "FRAME_CLAMP_s": 0.25,
+    "volume_MAX_FRAME_MS": 50,
+    "pixelBlock_default": 2,
+    "volume_pixel": 3,
+    "introRevealMs": 2400,
+    "ASSEMBLE_S": 1.5,
+    "snapAllToTargets": true,
+    "snap_called_on_assemble_end": true,
+    "formed_lock": true,
+    "complete_neq_stop": false
+  },
+  "clock": {
+    "pixi_docs": "deltaMS = capped/speed-scaled; elapsedMS = raw uncapped (PixiJS v8 Ticker)",
+    "live_uses": "ticker.elapsedMS / 1000 → tick() acc → physics() → radialWorld.drain(DT=1/60)",
+    "volume_legal": "const frameMS = Math.min(t.deltaMS, MAX_FRAME_MS); accMs += frameMS; while accMs>=FIXED_H_MS",
+    "mismatch": [
+      "时间源名字是 elapsedMS 不是 deltaMS",
+      "外层 FRAME_CLAMP=0.25s（卷面 50ms）",
+      "MAX_STEPS=2 → 每帧最多推进 33ms 物理"
+    ]
+  },
+  "sequences": {
+    "noSnap60": {
+      "hz": 60,
+      "snap": null,
+      "rms0": 682.76,
+      "p99_max": 106.532,
+      "p99_median_nonzero": 1.023,
+      "spike_over_3x_median": true,
+      "spike_over_3x_prev1s": false,
+      "prev1s_worst_ratio": 1.5,
+      "later_frac": 0.932,
+      "rms_monotonic": true,
+      "last": {
+        "t": 3.2,
+        "frame": 191,
+        "steps": 1,
+        "rms": 0.173,
+        "p": 0.9997,
+        "settled": 0.9965,
+        "p99": 0.022
+      },
+      "curve_every_8": [
+        {
+          "t": 0.017,
+          "frame": 0,
+          "steps": 1,
+          "rms": 658.96,
+          "p": 0.0349,
+          "settled": 0,
+          "p99": 60.15
+        },
+        {
+          "t": 0.15,
+          "frame": 8,
+          "steps": 1,
+          "rms": 369.022,
+          "p": 0.4595,
+          "settled": 0,
+          "p99": 66.195
+        },
+        {
+          "t": 0.283,
+          "frame": 16,
+          "steps": 1,
+          "rms": 231.836,
+          "p": 0.6604,
+          "settled": 0,
+          "p99": 32.114
+        },
+        {
+          "t": 0.417,
+          "frame": 24,
+          "steps": 1,
+          "rms": 156.87,
+          "p": 0.7702,
+          "settled": 0.0025,
+          "p99": 21.996
+        },
+        {
+          "t": 0.55,
+          "frame": 32,
+          "steps": 1,
+          "rms": 107.806,
+          "p": 0.8421,
+          "settled": 0.0743,
+          "p99": 15.77
+        },
+        {
+          "t": 0.683,
+          "frame": 40,
+          "steps": 1,
+          "rms": 74.609,
+          "p": 0.8907,
+          "settled": 0.4865,
+          "p99": 11.157
+        },
+        {
+          "t": 0.817,
+          "frame": 48,
+          "steps": 1,
+          "rms": 51.884,
+          "p": 0.924,
+          "settled": 0.559,
+          "p99": 7.945
+        },
+        {
+          "t": 0.95,
+          "frame": 56,
+          "steps": 1,
+          "rms": 36.217,
+          "p": 0.947,
+          "settled": 0.6093,
+          "p99": 5.633
+        },
+        {
+          "t": 1.083,
+          "frame": 64,
+          "steps": 1,
+          "rms": 25.364,
+          "p": 0.9629,
+          "settled": 0.6528,
+          "p99": 3.976
+        },
+        {
+          "t": 1.217,
+          "frame": 72,
+          "steps": 1,
+          "rms": 17.815,
+          "p": 0.9739,
+          "settled": 0.6843,
+          "p99": 2.815
+        },
+        {
+          "t": 1.35,
+          "frame": 80,
+          "steps": 1,
+          "rms": 12.548,
+          "p": 0.9816,
+          "settled": 0.712,
+          "p99": 2.012
+        },
+        {
+          "t": 1.483,
+          "frame": 88,
+          "steps": 1,
+          "rms": 8.862,
+          "p": 0.987,
+          "settled": 0.7348,
+          "p99": 1.432
+        },
+        {
+          "t": 1.617,
+          "frame": 96,
+          "steps": 1,
+          "rms": 6.276,
+          "p": 0.9908,
+          "settled": 0.7528,
+          "p99": 1
+        },
+        {
+          "t": 1.75,
+          "frame": 104,
+          "steps": 1,
+          "rms": 4.457,
+          "p": 0.9935,
+          "settled": 0.7678,
+          "p99": 0.709
+        },
+        {
+          "t": 1.883,
+          "frame": 112,
+          "steps": 1,
+          "rms": 3.173,
+          "p": 0.9954,
+          "settled": 0.7827,
+          "p99": 0.509
+        },
+        {
+          "t": 2.017,
+          "frame": 120,
+          "steps": 1,
+          "rms": 2.266,
+          "p": 0.9967,
+          "settled": 0.7983,
+          "p99": 0.365
+        },
+        {
+          "t": 2.15,
+          "frame": 128,
+          "steps": 1,
+          "rms": 1.623,
+          "p": 0.9976,
+          "settled": 0.813,
+          "p99": 0.263
+        },
+        {
+          "t": 2.283,
+          "frame": 136,
+          "steps": 1,
+          "rms": 1.166,
+          "p": 0.9983,
+          "settled": 0.8245,
+          "p99": 0.192
+        },
+        {
+          "t": 2.417,
+          "frame": 144,
+          "steps": 1,
+          "rms": 0.841,
+          "p": 0.9988,
+          "settled": 0.841,
+          "p99": 0.138
+        },
+        {
+          "t": 2.55,
+          "frame": 152,
+          "steps": 1,
+          "rms": 0.609,
+          "p": 0.9991,
+          "settled": 0.8603,
+          "p99": 0.1
+        },
+        {
+          "t": 2.683,
+          "frame": 160,
+          "steps": 1,
+          "rms": 0.444,
+          "p": 0.9993,
+          "settled": 0.886,
+          "p99": 0.072
+        },
+        {
+          "t": 2.817,
+          "frame": 168,
+          "steps": 1,
+          "rms": 0.329,
+          "p": 0.9995,
+          "settled": 0.923,
+          "p99": 0.052
+        },
+        {
+          "t": 2.95,
+          "frame": 176,
+          "steps": 1,
+          "rms": 0.25,
+          "p": 0.9996,
+          "settled": 0.9568,
+          "p99": 0.039
+        },
+        {
+          "t": 3.083,
+          "frame": 184,
+          "steps": 1,
+          "rms": 0.2,
+          "p": 0.9997,
+          "settled": 0.9843,
+          "p99": 0.028
+        }
+      ]
+    },
+    "snap60": {
+      "hz": 60,
+      "snap": {
+        "t": 2.417,
+        "p99": 3.377,
+        "p_before": 0.9988,
+        "settled_before": 0.841,
+        "trail_1s_median": 0.469,
+        "trail_ratio": 7.2
+      },
+      "rms0": 682.76,
+      "p99_max": 106.532,
+      "p99_median_nonzero": 2.876,
+      "spike_over_3x_median": true,
+      "spike_over_3x_prev1s": true,
+      "prev1s_worst_ratio": 7.2,
+      "later_frac": 0.91,
+      "rms_monotonic": true,
+      "last": {
+        "t": 2.417,
+        "frame": 144.5,
+        "rms": 0,
+        "p": 1,
+        "settled": 1,
+        "p99": 3.377,
+        "snap": true
+      },
+      "curve_every_8": [
+        {
+          "t": 0.017,
+          "frame": 0,
+          "steps": 1,
+          "rms": 658.96,
+          "p": 0.0349,
+          "settled": 0,
+          "p99": 60.15
+        },
+        {
+          "t": 0.15,
+          "frame": 8,
+          "steps": 1,
+          "rms": 369.022,
+          "p": 0.4595,
+          "settled": 0,
+          "p99": 66.195
+        },
+        {
+          "t": 0.283,
+          "frame": 16,
+          "steps": 1,
+          "rms": 231.836,
+          "p": 0.6604,
+          "settled": 0,
+          "p99": 32.114
+        },
+        {
+          "t": 0.417,
+          "frame": 24,
+          "steps": 1,
+          "rms": 156.87,
+          "p": 0.7702,
+          "settled": 0.0025,
+          "p99": 21.996
+        },
+        {
+          "t": 0.55,
+          "frame": 32,
+          "steps": 1,
+          "rms": 107.806,
+          "p": 0.8421,
+          "settled": 0.0743,
+          "p99": 15.77
+        },
+        {
+          "t": 0.683,
+          "frame": 40,
+          "steps": 1,
+          "rms": 74.609,
+          "p": 0.8907,
+          "settled": 0.4865,
+          "p99": 11.157
+        },
+        {
+          "t": 0.817,
+          "frame": 48,
+          "steps": 1,
+          "rms": 51.884,
+          "p": 0.924,
+          "settled": 0.559,
+          "p99": 7.945
+        },
+        {
+          "t": 0.95,
+          "frame": 56,
+          "steps": 1,
+          "rms": 36.217,
+          "p": 0.947,
+          "settled": 0.6093,
+          "p99": 5.633
+        },
+        {
+          "t": 1.083,
+          "frame": 64,
+          "steps": 1,
+          "rms": 25.364,
+          "p": 0.9629,
+          "settled": 0.6528,
+          "p99": 3.976
+        },
+        {
+          "t": 1.217,
+          "frame": 72,
+          "steps": 1,
+          "rms": 17.815,
+          "p": 0.9739,
+          "settled": 0.6843,
+          "p99": 2.815
+        },
+        {
+          "t": 1.35,
+          "frame": 80,
+          "steps": 1,
+          "rms": 12.548,
+          "p": 0.9816,
+          "settled": 0.712,
+          "p99": 2.012
+        },
+        {
+          "t": 1.483,
+          "frame": 88,
+          "steps": 1,
+          "rms": 8.862,
+          "p": 0.987,
+          "settled": 0.7348,
+          "p99": 1.432
+        },
+        {
+          "t": 1.617,
+          "frame": 96,
+          "steps": 1,
+          "rms": 6.276,
+          "p": 0.9908,
+          "settled": 0.7528,
+          "p99": 1
+        },
+        {
+          "t": 1.75,
+          "frame": 104,
+          "steps": 1,
+          "rms": 4.457,
+          "p": 0.9935,
+          "settled": 0.7678,
+          "p99": 0.709
+        },
+        {
+          "t": 1.883,
+          "frame": 112,
+          "steps": 1,
+          "rms": 3.173,
+          "p": 0.9954,
+          "settled": 0.7827,
+          "p99": 0.509
+        },
+        {
+          "t": 2.017,
+          "frame": 120,
+          "steps": 1,
+          "rms": 2.266,
+          "p": 0.9967,
+          "settled": 0.7983,
+          "p99": 0.365
+        },
+        {
+          "t": 2.15,
+          "frame": 128,
+          "steps": 1,
+          "rms": 1.623,
+          "p": 0.9976,
+          "settled": 0.813,
+          "p99": 0.263
+        },
+        {
+          "t": 2.283,
+          "frame": 136,
+          "steps": 1,
+          "rms": 1.166,
+          "p": 0.9983,
+          "settled": 0.8245,
+          "p99": 0.192
+        },
+        {
+          "t": 2.417,
+          "frame": 144,
+          "steps": 1,
+          "rms": 0.841,
+          "p": 0.9988,
+          "settled": 0.841,
+          "p99": 0.138
+        },
+        {
+          "t": 2.417,
+          "frame": 144.5,
+          "rms": 0,
+          "p": 1,
+          "settled": 1,
+          "p99": 3.377,
+          "snap": true
+        }
+      ]
+    },
+    "snap120": {
+      "hz": 120,
+      "snap": {
+        "t": 2.417,
+        "p99": 3.377,
+        "p_before": 0.9988,
+        "settled_before": 0.841,
+        "trail_1s_median": 0.469,
+        "trail_ratio": 7.2
+      },
+      "rms0": 682.76,
+      "p99_max": 106.532,
+      "p99_median_nonzero": 2.876,
+      "spike_over_3x_median": true,
+      "spike_over_3x_prev1s": true,
+      "prev1s_worst_ratio": 7.2,
+      "later_frac": 0.904,
+      "rms_monotonic": true,
+      "last": {
+        "t": 2.417,
+        "frame": 289.5,
+        "rms": 0,
+        "p": 1,
+        "settled": 1,
+        "p99": 3.377,
+        "snap": true
+      },
+      "curve_every_8": [
+        {
+          "t": 0,
+          "frame": 0,
+          "steps": 0,
+          "rms": 682.764,
+          "p": 0,
+          "settled": 0,
+          "p99": 0
+        },
+        {
+          "t": 0.067,
+          "frame": 8,
+          "steps": 0,
+          "rms": 538.438,
+          "p": 0.2114,
+          "settled": 0,
+          "p99": 0
+        },
+        {
+          "t": 0.133,
+          "frame": 16,
+          "steps": 0,
+          "rms": 395.964,
+          "p": 0.4201,
+          "settled": 0,
+          "p99": 0
+        },
+        {
+          "t": 0.2,
+          "frame": 24,
+          "steps": 0,
+          "rms": 304.629,
+          "p": 0.5538,
+          "settled": 0,
+          "p99": 0
+        },
+        {
+          "t": 0.267,
+          "frame": 32,
+          "steps": 0,
+          "rms": 244.111,
+          "p": 0.6425,
+          "settled": 0,
+          "p99": 0
+        },
+        {
+          "t": 0.333,
+          "frame": 40,
+          "steps": 0,
+          "rms": 199.578,
+          "p": 0.7077,
+          "settled": 0.0005,
+          "p99": 0
+        },
+        {
+          "t": 0.4,
+          "frame": 48,
+          "steps": 0,
+          "rms": 164.52,
+          "p": 0.759,
+          "settled": 0.0025,
+          "p99": 0
+        },
+        {
+          "t": 0.467,
+          "frame": 56,
+          "steps": 0,
+          "rms": 136.141,
+          "p": 0.8006,
+          "settled": 0.007,
+          "p99": 0
+        },
+        {
+          "t": 0.533,
+          "frame": 64,
+          "steps": 0,
+          "rms": 112.93,
+          "p": 0.8346,
+          "settled": 0.049,
+          "p99": 0
+        },
+        {
+          "t": 0.6,
+          "frame": 72,
+          "steps": 0,
+          "rms": 93.844,
+          "p": 0.8626,
+          "settled": 0.2358,
+          "p99": 0
+        },
+        {
+          "t": 0.667,
+          "frame": 80,
+          "steps": 0,
+          "rms": 78.099,
+          "p": 0.8856,
+          "settled": 0.4743,
+          "p99": 0
+        },
+        {
+          "t": 0.733,
+          "frame": 88,
+          "steps": 0,
+          "rms": 65.075,
+          "p": 0.9047,
+          "settled": 0.5158,
+          "p99": 0
+        },
+        {
+          "t": 0.8,
+          "frame": 96,
+          "steps": 0,
+          "rms": 54.282,
+          "p": 0.9205,
+          "settled": 0.552,
+          "p99": 0
+        },
+        {
+          "t": 0.867,
+          "frame": 104,
+          "steps": 0,
+          "rms": 45.322,
+          "p": 0.9336,
+          "settled": 0.58,
+          "p99": 0
+        },
+        {
+          "t": 0.933,
+          "frame": 112,
+          "steps": 0,
+          "rms": 37.875,
+          "p": 0.9445,
+          "settled": 0.6045,
+          "p99": 0
+        },
+        {
+          "t": 1,
+          "frame": 120,
+          "steps": 0,
+          "rms": 31.677,
+          "p": 0.9536,
+          "settled": 0.6255,
+          "p99": 0
+        },
+        {
+          "t": 1.067,
+          "frame": 128,
+          "steps": 0,
+          "rms": 26.514,
+          "p": 0.9612,
+          "settled": 0.6483,
+          "p99": 0
+        },
+        {
+          "t": 1.133,
+          "frame": 136,
+          "steps": 0,
+          "rms": 22.209,
+          "p": 0.9675,
+          "settled": 0.6657,
+          "p99": 0
+        },
+        {
+          "t": 1.2,
+          "frame": 144,
+          "steps": 0,
+          "rms": 18.616,
+          "p": 0.9727,
+          "settled": 0.681,
+          "p99": 0
+        },
+        {
+          "t": 1.267,
+          "frame": 152,
+          "steps": 0,
+          "rms": 15.616,
+          "p": 0.9771,
+          "settled": 0.696,
+          "p99": 0
+        },
+        {
+          "t": 1.333,
+          "frame": 160,
+          "steps": 0,
+          "rms": 13.108,
+          "p": 0.9808,
+          "settled": 0.708,
+          "p99": 0
+        },
+        {
+          "t": 1.4,
+          "frame": 168,
+          "steps": 0,
+          "rms": 11.01,
+          "p": 0.9839,
+          "settled": 0.719,
+          "p99": 0
+        },
+        {
+          "t": 1.467,
+          "frame": 176,
+          "steps": 0,
+          "rms": 9.254,
+          "p": 0.9864,
+          "settled": 0.7308,
+          "p99": 0
+        },
+        {
+          "t": 1.533,
+          "frame": 184,
+          "steps": 0,
+          "rms": 7.784,
+          "p": 0.9886,
+          "settled": 0.74,
+          "p99": 0
+        },
+        {
+          "t": 1.6,
+          "frame": 192,
+          "steps": 0,
+          "rms": 6.552,
+          "p": 0.9904,
+          "settled": 0.7503,
+          "p99": 0
+        },
+        {
+          "t": 1.667,
+          "frame": 200,
+          "steps": 0,
+          "rms": 5.518,
+          "p": 0.9919,
+          "settled": 0.7585,
+          "p99": 0
+        },
+        {
+          "t": 1.733,
+          "frame": 208,
+          "steps": 0,
+          "rms": 4.651,
+          "p": 0.9932,
+          "settled": 0.7658,
+          "p99": 0
+        },
+        {
+          "t": 1.8,
+          "frame": 216,
+          "steps": 0,
+          "rms": 3.922,
+          "p": 0.9943,
+          "settled": 0.773,
+          "p99": 0
+        },
+        {
+          "t": 1.867,
+          "frame": 224,
+          "steps": 0,
+          "rms": 3.311,
+          "p": 0.9952,
+          "settled": 0.7817,
+          "p99": 0
+        },
+        {
+          "t": 1.933,
+          "frame": 232,
+          "steps": 0,
+          "rms": 2.796,
+          "p": 0.9959,
+          "settled": 0.7895,
+          "p99": 0
+        },
+        {
+          "t": 2,
+          "frame": 240,
+          "steps": 0,
+          "rms": 2.363,
+          "p": 0.9965,
+          "settled": 0.7965,
+          "p99": 0
+        },
+        {
+          "t": 2.067,
+          "frame": 248,
+          "steps": 0,
+          "rms": 1.999,
+          "p": 0.9971,
+          "settled": 0.8038,
+          "p99": 0
+        },
+        {
+          "t": 2.133,
+          "frame": 256,
+          "steps": 0,
+          "rms": 1.692,
+          "p": 0.9975,
+          "settled": 0.811,
+          "p99": 0
+        },
+        {
+          "t": 2.2,
+          "frame": 264,
+          "steps": 0,
+          "rms": 1.433,
+          "p": 0.9979,
+          "settled": 0.8173,
+          "p99": 0
+        },
+        {
+          "t": 2.267,
+          "frame": 272,
+          "steps": 0,
+          "rms": 1.215,
+          "p": 0.9982,
+          "settled": 0.8238,
+          "p99": 0
+        },
+        {
+          "t": 2.333,
+          "frame": 280,
+          "steps": 0,
+          "rms": 1.031,
+          "p": 0.9985,
+          "settled": 0.8303,
+          "p99": 0
+        },
+        {
+          "t": 2.4,
+          "frame": 288,
+          "steps": 0,
+          "rms": 0.876,
+          "p": 0.9987,
+          "settled": 0.8378,
+          "p99": 0
+        },
+        {
+          "t": 2.417,
+          "frame": 289.5,
+          "rms": 0,
+          "p": 1,
+          "settled": 1,
+          "p99": 3.377,
+          "snap": true
+        }
+      ]
+    }
+  },
+  "g": {
+    "G1": {
+      "want": "RMS 平滑单调",
+      "rms_monotonic_60_nosnap": true,
+      "later_frac_nosnap": 0.932,
+      "later_frac_want": 0.35,
+      "pass_nosnap_mono": true,
+      "pass_later": true
+    },
+    "G2": {
+      "want": "单帧位移 P99 ≤ 3× 前一秒中位数",
+      "snap_p99_60": 3.377,
+      "snap_trail_ratio_60": 7.2,
+      "spike_60": true,
+      "spike_120": true,
+      "pass": false
+    },
+    "G3": {
+      "want": "代码审计 + 60/120 对比",
+      "snap_t_60": 2.417,
+      "snap_t_120": 2.417,
+      "snap_t_delta_s": 0,
+      "suspects": [
+        {
+          "id": "X1",
+          "name": "包络截断写终态",
+          "verdict": "成立",
+          "evidence": "snapAllToTargets → lockTo(tx,ty) 单帧写终态；G2 snap p99=3.377"
+        },
+        {
+          "id": "X2",
+          "name": "状态机提前切 DWELL/formed",
+          "verdict": "成立",
+          "evidence": "phaseElapsed>=budget 或 (t>=1.2s 且 settled>=0.97) 就 snap + setMode(formed)，不是 p≥0.995"
+        },
+        {
+          "id": "X3",
+          "name": "帧依赖跳步",
+          "verdict": "部分",
+          "evidence": "phaseElapsed 跟物理步走，但 MAX_STEPS=2 会在掉帧时少步进"
+        },
+        {
+          "id": "X4",
+          "name": "交接只播一半",
+          "verdict": "本闸未测交接录像",
+          "evidence": "HANDOVER 仍走 §3 八条；本闸只测 INTRO 装配"
+        },
+        {
+          "id": "X5",
+          "name": "粒子池重建",
+          "verdict": "未在 INTRO 内触发",
+          "evidence": "formTargets 会 rebuildRadialWorld；同画 INTRO 不重建"
+        },
+        {
+          "id": "X6",
+          "name": "缓动后半冲线",
+          "verdict": "成立（由 snap 造成）",
+          "evidence": "后段不是 S 形收束，而是 snap 把 p 从 <1 拉到 1"
+        }
+      ]
+    }
+  },
+  "redlines_live": {
+    "glow_softDot": true,
+    "complete_eq_stop": true,
+    "pixel_2_not_3": true,
+    "snapAll": true
+  }
+}
