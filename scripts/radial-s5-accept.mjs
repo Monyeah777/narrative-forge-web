@@ -274,11 +274,11 @@ function scaleRgb24(pixels, w, h, scale) {
   return { buf: out, w: sw, h: sh };
 }
 
-function cropZoomRgb24(pixels, w, h, cx, cy, src, zoom) {
-  const dw = src * zoom;
-  const dh = src * zoom;
-  const x0 = Math.round(cx - src / 2);
-  const y0 = Math.round(cy - src / 2);
+function cropZoomRgb24(pixels, w, h, cx, cy, srcW, srcH, zoom) {
+  const dw = (srcW * zoom) & ~1;
+  const dh = (srcH * zoom) & ~1;
+  const x0 = Math.round(cx - srcW / 2);
+  const y0 = Math.round(cy - srcH / 2);
   const out = Buffer.alloc(dw * dh * 3);
   const bytes = new Uint8Array(pixels.buffer, pixels.byteOffset, pixels.byteLength);
   let o = 0;
@@ -299,6 +299,18 @@ function cropZoomRgb24(pixels, w, h, cx, cy, src, zoom) {
     }
   }
   return { buf: out, w: dw, h: dh };
+}
+
+function sideBySide(left, right) {
+  if (left.h !== right.h) throw new Error("sideBySide height mismatch");
+  const w = left.w + right.w;
+  const h = left.h;
+  const out = Buffer.alloc(w * h * 3);
+  for (let y = 0; y < h; y++) {
+    left.buf.copy(out, (y * w) * 3, y * left.w * 3, (y + 1) * left.w * 3);
+    right.buf.copy(out, (y * w + left.w) * 3, y * right.w * 3, (y + 1) * right.w * 3);
+  }
+  return { buf: out, w, h };
 }
 
 function runFfmpeg(args, input) {
@@ -374,12 +386,33 @@ function phaseAtFrame(i, fps) {
   return physics.PHASE.REPEL;
 }
 
+function pickBand(world, lo, hi) {
+  const ids = [];
+  for (let i = 0; i < world.n; i++) {
+    if (world.r[i] >= lo && world.r[i] < hi) ids.push(i);
+  }
+  return ids.length ? ids[(ids.length / 2) | 0] : 0;
+}
+
+function framePair(renderer, cx, cy, ex, ey) {
+  return sideBySide(
+    cropZoomRgb24(renderer.pixels, renderer.width, renderer.height, cx, cy, 240, 256, 2),
+    cropZoomRgb24(renderer.pixels, renderer.width, renderer.height, ex, ey, 240, 256, 2)
+  );
+}
+
 async function recordVideo(dallas, dest) {
   const frames = VIDEO_S * VIDEO_FPS;
   const world = makeWorld(dallas, physics.PHASE.INTRO);
   const renderer = makeRenderer(world);
   renderer.prepare();
-  const preview = scaleRgb24(renderer.pixels, renderer.width, renderer.height, VIDEO_SCALE);
+  const ci = pickBand(world, 0, 0.3);
+  const ei = pickBand(world, 0.9, 1.01);
+  const cx = world.tx[ci];
+  const cy = world.ty[ci];
+  const ex = world.tx[ei];
+  const ey = world.ty[ei];
+  const preview = framePair(renderer, cx, cy, ex, ey);
   const args = [
     "-y",
     "-f",
@@ -424,11 +457,20 @@ async function recordVideo(dallas, dest) {
     world.drain(DWELL_DT);
     renderer.blit();
     scriptMs.push(performance.now() - t0);
-    const rgb = scaleRgb24(renderer.pixels, renderer.width, renderer.height, VIDEO_SCALE);
+    const rgb = framePair(renderer, cx, cy, ex, ey);
+    if (i === 30 || i === 240) {
+      if (!recordVideo._hash) recordVideo._hash = {};
+      recordVideo._hash[i] = sha256(rgb.buf.subarray(Math.floor(rgb.buf.length / 2)));
+    }
     child.stdin.write(rgb.buf);
   }
   child.stdin.end();
   await done;
+  const edgeIntro = recordVideo._hash[30];
+  const edgeDwell = recordVideo._hash[240];
+  if (edgeIntro === edgeDwell) {
+    throw new Error("S5 video edge crop identical at 1s INTRO and 8s DWELL; drift not reaching pixels");
+  }
   return {
     frames,
     fps: VIDEO_FPS,
@@ -436,6 +478,9 @@ async function recordVideo(dallas, dest) {
     width: preview.w,
     height: preview.h,
     script_ms: scriptMs,
+    crop: { center_r: world.r[ci], edge_r: world.r[ei], cx, cy, ex, ey },
+    edge_intro_sha: edgeIntro,
+    edge_dwell_sha: edgeDwell,
   };
 }
 
@@ -503,12 +548,15 @@ async function main() {
   stillRenderer.prepare();
   stillRenderer.blit();
   const full = scaleRgb24(stillRenderer.pixels, stillRenderer.width, stillRenderer.height, VIDEO_SCALE);
+  const stillC = pickBand(stillWorld, 0, 0.3);
+  const stillE = pickBand(stillWorld, 0.9, 1.01);
   const center = cropZoomRgb24(
     stillRenderer.pixels,
     stillRenderer.width,
     stillRenderer.height,
-    stillRenderer.width * 0.5,
-    stillRenderer.height * 0.5,
+    stillWorld.tx[stillC],
+    stillWorld.ty[stillC],
+    160,
     160,
     4
   );
@@ -516,8 +564,9 @@ async function main() {
     stillRenderer.pixels,
     stillRenderer.width,
     stillRenderer.height,
-    stillRenderer.width * 0.5 + stillRenderer.width * dallas.f.R95 * 0.92,
-    stillRenderer.height * 0.5,
+    stillWorld.tx[stillE],
+    stillWorld.ty[stillE],
+    160,
     160,
     4
   );
@@ -613,6 +662,8 @@ async function main() {
         fps: video.fps,
         frames: video.frames,
         size: `${video.width}x${video.height}`,
+        crop: video.crop,
+        edge_frames_differ: video.edge_intro_sha !== video.edge_dwell_sha,
         script_p95_ms: [...video.script_ms].sort((a, b) => a - b)[
           Math.floor(video.script_ms.length * 0.95)
         ],
