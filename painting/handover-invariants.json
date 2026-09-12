@@ -1,0 +1,54 @@
+{
+  "task": "§9.2 handover-invariants",
+  "viewport": { "w": 1440, "h": 900 },
+  "query": "?dwell=2200&seed=cloud",
+  "rollback": "?handover=0",
+  "timing": {
+    "T": 3,
+    "D_out": 1,
+    "D_in": 1,
+    "overlap_budget": 1,
+    "tB0": 1,
+    "flight": 1,
+    "waveN": 5,
+    "vmax_develop": 4
+  },
+  "measured": {
+    "a_core_release_s": 0.869,
+    "b_core_start_s": 1,
+    "core_delta_s": 0.131,
+    "overlap_s": 1.017,
+    "min_inside_frac": 0.804,
+    "empty_frames": 0,
+    "snapAll_calls": 0,
+    "step_hits": 126,
+    "max_step_px": 6,
+    "max_drift": 1.2,
+    "phaseElapsed": 3.567,
+    "tail_locks": 817
+  },
+  "spring": { "SPRING": 0.055, "DAMP": 0.9, "VMAX": 10 },
+  "acceptance": {
+    "core_sync": true,
+    "overlap": true,
+    "no_empty": true,
+    "no_snap": true,
+    "waves": true,
+    "duration": true,
+    "drift_cap": true,
+    "step_cap": true,
+    "spring_locked": true,
+    "home_chaos": true,
+    "classic_assemble": true,
+    "pass": true
+  },
+  "screenshots": {
+    "intro": "/opt/cursor/artifacts/ho_inv_01_intro_dwell.png",
+    "edge": "/opt/cursor/artifacts/ho_inv_02_edge_release.png",
+    "overlap": "/opt/cursor/artifacts/ho_inv_03_overlap.png",
+    "waves": "/opt/cursor/artifacts/ho_inv_04_b_waves.png",
+    "hall": "/opt/cursor/artifacts/ho_inv_05_hall_formed.png",
+    "home": "/opt/cursor/artifacts/ho_inv_06_home_disperse.png",
+    "classic": "/opt/cursor/artifacts/ho_inv_07_classic_rollback.png"
+  }
+}
