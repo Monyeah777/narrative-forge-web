@@ -31,7 +31,8 @@
 - 自动放映：本条分支 `cursor/autoplay-exhibit-52ec`（叠在 `cursor/multi-target-routes-52ec` 上）。§9.0+§9.3 先落地。
 - 画区云 seeding：本条分支 `cursor/seed-cloud-52ec`（叠在 `cursor/autoplay-exhibit-52ec` 上）。`seed.mode` / `seedMode` = `cloud`（默认）/`uniform`（回滚）；查询 `?seed=uniform`。`window.__nfSeedStats()` / `window.__nfSeedAudit`。首页 `disperse()` 仍全屏均匀混沌，不改 `scatterHomes`。
 - 交接不变式：本条分支 `cursor/handover-invariants-52ec`（叠在 `cursor/seed-cloud-52ec` 上）。展览 catalog 换幅走 §3 交接（边缘先散、B 核先凝、外漂、分波、轻弧、禁 snapAll）。回滚 `?handover=0`。`?arc=off` / `?group=sharp`。`window.__nfHandover`。手动介绍/START 仍走原 assemble。
-- 像素块 + 外围尘埃：本条分支 `cursor/pixel-block-dust-52ec`（叠在 `cursor/handover-invariants-52ec` 上）。默认哑光方块 2 设备像素；`?block=0` 回软边；`?pixel=3` 对照。尘埃低 alpha、无装配职责；`?dust=0` 关。`window.__nfPixel`。B4.1 下一刀。
+- 像素块 + 外围尘埃：本条分支 `cursor/pixel-block-dust-52ec`（叠在 `cursor/handover-invariants-52ec` 上）。默认哑光方块 2 设备像素；`?block=0` 回软边；`?pixel=3` 对照。尘埃低 alpha、无装配职责；`?dust=0` 关。`window.__nfPixel`。
+- B4.1 四态纪律 + A/B：本条分支 `cursor/b41-perf-ab-52ec`（叠在 `cursor/pixel-block-dust-52ec` 上）。v2 停留 ≤30Hz（尘埃微动、零 12k 重算）；classic 仍成画停 rAF（S5 用 `?discipline=classic`）。画区 `?frame=0.9|1|1.1`。`window.__nfB41`。彩度 v2/v3 待拍板，未做。数字在 `painting/b4-1-bench.json`。
 
 ---
 
@@ -237,4 +238,4 @@ POINTER_LERP 0.2  SIZES [2,3,4]
 
 1. 打开 http://localhost:8768/ 看现行原型（没有服务就在 `prototype/` 起 python http.server）。
 2. 读 `prototype/index.html` 的 CSS 报章区 + `openArchive` / `triggerEgg`，不要重写引擎。
-3. 只做用户这一次点名的事。规格里未点名的轨道 B、Fusion Pixel，先问。自动放映修订包 §9.1–§9.2 / §9.4 已做；§9.5 B4.1 未做，等用户说「继续」。
+3. 只做用户这一次点名的事。规格里未点名的轨道 B、Fusion Pixel，先问。自动放映修订包 §9.0–§9.5 已做；下一本是 §9.6 交付汇总（或用户点名的 §6 总验收），等用户说「继续」。
