@@ -13,7 +13,7 @@
   "catalog": ["INTRO", "HALL", "COMMUNITY"],
   "interlude": "none",
   "control": { "pause": "text" },
-  "transition": { "group": "develop", "arc": "on" },
+  "transition": { "group": "develop", "arc": "on", "handover": "on" },
   "seedMode": "cloud",
   "pixelBlock": { "enabled": false, "size": 2 },
   "frameScale": 1.0,

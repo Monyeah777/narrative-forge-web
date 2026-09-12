@@ -29,7 +29,8 @@
 - 本条分支：`cursor/s5-device-trial-52ec`（叠在 `cursor/b4-perf-gate-52ec` 上）
 - 多画作路由：`TARGETS` 绑定介绍/大厅/社区/NF；本条分支 `cursor/multi-target-routes-52ec`（叠在 `cursor/s5-device-trial-52ec` 上）
 - 自动放映：本条分支 `cursor/autoplay-exhibit-52ec`（叠在 `cursor/multi-target-routes-52ec` 上）。§9.0+§9.3 先落地。
-- 画区云 seeding：本条分支 `cursor/seed-cloud-52ec`（叠在 `cursor/autoplay-exhibit-52ec` 上）。`seed.mode` / `seedMode` = `cloud`（默认）/`uniform`（回滚）；查询 `?seed=uniform`。`window.__nfSeedStats()` / `window.__nfSeedAudit`。首页 `disperse()` 仍全屏均匀混沌，不改 `scatterHomes`。交接不变式 / 像素块 / B4.1 下一刀。
+- 画区云 seeding：本条分支 `cursor/seed-cloud-52ec`（叠在 `cursor/autoplay-exhibit-52ec` 上）。`seed.mode` / `seedMode` = `cloud`（默认）/`uniform`（回滚）；查询 `?seed=uniform`。`window.__nfSeedStats()` / `window.__nfSeedAudit`。首页 `disperse()` 仍全屏均匀混沌，不改 `scatterHomes`。
+- 交接不变式：本条分支 `cursor/handover-invariants-52ec`（叠在 `cursor/seed-cloud-52ec` 上）。展览 catalog 换幅走 §3 交接（边缘先散、B 核先凝、外漂、分波、轻弧、禁 snapAll）。回滚 `?handover=0`。`?arc=off` / `?group=sharp`。`window.__nfHandover`。手动介绍/START 仍走原 assemble。像素块 / B4.1 下一刀。
 
 ---
 
@@ -235,4 +236,4 @@ POINTER_LERP 0.2  SIZES [2,3,4]
 
 1. 打开 http://localhost:8768/ 看现行原型（没有服务就在 `prototype/` 起 python http.server）。
 2. 读 `prototype/index.html` 的 CSS 报章区 + `openArchive` / `triggerEgg`，不要重写引擎。
-3. 只做用户这一次点名的事。规格里未点名的轨道 B、Fusion Pixel，先问。自动放映修订包 §9.1 已做；§9.2 / §9.4–§9.5 未做，等用户说「继续」。
+3. 只做用户这一次点名的事。规格里未点名的轨道 B、Fusion Pixel，先问。自动放映修订包 §9.1–§9.2 已做；§9.4–§9.5 未做，等用户说「继续」。

@@ -75,4 +75,5 @@ painting/*
 !painting/s5-refs.json
 !painting/s5-trial.json
 !painting/seed-cloud.json
+!painting/handover-invariants.json
 
