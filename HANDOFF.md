@@ -10,7 +10,7 @@
 
 ## 当前进度（云端 Track A）
 
-手册 **§5 已完成**（真机试炼 / bench.html 协议）。B4 / B4.1 已过闸。自动放映修订包 §9.0–§9.6 已交付。不要开轨道 B，下一本是手册 **§6 总验收**，等用户说「继续」。
+手册 **§5 已完成**（真机试炼 / bench.html 协议）。B4 / B4.1 已过闸。自动放映修订包 §9.0–§9.6 已交付。作者点名《PixiJS v8 迁移总手册》最高严谨模式：当前只做 **H1-① 依赖落位**。现网成画仍是 Canvas2D 12k，禁止把 Pixi 接进 `prototype/index.html`。下一刀是 H1-② Hello 空场景（或用户改口）。
 
 - 凌厉弹簧 0.055 / 阻尼 0.90 / vmax 10；临界停止 0.6px / 0.06；驱离 100px 平方反比
 - 成画 1.5s（最早 1.2s）、回退 1.1s；相位时间走固定步长，冻结不计入
@@ -34,6 +34,7 @@
 - 像素块 + 外围尘埃：本条分支 `cursor/pixel-block-dust-52ec`（叠在 `cursor/handover-invariants-52ec` 上）。默认哑光方块 2 设备像素；`?block=0` 回软边；`?pixel=3` 对照。尘埃低 alpha、无装配职责；`?dust=0` 关。`window.__nfPixel`。
 - B4.1 四态纪律 + A/B：本条分支 `cursor/b41-perf-ab-52ec`（叠在 `cursor/pixel-block-dust-52ec` 上）。v2 停留 ≤30Hz（尘埃微动、零 12k 重算）；classic 仍成画停 rAF（S5 用 `?discipline=classic`）。画区 `?frame=0.9|1|1.1`。`window.__nfB41`。彩度 v2/v3 待拍板，未做。数字在 `painting/b4-1-bench.json`。
 - 自动放映交付：本条分支 `cursor/exhibit-deliver-52ec`（叠在 `cursor/b41-perf-ab-52ec` 上）。汇总在 `docs/NF_自动放映_交付_v1.0.md`，复测在 `painting/exhibit-deliver.json`。裁决号 `NF-EXHIBIT-DELIVER-20260912`。
+- Pixi H1-①：本条分支 `cursor/pixi-h1-vendor-52ec`（叠在 `cursor/exhibit-deliver-52ec` 上）。手册 `docs/NF_PixiJS迁移总手册_整合版_v1_2026-09-11.md`。vendor `prototype/vendor/pixi.min.js` = 8.20.1 / sha256 `994859…4d53` / 818871B / gzip-9 230584B。隔离冒烟 `prototype/pixi-smoke/index.html`。未改成画点数、DPR、物理、rAF。
 
 ---
 
@@ -239,4 +240,4 @@ POINTER_LERP 0.2  SIZES [2,3,4]
 
 1. 打开 http://localhost:8768/ 看现行原型（没有服务就在 `prototype/` 起 python http.server）。
 2. 读 `prototype/index.html` 的 CSS 报章区 + `openArchive` / `triggerEgg`，不要重写引擎。
-3. 只做用户这一次点名的事。规格里未点名的轨道 B、Fusion Pixel，先问。自动放映修订包 §9.0–§9.6 已交付；下一本是手册 §6 总验收，等用户说「继续」。
+3. 只做用户这一次点名的事。Pixi 迁移按 H1 五步，一步一目标。H1-① 已做；不要把 Pixi 接进现网 `index.html`，不要把 12k 改成 100k，除非用户点名 H1-② 或之后。
