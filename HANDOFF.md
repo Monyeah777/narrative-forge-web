@@ -10,7 +10,7 @@
 
 ## 当前进度（云端 Track A）
 
-手册 **§5 已完成**（真机试炼 / bench.html 协议）。B4 / B4.1 已过闸。自动放映修订包 §9.0–§9.6 已交付。作者点名《PixiJS v8 迁移总手册》最高严谨模式：H1-①② 已过闸。当前只做 **H1-③ 数据桥**。现网成画仍是 Canvas2D 12k JSON，禁止把 Pixi 接进 `prototype/index.html`，禁止本步上 100k 粒子。下一刀是 H1-④ 点云上线（或用户改口）。
+手册 **§5 已完成**（真机试炼 / bench.html 协议）。B4 / B4.1 已过闸。自动放映修订包 §9.0–§9.6 已交付。作者点名《PixiJS v8 迁移总手册》最高严谨模式：H1-①②③ 已过闸。当前只做 **H1-④ 点云上线**。现网成画仍是 Canvas2D 12k JSON，禁止把 Pixi 接进 `prototype/index.html`。下一刀是 H1-⑤ 物理联调（或用户改口）。
 
 - 凌厉弹簧 0.055 / 阻尼 0.90 / vmax 10；临界停止 0.6px / 0.06；驱离 100px 平方反比
 - 成画 1.5s（最早 1.2s）、回退 1.1s；相位时间走固定步长，冻结不计入
@@ -36,7 +36,8 @@
 - 自动放映交付：本条分支 `cursor/exhibit-deliver-52ec`（叠在 `cursor/b41-perf-ab-52ec` 上）。汇总在 `docs/NF_自动放映_交付_v1.0.md`，复测在 `painting/exhibit-deliver.json`。裁决号 `NF-EXHIBIT-DELIVER-20260912`。
 - Pixi H1-①：分支 `cursor/pixi-h1-vendor-52ec`（叠在 `cursor/exhibit-deliver-52ec` 上）。vendor 8.20.1 / sha256 `994859…4d53`。证据 `painting/pixi-h1-1-vendor.json`。
 - Pixi H1-②：分支 `cursor/pixi-h1-hello-52ec`。隔离空场景 `prototype/pixi-hello/index.html`。证据 `painting/pixi-h1-2-hello.json`。
-- Pixi H1-③：本条分支 `cursor/pixi-h1-bridge-52ec`（叠在 `cursor/pixi-h1-hello-52ec` 上）。契约 v3：`prototype/pixi-bridge/`（`fixed5_3.bin` 15B / sha256 `9690b47f…99f7`，DataView `getUint16(o, true)`，无文件头）。证据 `painting/pixi-h1-3-bridge.json`。未改 12k JSON、未接 Pixi 成画。下一刀是 H1-④ 点云上线（或用户改口）。
+- Pixi H1-③：分支 `cursor/pixi-h1-bridge-52ec`。契约 v3 黄金样本 `fixed5_3.bin`。证据 `painting/pixi-h1-3-bridge.json`。
+- Pixi H1-④：本条分支 `cursor/pixi-h1-cloud-52ec`（叠在 `cursor/pixi-h1-bridge-52ec` 上）。隔离 100k `ParticleContainer`：`prototype/pixi-cloud/`。现网 12k JSON / 物理 / rAF 未改。下一刀是 H1-⑤ 物理联调（或用户改口）。
 
 ---
 
