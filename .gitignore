@@ -53,6 +53,8 @@ painting/*
 !painting/b1-1-refs.json
 !painting/b1-1-batch.json
 !painting/points.json
+!painting/points_artwork_b.json
+!painting/points_artwork_c.json
 !painting/sample-stats.json
 !painting/b1-2-refs.json
 !painting/b1-3-refs.json

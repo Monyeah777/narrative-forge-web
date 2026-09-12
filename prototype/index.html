@@ -8,7 +8,10 @@
   <title>NarrativeForge · 宇宙像素档案</title>
   <link rel="icon" href="favicon.ico" sizes="any" />
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-  <link rel="preload" as="fetch" href="assets/points.json" crossorigin />
+  <link rel="preload" as="fetch" href="assets/points_poplars.json" crossorigin />
+  <link rel="preload" as="fetch" href="assets/points_artwork_b.json" crossorigin />
+  <link rel="preload" as="fetch" href="assets/points_artwork_c.json" crossorigin />
+  <link rel="preload" as="fetch" href="assets/points_nf.json" crossorigin />
   <link rel="preload" href="assets/fonts/press-start-2p-subset.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="assets/fonts/silkscreen-400-subset.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="assets/fonts/silkscreen-700-subset.woff2" as="font" type="font/woff2" crossorigin />
@@ -1070,6 +1073,11 @@
       };
       var mode = "chaos";
       var currentView = "home";
+      var currentTarget = null;
+      var lastImageTarget = null;
+      var applyGen = 0;
+      var assembleRequest = 0;
+      var recordCache = Object.create(null);
       var hasGlyph = false;
       var modeT0 = 0;
       var glyphTintT0 = 0;
@@ -1425,6 +1433,7 @@
         animInfo.nanHeals = nanHeals;
         animInfo.reduced = reduced;
         animInfo.checksum = N > 0 ? x[0] + y[0] + x[N >> 1] + y[N >> 1] : 0;
+        animInfo.target = window.__nfTarget || null;
         window.__nfAnim = animInfo;
       }
 
@@ -1728,6 +1737,7 @@
 
       function glyphTintK(now) {
         var elapsed;
+        if (!currentTarget || currentTarget.type !== "text") return 0;
         if (!hasGlyph || mode !== "formed") return 0;
         if (reduced) return 1;
         if (!glyphTintT0) return 0;
@@ -1865,9 +1875,19 @@
         }
       }
 
-      var POINTS_HREF = "assets/points.json";
+      var TARGETS = {
+        INTRO: { type: "image", path: "points_poplars.json", palette: "source" },
+        HALL: { type: "image", path: "points_artwork_b.json", palette: "source" },
+        COMMUNITY: { type: "image", path: "points_artwork_c.json", palette: "source" },
+        EGG: { type: "text", text: "NF", path: "points_nf.json", palette: "silver-blue" }
+      };
+      var EGG_PALETTE = ["#C9CFD8", "#6F8FAF"];
+      var POINTS_HREF = "assets/points_poplars.json";
       var HEX6 = /^#[0-9A-Fa-f]{6}$/;
       var PLACEHOLDER_PALETTE = ["#d6d2c8", "#c8cdd7", "#b0c6e0"];
+      currentTarget = TARGETS.INTRO;
+      lastImageTarget = TARGETS.INTRO;
+      window.TARGETS = TARGETS;
 
       function round3(n) {
         return Math.round(n * 1000) / 1000;
@@ -2036,9 +2056,63 @@
         window.__nfLoadTimings = timings;
       }
 
-      function loadPointsRecord() {
+      function targetHref(target) {
+        var p = target && target.path ? target.path : "points_poplars.json";
+        if (p.indexOf("/") === -1) return "assets/" + p;
+        return p;
+      }
+
+      function targetKeyOf(target) {
+        if (!target) return "";
+        if (target === TARGETS.INTRO) return "INTRO";
+        if (target === TARGETS.HALL) return "HALL";
+        if (target === TARGETS.COMMUNITY) return "COMMUNITY";
+        if (target === TARGETS.EGG) return "EGG";
+        return target.path || "";
+      }
+
+      function publishTarget(target, rec) {
+        window.__nfTarget = {
+          key: targetKeyOf(target),
+          type: target ? target.type : "",
+          path: target ? target.path : "",
+          palette: target ? target.palette : "",
+          text: target && target.text ? target.text : "",
+          id: rec && rec.id ? rec.id : (window.__nfPoints && window.__nfPoints.id) || ""
+        };
+      }
+
+      function coerceTargetRecord(rec, target) {
+        var pal;
+        var pts;
+        var i;
+        var p;
+        var idx;
+        if (!rec || !target || target.type !== "text") return rec;
+        pal = EGG_PALETTE.slice();
+        pts = [];
+        for (i = 0; i < rec.points.length; i++) {
+          p = rec.points[i];
+          idx = p.x < GLYPH_SPLIT ? 0 : 1;
+          pts.push({ x: p.x, y: p.y, i: idx });
+        }
+        return {
+          id: rec.id || "nf-glyph",
+          w: rec.w,
+          h: rec.h,
+          count: pts.length,
+          note: rec.note,
+          palette: pal,
+          points: pts,
+          source: rec.source
+        };
+      }
+
+      function loadTargetRecord(target) {
+        var href = targetHref(target);
         var t0 = performance.now();
         var forcePh = false;
+        var cached;
         try {
           forcePh = new URLSearchParams(window.location.search).get("nf-points") === "placeholder";
         } catch (err) {
@@ -2047,7 +2121,9 @@
         if (forcePh) {
           return Promise.resolve(finishPlaceholder(t0, "query nf-points=placeholder"));
         }
-        return fetch(POINTS_HREF, { credentials: "omit", mode: "cors" })
+        cached = recordCache[href];
+        if (cached) return Promise.resolve(cached);
+        return fetch(href, { credentials: "omit", mode: "cors" })
           .then(function (res) {
             var tFetch = performance.now();
             if (!res.ok) throw new Error("http " + res.status);
@@ -2060,12 +2136,12 @@
               var reused;
               if (!rec) throw new Error("v2 parse failed");
               rec.source = "fetch";
-              resource = resourceTimingFor(POINTS_HREF);
+              resource = resourceTimingFor(href);
               fetchEntry = resource.fetch || resource.link;
               reused = !!(resource.link && resource.fetch && resource.fetch.transferSize === 0);
               if (!reused && resource.link && !resource.fetch) reused = true;
               timings = {
-                href: POINTS_HREF,
+                href: href,
                 source: "fetch",
                 t_fetch_start_ms: round3(t0),
                 fetch_ms: round3(tFetch - t0),
@@ -2079,14 +2155,57 @@
                 decodedBodySize: fetchEntry ? fetchEntry.decodedBodySize : 0,
                 transferSize: fetchEntry ? fetchEntry.transferSize : 0
               };
-              freezeLoaded(rec, timings);
+              rec._timings = timings;
+              recordCache[href] = rec;
               logLoadList(timings);
-              return rec.points;
+              return rec;
             });
           })
           .catch(function (err) {
             return finishPlaceholder(t0, String(err && err.message ? err.message : err));
           });
+      }
+
+      function applyTarget(target) {
+        var gen = ++applyGen;
+        if (!target) target = TARGETS.INTRO;
+        currentTarget = target;
+        if (target.type === "image") lastImageTarget = target;
+        publishTarget(target, null);
+        return loadTargetRecord(target).then(function (rec) {
+          var coerced;
+          var timings;
+          if (gen !== applyGen) return null;
+          coerced = coerceTargetRecord(rec, target);
+          timings = rec._timings || {
+            href: targetHref(target),
+            source: rec.source || "cache",
+            t_fetch_start_ms: 0,
+            fetch_ms: 0,
+            parse_ms: 0,
+            total_ms: 0,
+            count: coerced.count,
+            http_status: rec.source === "placeholder" ? 0 : 200,
+            preload_reused: true,
+            resource: { entries: 0, link: null, fetch: null },
+            encodedBodySize: 0,
+            decodedBodySize: 0,
+            transferSize: 0
+          };
+          freezeLoaded(coerced, timings);
+          publishTarget(target, coerced);
+          return buildPaletteAtlas().then(function () {
+            if (gen !== applyGen) return null;
+            formTargets(coerced.points);
+            return coerced;
+          });
+        });
+      }
+
+      function loadPointsRecord() {
+        return loadTargetRecord(TARGETS.INTRO).then(function (rec) {
+          return coerceTargetRecord(rec, TARGETS.INTRO).points;
+        });
       }
 
       function finishPlaceholder(t0, reason) {
@@ -2107,9 +2226,10 @@
           transferSize: 0,
           reason: rec.reason
         };
+        rec._timings = timings;
         freezeLoaded(rec, timings);
         logLoadList(timings);
-        return rec.points;
+        return rec;
       }
 
       function paintVoid() {
@@ -2484,6 +2604,7 @@
       }
 
       function openArchive(view) {
+        var target;
         currentView = view;
         dossier.dataset.view = view;
         if (view === "home") {
@@ -2491,15 +2612,18 @@
           disperse();
           return;
         }
-        if (view === "intro") setCurrentNav(btnIntro);
-        else if (view === "hall") setCurrentNav(btnHall);
-        else setCurrentNav(btnCommunity);
-        if (mode === "formed") {
-          setMode("formed");
-          pulseRise();
-          return;
+        if (view === "intro") {
+          setCurrentNav(btnIntro);
+          target = TARGETS.INTRO;
+        } else if (view === "hall") {
+          setCurrentNav(btnHall);
+          target = TARGETS.HALL;
+        } else {
+          setCurrentNav(btnCommunity);
+          target = TARGETS.COMMUNITY;
         }
-        assemble();
+        assemble(target);
+        pulseRise();
       }
 
       function burstFromGlyph() {
@@ -2570,10 +2694,10 @@
       function triggerEgg() {
         if (!hasGlyph || !booted) return;
         if (mode === "formed") burstFromGlyph();
-        assemble();
+        assemble(TARGETS.EGG);
       }
 
-      function assemble() {
+      function beginAssemble() {
         setFrozen(false);
         pointerEver = false;
         setMode("assemble");
@@ -2586,7 +2710,20 @@
         startLoop();
       }
 
+      function assemble(target) {
+        var req = ++assembleRequest;
+        if (target) {
+          return applyTarget(target).then(function (rec) {
+            if (!rec || req !== assembleRequest) return;
+            beginAssemble();
+          });
+        }
+        beginAssemble();
+      }
+
       function disperse() {
+        assembleRequest++;
+        applyGen++;
         setFrozen(false);
         scatterHomes();
         pointerEver = false;
@@ -2600,7 +2737,25 @@
         startLoop();
       }
 
-      window.assemble = function () { openArchive("intro"); };
+      window.assemble = function (target) {
+        if (target && target.type === "text") {
+          triggerEgg();
+          return;
+        }
+        if (target === TARGETS.HALL) {
+          openArchive("hall");
+          return;
+        }
+        if (target === TARGETS.COMMUNITY) {
+          openArchive("community");
+          return;
+        }
+        if (target === TARGETS.INTRO || !target) {
+          openArchive("intro");
+          return;
+        }
+        assemble(target);
+      };
       window.disperse = function () { openArchive("home"); };
 
       function onPointerMove(e) {
@@ -2752,7 +2907,11 @@
       }
       if (btnStart) {
         btnStart.addEventListener("click", function () {
-          assemble();
+          if (currentTarget && currentTarget.type === "text") {
+            assemble(lastImageTarget || TARGETS.INTRO);
+            return;
+          }
+          beginAssemble();
         });
       }
       if (btnSave) {
@@ -2775,9 +2934,26 @@
       resizeCanvas();
       paintVoid();
 
-      loadPointsRecord().then(function (points) {
+      loadTargetRecord(TARGETS.INTRO).then(function (rec) {
+        var coerced = coerceTargetRecord(rec, TARGETS.INTRO);
+        var timings = rec._timings || {
+          href: targetHref(TARGETS.INTRO),
+          source: rec.source || "fetch",
+          t_fetch_start_ms: 0,
+          fetch_ms: 0,
+          parse_ms: 0,
+          total_ms: 0,
+          count: coerced.count,
+          http_status: 200,
+          preload_reused: true,
+          resource: { entries: 0, link: null, fetch: null }
+        };
+        currentTarget = TARGETS.INTRO;
+        lastImageTarget = TARGETS.INTRO;
+        freezeLoaded(coerced, timings);
+        publishTarget(TARGETS.INTRO, coerced);
         return buildPaletteAtlas().then(function () {
-          boot(points);
+          boot(coerced.points);
         });
       });
     })();
