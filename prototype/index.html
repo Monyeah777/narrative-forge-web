@@ -3018,8 +3018,22 @@
         lx = x1 - x0;
         ly = y1 - y0;
         L = Math.hypot(lx, ly);
-        if (L < 0.5 || u >= 1) {
+        if (L < 0.5) {
           lockTo(i, x1, y1);
+          return;
+        }
+        if (u >= 1) {
+          dx = x1 - x[i];
+          dy = y1 - y[i];
+          d = Math.hypot(dx, dy);
+          if (d <= stepMax || nearStop(i, x1, y1)) {
+            lockTo(i, x1, y1);
+            return;
+          }
+          x[i] += dx * (stepMax / d);
+          y[i] += dy * (stepMax / d);
+          vx[i] = 0;
+          vy[i] = 0;
           return;
         }
         inv = 1 / L;
@@ -3143,7 +3157,7 @@
           if (aIn > 0 && bIn > 0) handoverOverlapS += DT;
         }
         phaseElapsed += DT;
-        if (phaseElapsed >= tm.T || (phaseElapsed >= tm.T - 0.35 && settled / N >= 0.97)) {
+        if ((phaseElapsed >= tm.T && settled / N >= 0.97) || phaseElapsed >= tm.T + 0.55) {
           finishHandover();
         } else if ((tickCount & 7) === 0) {
           publishHandover(false);
