@@ -10,7 +10,7 @@
 
 ## 当前进度（云端 Track A）
 
-手册 **§5 已完成**（真机试炼 / bench.html 协议）。B4 / B4.1 已过闸。自动放映修订包 §9.0–§9.6 已交付。作者点名《PixiJS v8 迁移总手册》最高严谨模式：现网默认 Pixi + ticker。现网介绍仍是 **INTRO 100k**（复用 H1-④ `dallas-100k.bin`，不重采样）。大厅 / 社区 / NF 仍 12k JSON。`?bin=0` 回滚介绍 12k。弹簧 / physics **未改**。当前刀是隔离 **150k / 250k 点数档对照**（`prototype/pixi-density/`，不改现网默认）。下一刀是 HALL 100k 或清 ctx 死代码（或用户改口）。
+手册 **§5 已完成**（真机试炼 / bench.html 协议）。B4 / B4.1 已过闸。自动放映修订包 §9.0–§9.6 已交付。作者点名《PixiJS v8 迁移总手册》最高严谨模式：现网默认 Pixi + ticker。现网介绍仍是 **INTRO 100k**（Dallas bin，不重采样）。大厅默认 **HALL 100k**（Scotland `scotland-100k.bin`）。社区 / NF 仍 12k JSON。`?bin=0` 回滚介绍+大厅 12k。弹簧 / physics **未改**。150k/250k 仍只在隔离对照页。下一刀是 COMMUNITY 100k 或清 ctx 死代码（或用户改口）。
 
 - 凌厉弹簧 0.055 / 阻尼 0.90 / vmax 10；临界停止 0.6px / 0.06；驱离 100px 平方反比
 - 成画 1.5s（最早 1.2s）、回退 1.1s；相位时间走固定步长，冻结不计入
@@ -43,7 +43,8 @@
 - 默认切轨：分支 `cursor/pixi-h1-default-52ec`。证据 `painting/pixi-h1-7-default.json`。
 - 拆除旧轨：分支 `cursor/pixi-h1-teardown-52ec`。证据 `painting/pixi-h1-8-teardown.json`。
 - INTRO 100k：分支 `cursor/pixi-h1-100k-52ec`（叠在 `cursor/pixi-h1-teardown-52ec` 上）。介绍默认读 `prototype/pixi-cloud/dallas-100k.bin`（v3 DataView）。`?bin=0` 回 12k JSON。大厅/社区/NF 未改。证据 `painting/pixi-h1-9-100k.json`。
-- 点数档对照：本条分支 `cursor/pixi-h1-density-52ec`（叠在 `cursor/pixi-h1-100k-52ec` 上）。隔离页 `prototype/pixi-density/index.html?n=100000|150000|250000`。100k 复用现成 bin，不重采样。150k/250k 新采样，不进现网。证据 `painting/pixi-h1-10-density.json`。下一刀是 HALL 100k 或清 ctx 死代码（须点名）。
+- 点数档对照：分支 `cursor/pixi-h1-density-52ec`（叠在 `cursor/pixi-h1-100k-52ec` 上）。隔离页 `prototype/pixi-density/index.html?n=100000|150000|250000`。100k 复用现成 bin，不重采样。150k/250k 新采样，不进现网。证据 `painting/pixi-h1-10-density.json`。
+- HALL 100k：本条分支 `cursor/pixi-h1-hall-52ec`（叠在 `cursor/pixi-h1-density-52ec` 上）。大厅默认读 `prototype/pixi-hall/scotland-100k.bin`。`?bin=0` 回介绍+大厅 12k JSON。社区/NF 未改。Dallas 100k 未重采样。证据 `painting/pixi-h1-11-hall.json`。下一刀是 COMMUNITY 100k 或清 ctx 死代码（须点名）。
 
 ---
 
@@ -249,4 +250,4 @@ POINTER_LERP 0.2  SIZES [2,3,4]
 
 1. 打开 http://localhost:8768/ 看现行原型（没有服务就在 `prototype/` 起 python http.server）。
 2. 读 `prototype/index.html` 的 CSS 报章区 + `openArchive` / `triggerEgg`，不要重写引擎。
-3. 只做用户这一次点名的事。现网默认 Pixi，介绍默认 100k bin。150k/250k 只在隔离对照页。不要改弹簧。不要把大厅/社区也改成 100k，除非用户点名。
+3. 只做用户这一次点名的事。现网默认 Pixi，介绍 Dallas 100k，大厅 Scotland 100k。150k/250k 只在隔离对照页。不要改弹簧。不要把社区也改成 100k，除非用户点名。

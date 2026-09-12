@@ -2854,8 +2854,8 @@
         };
       }
 
-      function introUsesBin() {
-        /* == RENDERER-SWAP == default INTRO density = v3 100k bin. ?bin=0 keeps 12k JSON. */
+      function usesPointsBin() {
+        /* == RENDERER-SWAP == INTRO + HALL default = v3 100k bin. ?bin=0 keeps 12k JSON. */
         try {
           return new URLSearchParams(window.location.search).get("bin") !== "0";
         } catch (errBin) {
@@ -2863,7 +2863,7 @@
         }
       }
 
-      function recordFromDallasBin(meta, buffer) {
+      function recordFromPointsBin(meta, buffer) {
         var raw = NFPointsBin.readPointsBin(buffer, meta.count);
         var pts = [];
         var i;
@@ -2879,16 +2879,14 @@
           w: meta.w,
           h: meta.h,
           count: pts.length,
-          note: "v3 points.bin 100k",
+          note: "v3 points.bin " + pts.length,
           palette: meta.palette.slice(),
           points: pts,
           source: "bin"
         };
       }
 
-      function loadIntroBin(t0) {
-        var href = "pixi-cloud/dallas-100k.bin";
-        var metaHref = "pixi-cloud/meta.json";
+      function loadPointsBinRecord(href, metaHref, t0) {
         var cached = recordCache[href];
         if (cached) return Promise.resolve(cached);
         return loadScriptOnce("pixi-bridge/points-bin.js").then(function () {
@@ -2904,7 +2902,7 @@
             })
           ]);
         }).then(function (pair) {
-          var rec = recordFromDallasBin(pair[0], pair[1]);
+          var rec = recordFromPointsBin(pair[0], pair[1]);
           var t1 = performance.now();
           rec._timings = {
             href: href,
@@ -2924,6 +2922,14 @@
         });
       }
 
+      function loadIntroBin(t0) {
+        return loadPointsBinRecord("pixi-cloud/dallas-100k.bin", "pixi-cloud/meta.json", t0);
+      }
+
+      function loadHallBin(t0) {
+        return loadPointsBinRecord("pixi-hall/scotland-100k.bin", "pixi-hall/meta.json", t0);
+      }
+
       function loadTargetRecord(target) {
         var href = targetHref(target);
         var t0 = performance.now();
@@ -2937,8 +2943,13 @@
         if (forcePh) {
           return Promise.resolve(finishPlaceholder(t0, "query nf-points=placeholder"));
         }
-        if (introUsesBin() && target && (target === TARGETS.INTRO || target.path === "points_poplars.json")) {
+        if (usesPointsBin() && target && (target === TARGETS.INTRO || target.path === "points_poplars.json")) {
           return loadIntroBin(t0).catch(function (err) {
+            return finishPlaceholder(t0, String(err && err.message ? err.message : err));
+          });
+        }
+        if (usesPointsBin() && target && (target === TARGETS.HALL || target.path === "points_artwork_b.json")) {
+          return loadHallBin(t0).catch(function (err) {
             return finishPlaceholder(t0, String(err && err.message ? err.message : err));
           });
         }
