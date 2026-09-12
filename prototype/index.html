@@ -1002,6 +1002,7 @@
       var HANDOVER_OVERLAP_S = 1.0;
       var HANDOVER_VMAX_DEV = 4;
       var HANDOVER_CORE_R = 0.2;
+      var DUST_N = 640;
       var assembleBudgetS = ASSEMBLE_S;
       var DISPERSE_S = 1.1;
       var ASSEMBLE_MS = ASSEMBLE_S * 1000;
@@ -1058,6 +1059,9 @@
       var N = 0;
       var x, y, vx, vy, hx, hy, tx, ty, nx, ny, nhx, nhy, ntx, nty, z, sid, gid, tid, pid;
       var ax, ay, sx, sy, delayOut, delayIn, hs, arcSign;
+      var dustX, dustY, dustVx, dustVy, dustA;
+      var dustN = 0;
+      var lastPaintBmp = null;
       var sprites = [];
       var tintSprites = [];
       var atlasGen = 0;
@@ -1511,6 +1515,15 @@
           handover: handoverLive
         };
         window.__nfAnim = animInfo;
+        window.__nfPixel = {
+          block: pixelBlockOn(),
+          size: pixelBlockSize(),
+          cell: atlasCell,
+          smoothing: ctx.imageSmoothingEnabled,
+          shadowBlur: ctx.shadowBlur || 0,
+          dust: dustOn(),
+          dustN: dustN
+        };
       }
 
       function makeSprite(cssPx, pixelRatio, c0, c1) {
@@ -1530,6 +1543,27 @@
         g.arc(c, c, radius, 0, Math.PI * 2);
         g.fill();
         return { canvas: off, css: cssPx };
+      }
+
+      function pixelBlockOn() {
+        return !!(exhibitManifest.pixelBlock && exhibitManifest.pixelBlock.enabled);
+      }
+
+      function pixelBlockSize() {
+        var s = exhibitManifest.pixelBlock && exhibitManifest.pixelBlock.size;
+        if (s === 3) return 3;
+        return 2;
+      }
+
+      function dustOn() {
+        return !!(exhibitManifest.dust && exhibitManifest.dust.enabled !== false);
+      }
+
+      function paintBlockDot(g, cell, rgb) {
+        g.imageSmoothingEnabled = false;
+        g.shadowBlur = 0;
+        g.fillStyle = "rgb(" + (rgb[0] | 0) + "," + (rgb[1] | 0) + "," + (rgb[2] | 0) + ")";
+        g.fillRect(0, 0, cell, cell);
       }
 
       function paintSoftDot(g, cell, rgb, cssPx, pixelRatio) {
@@ -1576,6 +1610,11 @@
         spriteBmp = null;
       }
 
+      function closeLastPaint() {
+        if (lastPaintBmp && typeof lastPaintBmp.close === "function") lastPaintBmp.close();
+        lastPaintBmp = null;
+      }
+
       function closeAtlas() {
         closeSprites();
         if (atlasBmp && typeof atlasBmp.close === "function") {
@@ -1593,7 +1632,7 @@
         cell = atlasCell;
         jobs = [];
         for (p = 0; p < atlasPalN; p++) {
-          row = palSize ? palSize[p] : 0;
+          row = pixelBlockOn() ? 0 : (palSize ? palSize[p] : 0);
           jobs.push(createImageBitmap(atlasBmp, p * cell, row * cell, cell, cell));
         }
         return Promise.all(jobs).then(function (bmps) {
@@ -1612,6 +1651,7 @@
           renderWorker.terminate();
           renderWorker = null;
         }
+        closeLastPaint();
       }
 
       function bootRenderWorker() {
@@ -1654,12 +1694,20 @@
         workerPending = false;
         bmp = e.data.bitmap;
         if (!bmp || !ctx) return;
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(bmp, 0, 0);
+        if (lastPaintBmp && lastPaintBmp !== bmp && typeof lastPaintBmp.close === "function") lastPaintBmp.close();
+        lastPaintBmp = bmp;
         workerHasFrame = true;
-        if (typeof bmp.close === "function") bmp.close();
+        paintStage(lastPaintBmp);
         publishRenderInfo();
+      }
+
+      function paintStage(bmp) {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.imageSmoothingEnabled = false;
+        ctx.shadowBlur = 0;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (bmp) ctx.drawImage(bmp, 0, 0);
+        drawDust();
       }
 
       function postWorkerFrame() {
@@ -1678,25 +1726,31 @@
         var rec = window.__nfPoints;
         var palette = rec && rec.palette ? rec.palette : PLACEHOLDER_PALETTE;
         var palN = palette.length;
-        var cell = Math.max(16, Math.round(SIZES[2] * ATLAS_PAD * dpr));
+        var block = pixelBlockOn();
+        var cell = block ? pixelBlockSize() : Math.max(16, Math.round(SIZES[2] * ATLAS_PAD * dpr));
         var sheet = document.createElement("canvas");
         var g;
         var row, col, rgb;
+        var rows;
         atlasPalN = palN;
         atlasCell = cell;
         assignPaletteSizes(palette);
         bucketCount = new Uint16Array(palN);
         bucketPrefix = new Uint32Array(palN + 1);
+        rows = block ? 1 : SIZES.length;
         sheet.width = palN * cell;
-        sheet.height = SIZES.length * cell;
+        sheet.height = rows * cell;
         g = sheet.getContext("2d");
+        g.imageSmoothingEnabled = false;
+        g.shadowBlur = 0;
         g.clearRect(0, 0, sheet.width, sheet.height);
-        for (row = 0; row < SIZES.length; row++) {
+        for (row = 0; row < rows; row++) {
           for (col = 0; col < palN; col++) {
             rgb = hexRgb(palette[col]);
             g.save();
             g.translate(col * cell, row * cell);
-            paintSoftDot(g, cell, rgb, SIZES[row], dpr);
+            if (block) paintBlockDot(g, cell, rgb);
+            else paintSoftDot(g, cell, rgb, SIZES[row], dpr);
             g.restore();
           }
         }
@@ -1888,6 +1942,101 @@
           nhx[i] = hx[i] * iw;
           nhy[i] = hy[i] * ih;
         }
+      }
+
+      function inPaintBox(px, py, grow) {
+        return px >= fitX - grow && px <= fitX + fitW + grow && py >= fitY - grow && py <= fitY + fitH + grow;
+      }
+
+      function dustCount() {
+        var n = exhibitManifest.dust && exhibitManifest.dust.n;
+        if (typeof n === "number" && n > 0) return n | 0;
+        return DUST_N;
+      }
+
+      function placeDust() {
+        var i;
+        var tries;
+        var px;
+        var py;
+        var n;
+        if (!dustOn()) {
+          dustN = 0;
+          return;
+        }
+        n = dustCount();
+        if (!dustX || dustX.length !== n) {
+          dustX = new Float32Array(n);
+          dustY = new Float32Array(n);
+          dustVx = new Float32Array(n);
+          dustVy = new Float32Array(n);
+          dustA = new Float32Array(n);
+        }
+        dustN = n;
+        for (i = 0; i < n; i++) {
+          px = rand() * cssW;
+          py = rand() * cssH;
+          for (tries = 0; tries < 12 && inPaintBox(px, py, 6); tries++) {
+            px = rand() * cssW;
+            py = rand() * cssH;
+          }
+          dustX[i] = px;
+          dustY[i] = py;
+          dustVx[i] = (rand() * 2 - 1) * 0.16;
+          dustVy[i] = (rand() * 2 - 1) * 0.16;
+          dustA[i] = 0.08 + rand() * 0.14;
+        }
+      }
+
+      function integrateDust() {
+        var i;
+        var cx;
+        var cy;
+        var px;
+        var py;
+        if (!dustOn() || !dustN || reduced || frozen) return;
+        cx = fitX + fitW * 0.5;
+        cy = fitY + fitH * 0.5;
+        for (i = 0; i < dustN; i++) {
+          dustVx[i] = dustVx[i] * 0.97 + (rand() * 2 - 1) * 0.012;
+          dustVy[i] = dustVy[i] * 0.97 + (rand() * 2 - 1) * 0.012;
+          if (dustVx[i] > 0.32) dustVx[i] = 0.32;
+          if (dustVx[i] < -0.32) dustVx[i] = -0.32;
+          if (dustVy[i] > 0.32) dustVy[i] = 0.32;
+          if (dustVy[i] < -0.32) dustVy[i] = -0.32;
+          dustX[i] += dustVx[i];
+          dustY[i] += dustVy[i];
+          if (dustX[i] < 0) dustX[i] += cssW;
+          else if (dustX[i] > cssW) dustX[i] -= cssW;
+          if (dustY[i] < 0) dustY[i] += cssH;
+          else if (dustY[i] > cssH) dustY[i] -= cssH;
+          if (inPaintBox(dustX[i], dustY[i], -2)) {
+            px = dustX[i] - cx;
+            py = dustY[i] - cy;
+            if (Math.abs(px) > Math.abs(py)) dustX[i] += px >= 0 ? 3 : -3;
+            else dustY[i] += py >= 0 ? 3 : -3;
+          }
+        }
+      }
+
+      function drawDust() {
+        var i;
+        var dx;
+        var dy;
+        if (!dustOn() || !dustN || !ctx) return;
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.imageSmoothingEnabled = false;
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = "#5a626c";
+        for (i = 0; i < dustN; i++) {
+          ctx.globalAlpha = dustA[i];
+          dx = Math.round(dustX[i] * dpr);
+          dy = Math.round(dustY[i] * dpr);
+          ctx.fillRect(dx, dy, 1, 1);
+        }
+        ctx.globalAlpha = 1;
+        ctx.restore();
       }
 
       function scatterHomes() {
@@ -2085,7 +2234,9 @@
         interlude: "none",
         control: { pause: "text" },
         transition: { group: "develop", arc: "on", handover: "on" },
-        seedMode: "cloud"
+        seedMode: "cloud",
+        pixelBlock: { enabled: true, size: 2 },
+        dust: { enabled: true, n: 640 }
       };
       try {
         var _qs = new URLSearchParams(window.location.search);
@@ -2095,6 +2246,13 @@
         if (_qs.get("handover") === "0") exhibitManifest.transition.handover = "off";
         if (_qs.get("arc") === "off" || _qs.get("arc") === "on") exhibitManifest.transition.arc = _qs.get("arc");
         if (_qs.get("group") === "sharp" || _qs.get("group") === "develop") exhibitManifest.transition.group = _qs.get("group");
+        if (_qs.get("block") === "0") exhibitManifest.pixelBlock.enabled = false;
+        if (_qs.get("block") === "1") exhibitManifest.pixelBlock.enabled = true;
+        if (_qs.get("pixel") === "2" || _qs.get("pixel") === "3") {
+          exhibitManifest.pixelBlock.enabled = true;
+          exhibitManifest.pixelBlock.size = parseInt(_qs.get("pixel"), 10);
+        }
+        if (_qs.get("dust") === "0") exhibitManifest.dust.enabled = false;
       } catch (errQs) {}
       var exhibit = {
         phase: "off",
@@ -2712,6 +2870,7 @@
           }
         }
         paintVoid();
+        if (booted) placeDust();
       }
 
       function capSpeedLimit(i, max) {
@@ -3266,8 +3425,14 @@
           publishRenderInfo();
           return;
         }
-        if (workerReady && postWorkerFrame()) {
+        if (workerReady && lastPaintBmp && mode === "formed" && !pointerLive() && !handoverLive && !frozen) {
+          paintStage(lastPaintBmp);
           publishRenderInfo();
+          return;
+        }
+        if (workerReady && postWorkerFrame()) {
+          if (lastPaintBmp) paintStage(lastPaintBmp);
+          else publishRenderInfo();
           return;
         }
         ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -3275,6 +3440,7 @@
         half = cell * 0.5;
         ctx.globalAlpha = 1;
         ctx.imageSmoothingEnabled = false;
+        ctx.shadowBlur = 0;
         if (spriteBmp && spriteBmp.length === atlasPalN) {
           var xMin = -cell;
           var yMin = -cell;
@@ -3287,8 +3453,8 @@
             spr = spriteBmp[p];
             for (k = start; k < end; k++) {
               i = bucketIndex[k];
-              dx = (x[i] * dpr - half) | 0;
-              dy = (y[i] * dpr - half) | 0;
+              dx = Math.round(x[i] * dpr - half);
+              dy = Math.round(y[i] * dpr - half);
               if (dx < xMin || dy < yMin || dx > xMax || dy > yMax) continue;
               ctx.drawImage(spr, dx, dy);
             }
@@ -3300,18 +3466,20 @@
             if (start === end) continue;
             for (k = start; k < end; k++) {
               i = bucketIndex[k];
-              dx = (x[i] * dpr - half) | 0;
-              dy = (y[i] * dpr - half) | 0;
-              ctx.drawImage(atlasBmp, p * cell, (palSize ? palSize[p] : 0) * cell, cell, cell, dx, dy, cell, cell);
+              dx = Math.round(x[i] * dpr - half);
+              dy = Math.round(y[i] * dpr - half);
+              ctx.drawImage(atlasBmp, p * cell, (pixelBlockOn() ? 0 : (palSize ? palSize[p] : 0)) * cell, cell, cell, dx, dy, cell, cell);
             }
           }
         }
-        ctx.imageSmoothingEnabled = true;
+        if (!pixelBlockOn()) ctx.imageSmoothingEnabled = true;
+        drawDust();
         publishRenderInfo();
       }
 
       function shouldStopLoop() {
         if (frozen) return true;
+        if (dustOn() && !reduced) return false;
         if (mode === "formed" && hasGlyph && activeCount === 0 && !pointerLive()) return true;
         return false;
       }
@@ -3350,6 +3518,7 @@
           acc -= DT;
           steps++;
         }
+        integrateDust();
         tDraw = performance.now();
         render(now);
         draw = performance.now() - tDraw;
@@ -3726,6 +3895,7 @@
         scatterHomes();
         formTargets(points);
         placeStart();
+        placeDust();
         window.__nfSeedAudit = seedStats();
         setMode("chaos");
         booted = true;
