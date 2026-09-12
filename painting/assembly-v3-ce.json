@@ -1,11 +1,11 @@
 {
   "task": "assembly-v3-CE-phys",
-  "volume": "docs/NF_粒子装配模块_整合总卷_v3.0.md",
+  "volume": "docs/NF_\u7c92\u5b50\u88c5\u914d\u6a21\u5757_\u6574\u5408\u603b\u5377_v3.0.md",
   "sources": {
-    "reeves": "ACM TOG 2(2) 1983 §2.4: kill on lifetime=0, intensity below threshold, or leave region of interest. Frame loop: generate → attributes → extinguish → dynamics → render.",
-    "phase_velocity": "OpenStax University Physics 1 §16.1: v=λ/T=λf. Crest of u=A sin(2πt/T−2πr/λ+φ0) travels at v_φ=λ/T. Britannica cited by volume; bot-walled this run.",
+    "reeves": "ACM TOG 2(2) 1983 \u00a72.4: kill on lifetime=0, intensity below threshold, or leave region of interest. Frame loop: generate \u2192 attributes \u2192 extinguish \u2192 dynamics \u2192 render.",
+    "phase_velocity": "OpenStax University Physics 1 \u00a716.1: v=\u03bb/T=\u03bbf. Crest of u=A sin(2\u03c0t/T\u22122\u03c0r/\u03bb+\u03c60) travels at v_\u03c6=\u03bb/T. Britannica cited by volume; bot-walled this run.",
     "streakline": "Cambridge MDP node8 + MIT Unified Fluids Lect.8: streakline = particles that have passed a fixed point (continuous dye/smoke). NASA Glenn: streamline is instantaneous tangent; they coincide only in steady flow.",
-    "bridson": "Bridson, Hourihan, Nordenstam, SIGGRAPH 2007 §2.1: 2D v=(∂ψ/∂y,−∂ψ/∂x); ∇·∇×≡0, no gutters. Potential modulated, not raw Perlin velocity."
+    "bridson": "Bridson, Hourihan, Nordenstam, SIGGRAPH 2007 \u00a72.1: 2D v=(\u2202\u03c8/\u2202y,\u2212\u2202\u03c8/\u2202x); \u2207\u00b7\u2207\u00d7\u22610, no gutters. Potential modulated, not raw Perlin velocity."
   },
   "isolation_defaults_off": true,
   "s3_dual": "cdff787751379eca069c205dbeb730f7b34a13e85c9902dee0959acee143aa19",
@@ -36,8 +36,8 @@
     "physics_clean": true
   },
   "budget": {
-    "increment_8k_ms": 0.6235261666666667,
-    "scaled_50k_ms": 3.897038541666667,
+    "increment_8k_ms": 0.9485885499999998,
+    "scaled_50k_ms": 5.928678437499999,
     "cap": 1
   },
   "petition_E": true,
@@ -46,11 +46,89 @@
   "failed": [],
   "notes": [
     {
-      "msOff": 1.7760688333333334,
-      "msOn": 2.399595,
-      "delta": 0.6235261666666667,
-      "scaled50k": 3.897038541666667
+      "msOff": 1.0094704,
+      "msOn": 1.9580589499999999,
+      "delta": 0.9485885499999998,
+      "scaled50k": 5.928678437499999
     },
-    "DWELL increment over +1.0ms at 50k scale — petition, not silent. Morph stays on; E/count cut still off."
-  ]
+    "DWELL increment over +1.0ms at 50k scale \u2014 petition, not silent. Morph stays on; E/count cut still off."
+  ],
+  "browser": {
+    "task": "assembly-v3-CE-browser",
+    "dwell": {
+      "mode": "formed",
+      "scene": "dallas",
+      "on": true,
+      "n": 50601,
+      "phase": "DWELL",
+      "handbookShape": true,
+      "lifecycle": true,
+      "recycle": true,
+      "boundaryQ": true,
+      "ripple": true,
+      "streak": true,
+      "morphRamp": 0.2133333333333326,
+      "escP95": 0,
+      "tintMin": 0.9941,
+      "tintMean": 0.9982917469065478
+    },
+    "egg": {
+      "mode": "assemble",
+      "scene": "glyph",
+      "on": true,
+      "n": 50601,
+      "phase": "INTRO",
+      "handbookShape": true,
+      "lifecycle": true,
+      "recycle": true,
+      "boundaryQ": true,
+      "ripple": true,
+      "streak": true,
+      "morphRamp": 0,
+      "escP95": 0,
+      "tintMin": 1,
+      "tintMean": 1
+    },
+    "morph0": {
+      "mode": "assemble",
+      "scene": "dallas",
+      "on": true,
+      "n": 50601,
+      "phase": "INTRO",
+      "handbookShape": true,
+      "lifecycle": false,
+      "recycle": false,
+      "boundaryQ": false,
+      "ripple": false,
+      "streak": false,
+      "morphRamp": 0,
+      "escP95": 0,
+      "tintMin": 1,
+      "tintMean": 1
+    },
+    "shots": [
+      "/opt/cursor/artifacts/screenshots/assembly-ce-dwell-morph.png",
+      "/opt/cursor/artifacts/screenshots/assembly-ce-egg.png",
+      "/opt/cursor/artifacts/screenshots/assembly-ce-morph-off.png"
+    ],
+    "formed_first": {
+      "mode": "formed",
+      "scene": "dallas",
+      "on": true,
+      "n": 50601,
+      "phase": "DWELL",
+      "handbookShape": true,
+      "lifecycle": true,
+      "recycle": true,
+      "boundaryQ": true,
+      "ripple": true,
+      "streak": true,
+      "morphRamp": 0.006666666666666644,
+      "escP95": 0,
+      "tintMin": 1,
+      "tintMean": 1
+    },
+    "pass": true,
+    "failed": []
+  }
 }

@@ -427,9 +427,11 @@
     var cyH = cy * height;
     var lifeRng = mulberry32(seed ^ 0x4c494645);
     var phi0 = TWO_PI * mulberry32(seed ^ 0x4d302020)();
+    var hold;
     for (i = 0; i < n; i++) {
       lifeTau[i] = LIFE_TAU0 + lifeRng() * LIFE_TAU1;
-      lifeAge[i] = LIFE_IN + lifeRng() * Math.max(0.01, lifeTau[i] * (1 - LIFE_OUT) - LIFE_IN);
+      hold = Math.max(0.01, lifeTau[i] * (1 - LIFE_OUT) - LIFE_IN);
+      lifeAge[i] = LIFE_IN + 0.15 * hold + lifeRng() * 0.35 * hold;
       lifeA[i] = 1;
       tintA[i] = 1;
     }
@@ -707,7 +709,7 @@
         dx = tx[idx] - x[idx];
         dy = ty[idx] - y[idx];
         if (dx * dx + dy * dy < SLEEP_X * SLEEP_X) {
-          if (!(sw.boundaryQ && rr[idx] >= Q_LO)) return;
+          if (!(sw.boundaryQ && phase === PHASE.DWELL && rr[idx] >= Q_LO)) return;
         } else {
           asleep[idx] = 0;
         }
@@ -755,7 +757,7 @@
         vy[idx] *= c;
       }
 
-      if (sw.boundaryQ && rr[idx] >= Q_LO) {
+      if (sw.boundaryQ && phase === PHASE.DWELL && rr[idx] >= Q_LO) {
         var qNow = qOfR(rr[idx]);
         if (qNow > 0) {
           rx = urx[idx];
@@ -797,7 +799,7 @@
       var fily;
       var fil;
       var speed;
-      if (sw.lifecycle) {
+      if (sw.lifecycle && phase === PHASE.DWELL) {
         lifeAge[idx] += H;
         if (lifeAge[idx] <= LIFE_IN || lifeAge[idx] >= lifeTau[idx] * (1 - LIFE_OUT)) {
           a = lifeEnvelope(lifeAge[idx], lifeTau[idx]);
