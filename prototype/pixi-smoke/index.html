@@ -22,7 +22,7 @@
 </head>
 <body>
   <main>
-    <p>H1-① 依赖落位 · PixiJS v8.20.1 · 隔离页，不替换 Canvas2D 成画</p>
+    <p>H1-1 vendor land · PixiJS v8.20.1 · isolated page; live Canvas2D exhibit untouched</p>
     <div id="host"></div>
     <pre id="log">booting</pre>
   </main>
@@ -64,19 +64,19 @@
           autoDensity: true
         });
         if (!app.canvas) {
-          fail("app.canvas missing (do not use app.view)");
+          fail("canvas missing after Application.init");
           return;
         }
         host.appendChild(app.canvas);
         app.render();
-        var rendererName = app.renderer && app.renderer.type != null ? String(app.renderer.type) : "";
+        var rendererName = app.renderer && app.renderer.name ? String(app.renderer.name) : "";
+        var rendererType = app.renderer && app.renderer.type != null ? String(app.renderer.type) : "";
         var info = {
           ok: errors.length === 0,
           version: PIXI.VERSION || "",
           canvas: { w: app.canvas.width, h: app.canvas.height },
-          rendererType: rendererName,
-          rendererName: app.renderer && app.renderer.name,
-          usedView: !!app.view,
+          rendererType: rendererType,
+          rendererName: rendererName,
           usedCanvas: !!app.canvas,
           tickerStarted: !!(app.ticker && app.ticker.started),
           errors: errors.slice()

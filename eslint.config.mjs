@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // H1-① audited Pixi 8.20.1 vendor — do not lint minified third-party.
+    "prototype/vendor/**",
   ]),
 ]);
 

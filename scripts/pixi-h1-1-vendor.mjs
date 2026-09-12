@@ -95,10 +95,14 @@ function grepBlacklist() {
   const hits = {
     at_pixi: /@pixi\//.test(smoke),
     beginFill: /beginFill|endFill|lineStyle|drawRect\(|drawCircle\(/.test(smoke),
-    app_view_append: /appendChild\(\s*app\.view\s*\)/.test(smoke),
+    app_view: /\bapp\.view\b/.test(smoke),
+    base_texture: /BaseTexture/.test(smoke),
     ctor_options: /new PIXI\.Application\s*\(\s*\{/.test(smoke),
   };
-  return { hits, pass: !hits.at_pixi && !hits.beginFill && !hits.app_view_append && !hits.ctor_options };
+  return {
+    hits,
+    pass: Object.values(hits).every((hit) => hit === false),
+  };
 }
 
 async function main() {
@@ -153,6 +157,7 @@ async function main() {
         no_pageerror: pageErrors.length === 0,
         ticker_stopped: !!(smoke && smoke.tickerStarted === false),
         used_canvas: !!(smoke && smoke.usedCanvas === true),
+        webgl_backend: !!(smoke && smoke.rendererName === "webgl"),
         exhibit_untouched: true,
       },
     };
