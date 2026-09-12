@@ -1,0 +1,408 @@
+{
+  "task": "§9.6 exhibit-deliver",
+  "verdict": "NF-EXHIBIT-DELIVER-20260912",
+  "viewport": {
+    "w": 1440,
+    "h": 900,
+    "dpr": 1
+  },
+  "manifest": {
+    "runtime_authority": "inline exhibitManifest in prototype/index.html",
+    "json_fetched": false,
+    "json_only": [
+      "note"
+    ],
+    "seed_equal": true,
+    "diffs": [],
+    "inline": {
+      "id": "exhibit-v1",
+      "autoplay": {
+        "enabled": true
+      },
+      "motion": {
+        "discipline": "v2"
+      },
+      "dwellMs": 10000,
+      "transitionMs": 3000,
+      "introRevealMs": 2400,
+      "idleResumeMs": 30000,
+      "hoverResumeMs": 1500,
+      "captionSwapMs": 300,
+      "seed": 20038,
+      "catalog": [
+        "INTRO",
+        "HALL",
+        "COMMUNITY"
+      ],
+      "interlude": "none",
+      "control": {
+        "pause": "text"
+      },
+      "transition": {
+        "group": "develop",
+        "arc": "on",
+        "handover": "on"
+      },
+      "seedMode": "cloud",
+      "pixelBlock": {
+        "enabled": true,
+        "size": 2
+      },
+      "dust": {
+        "enabled": true,
+        "n": 640
+      },
+      "frameScale": 1,
+      "colorVersion": "v1"
+    },
+    "json": {
+      "id": "exhibit-v1",
+      "note": "自动放映 manifest · 运行时不得掷骰子 · 回退见附录 A",
+      "autoplay": {
+        "enabled": true
+      },
+      "motion": {
+        "discipline": "v2"
+      },
+      "dwellMs": 10000,
+      "transitionMs": 3000,
+      "introRevealMs": 2400,
+      "idleResumeMs": 30000,
+      "hoverResumeMs": 1500,
+      "captionSwapMs": 300,
+      "seed": 20038,
+      "catalog": [
+        "INTRO",
+        "HALL",
+        "COMMUNITY"
+      ],
+      "interlude": "none",
+      "control": {
+        "pause": "text"
+      },
+      "transition": {
+        "group": "develop",
+        "arc": "on",
+        "handover": "on"
+      },
+      "seedMode": "cloud",
+      "pixelBlock": {
+        "enabled": true,
+        "size": 2
+      },
+      "dust": {
+        "enabled": true,
+        "n": 640
+      },
+      "frameScale": 1,
+      "colorVersion": "v1"
+    },
+    "pass": true
+  },
+  "defaults": {
+    "autoplay": true,
+    "discipline": "v2",
+    "group": "develop",
+    "arc": "on",
+    "handover": "on",
+    "seedMode": "cloud",
+    "block": true,
+    "pixel": 2,
+    "dust": true,
+    "frameScale": 1,
+    "colorVersion": "v1",
+    "interlude": "none",
+    "pause": "text"
+  },
+  "switches": [
+    {
+      "query": "?dpr=1&autoplay=0",
+      "key": "autoplay",
+      "ok": true,
+      "got": {
+        "autoplay": false,
+        "discipline": "v2",
+        "group": "develop",
+        "arc": "on",
+        "handover": "on",
+        "seedMode": "cloud",
+        "block": true,
+        "pixel": 2,
+        "dust": true,
+        "frameScale": 1,
+        "colorVersion": "v1",
+        "interlude": "none",
+        "pause": "text"
+      }
+    },
+    {
+      "query": "?dpr=1&discipline=classic",
+      "key": "discipline",
+      "ok": true,
+      "got": {
+        "autoplay": true,
+        "discipline": "classic",
+        "group": "develop",
+        "arc": "on",
+        "handover": "on",
+        "seedMode": "cloud",
+        "block": true,
+        "pixel": 2,
+        "dust": true,
+        "frameScale": 1,
+        "colorVersion": "v1",
+        "interlude": "none",
+        "pause": "text"
+      }
+    },
+    {
+      "query": "?dpr=1&group=sharp",
+      "key": "group",
+      "ok": true,
+      "got": {
+        "autoplay": true,
+        "discipline": "v2",
+        "group": "sharp",
+        "arc": "on",
+        "handover": "on",
+        "seedMode": "cloud",
+        "block": true,
+        "pixel": 2,
+        "dust": true,
+        "frameScale": 1,
+        "colorVersion": "v1",
+        "interlude": "none",
+        "pause": "text"
+      }
+    },
+    {
+      "query": "?dpr=1&arc=off",
+      "key": "arc",
+      "ok": true,
+      "got": {
+        "autoplay": true,
+        "discipline": "v2",
+        "group": "develop",
+        "arc": "off",
+        "handover": "on",
+        "seedMode": "cloud",
+        "block": true,
+        "pixel": 2,
+        "dust": true,
+        "frameScale": 1,
+        "colorVersion": "v1",
+        "interlude": "none",
+        "pause": "text"
+      }
+    },
+    {
+      "query": "?dpr=1&handover=0",
+      "key": "handover",
+      "ok": true,
+      "got": {
+        "autoplay": true,
+        "discipline": "v2",
+        "group": "develop",
+        "arc": "on",
+        "handover": "off",
+        "seedMode": "cloud",
+        "block": true,
+        "pixel": 2,
+        "dust": true,
+        "frameScale": 1,
+        "colorVersion": "v1",
+        "interlude": "none",
+        "pause": "text"
+      }
+    },
+    {
+      "query": "?dpr=1&seed=uniform",
+      "key": "seed",
+      "ok": true,
+      "got": {
+        "autoplay": true,
+        "discipline": "v2",
+        "group": "develop",
+        "arc": "on",
+        "handover": "on",
+        "seedMode": "uniform",
+        "block": true,
+        "pixel": 2,
+        "dust": true,
+        "frameScale": 1,
+        "colorVersion": "v1",
+        "interlude": "none",
+        "pause": "text"
+      }
+    },
+    {
+      "query": "?dpr=1&block=0",
+      "key": "block",
+      "ok": true,
+      "got": {
+        "autoplay": true,
+        "discipline": "v2",
+        "group": "develop",
+        "arc": "on",
+        "handover": "on",
+        "seedMode": "cloud",
+        "block": false,
+        "pixel": 2,
+        "dust": true,
+        "frameScale": 1,
+        "colorVersion": "v1",
+        "interlude": "none",
+        "pause": "text"
+      }
+    },
+    {
+      "query": "?dpr=1&pixel=3",
+      "key": "pixel",
+      "ok": true,
+      "got": {
+        "autoplay": true,
+        "discipline": "v2",
+        "group": "develop",
+        "arc": "on",
+        "handover": "on",
+        "seedMode": "cloud",
+        "block": true,
+        "pixel": 3,
+        "dust": true,
+        "frameScale": 1,
+        "colorVersion": "v1",
+        "interlude": "none",
+        "pause": "text"
+      }
+    },
+    {
+      "query": "?dpr=1&dust=0",
+      "key": "dust",
+      "ok": true,
+      "got": {
+        "autoplay": true,
+        "discipline": "v2",
+        "group": "develop",
+        "arc": "on",
+        "handover": "on",
+        "seedMode": "cloud",
+        "block": true,
+        "pixel": 2,
+        "dust": false,
+        "frameScale": 1,
+        "colorVersion": "v1",
+        "interlude": "none",
+        "pause": "text"
+      }
+    },
+    {
+      "query": "?dpr=1&frame=0.9",
+      "key": "frame",
+      "ok": true,
+      "got": {
+        "autoplay": true,
+        "discipline": "v2",
+        "group": "develop",
+        "arc": "on",
+        "handover": "on",
+        "seedMode": "cloud",
+        "block": true,
+        "pixel": 2,
+        "dust": true,
+        "frameScale": 0.9,
+        "colorVersion": "v1",
+        "interlude": "none",
+        "pause": "text"
+      }
+    }
+  ],
+  "handover": {
+    "pass": {
+      "core_sync": true,
+      "overlap": true,
+      "no_empty": true,
+      "no_snap": true,
+      "waves": true,
+      "duration": true,
+      "drift_cap": true,
+      "step_cap": true,
+      "all": true
+    },
+    "measured": {
+      "a_core_release_s": 0.869,
+      "b_core_start_s": 1,
+      "core_delta_s": 0.131,
+      "overlap_s": 1.017,
+      "empty_frames": 0,
+      "snapAll_calls": 0,
+      "max_step_px": 6,
+      "max_drift": 1.2,
+      "waveN": 5,
+      "tail_locks": 817,
+      "T": 3,
+      "group": "develop"
+    },
+    "spring": 0.055
+  },
+  "home": {
+    "mode": "chaos",
+    "view": "true"
+  },
+  "dwell": {
+    "hz": 22.666666666666668,
+    "tickDelta": 0,
+    "checksumSame": true,
+    "lastPhysMs": 0,
+    "workP95": 0.20000000298023224,
+    "stayQuiet": true,
+    "spring": 0.055
+  },
+  "conflicts": {
+    "hits": [
+      {
+        "file": "HANDOFF.md",
+        "allowed": true
+      },
+      {
+        "file": "docs/NF_自动放映_交付_v1.0.md",
+        "allowed": true
+      },
+      {
+        "file": "docs/NF_自动放映_修订包_v1.0.md",
+        "allowed": true
+      },
+      {
+        "file": "scripts/exhibit-deliver-bench.mjs",
+        "allowed": true
+      }
+    ],
+    "stray": [],
+    "pass": true
+  },
+  "prior_pass": {
+    "seed": true,
+    "handover": true,
+    "pixel": true,
+    "b41": true,
+    "ab": true
+  },
+  "screenshots": {
+    "hall": "/opt/cursor/artifacts/ex_deliver_hall_formed_2.png",
+    "dwell": "/opt/cursor/artifacts/ex_deliver_intro_dwell_2.png"
+  },
+  "acceptance": {
+    "manifest_sync": true,
+    "json_not_fetched": true,
+    "conflicts_clean": true,
+    "switches_all": true,
+    "section3_pass": true,
+    "no_snap": true,
+    "no_empty": true,
+    "home_chaos": true,
+    "dwell_hz_le_32": true,
+    "dwell_zero_recompute": true,
+    "spring_locked": true,
+    "prior_logs_pass": true,
+    "pass": true
+  }
+}

@@ -123,6 +123,7 @@ function auditConflicts() {
     "docs/NF_自动放映_修订包_v1.0.md",
     "docs/NF_自动放映_交付_v1.0.md",
     "HANDOFF.md",
+    "scripts/exhibit-deliver-bench.mjs",
   ]);
   const roots = ["docs", "prototype", "scripts", "src", "."];
   const files = [];
@@ -346,7 +347,16 @@ async function main() {
     if (fs.existsSync(ART)) await hoPage.screenshot({ path: hallShot, fullPage: false });
     await hoPage.click("#btn-home");
     await leavePointer(hoPage);
-    await sleep(400);
+    await waitFor(
+      hoPage,
+      () => {
+        const mode = window.__nfRender && window.__nfRender.mode;
+        return { ok: mode === "chaos" || mode === "disperse", mode };
+      },
+      2000,
+      "home-disperse"
+    );
+    await sleep(1200);
     const home = await hoPage.evaluate(() => ({
       mode: window.__nfRender.mode,
       view: document.getElementById("dossier") && document.getElementById("dossier").getAttribute("aria-hidden"),

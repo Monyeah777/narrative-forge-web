@@ -19,7 +19,7 @@
 | `motion.discipline` | 成画停 rAF | `v2`（`?discipline=classic` 回旧规） |
 | `dwellMs` / `transitionMs` / `introRevealMs` | — | `10000` / `3000` / `2400` |
 | `idleResumeMs` / `hoverResumeMs` / `captionSwapMs` | — | `30000` / `1500` / `300` |
-| `seed` / `seedMode` | 均匀全视口 | `0x4e46` / `cloud` |
+| `seed` / `seedMode` | 均匀全视口 | `0x4e46`（**20038**） / `cloud` |
 | `catalog` | — | `INTRO, HALL, COMMUNITY` |
 | `transition` | — | `group=develop, arc=on, handover=on` |
 | `pixelBlock` | 软边 atlas cell 16 | `{ enabled: true, size: 2 }` |
@@ -28,7 +28,7 @@
 | `colorVersion` | — | `v1`（v2/v3 待拍板，未做） |
 | `interlude` / `control.pause` | — | `none` / `text` |
 
-JSON 仅多一个 `note` 字段；`seed` 字面量 `20166` ≡ 内联 `0x4e46`。复测脚本断言：字段对齐、JSON 未被 fetch。
+JSON 仅多一个 `note` 字段。副本里曾误写 `seed: 20166`；`0x4e46` 的十进制是 **20038**，已改齐。复测脚本断言：字段对齐、JSON 未被 fetch。
 
 ---
 
@@ -75,7 +75,7 @@ JSON 仅多一个 `note` 字段；`seed` 字面量 `20166` ≡ 内联 `0x4e46`�
 | `painting/pixel-block-dust.json` | true |
 | `painting/b4-1-bench.json` | true |
 | `painting/b4-1-ab.json` | true |
-| `painting/exhibit-deliver.json`（本交付复测） | 见该文件 |
+| `painting/exhibit-deliver.json`（本交付复测） | **true**（§3 all、10/10 开关、停留 22.7Hz / tickDelta 0、首页 chaos、冲突句 0 条散落） |
 
 §3 复测读 `window.__nfHandover.pass.all`。§5 复测停留 Hz / tickDelta / lastPhysMs。
 
