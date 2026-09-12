@@ -14,7 +14,7 @@
   "interlude": "none",
   "control": { "pause": "text" },
   "transition": { "group": "develop", "arc": "on" },
-  "seedMode": "uniform",
+  "seedMode": "cloud",
   "pixelBlock": { "enabled": false, "size": 2 },
   "frameScale": 1.0,
   "colorVersion": "v1"

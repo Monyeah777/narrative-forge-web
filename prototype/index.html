@@ -989,6 +989,7 @@
       var LEFT_WEIGHT = 0;
       var PAINT_H = 0.70;
       var PAINT_CX = 0.35;
+      var SEED_CLOUD_SIG = 0.26;
       var REPEL_R = 100;
       var REPEL = 1.1;
       var REPEL_FMAX = 2.4;
@@ -1864,12 +1865,104 @@
 
       function scatterHomes() {
         var i;
+        /* 首页 / disperse：全视口均匀混沌。画区云只写 x/y，不得改这里。 */
         for (i = 0; i < N; i++) {
           nhx[i] = spawnNormX();
           nhy[i] = rand();
           hx[i] = nhx[i] * cssW;
           hy[i] = nhy[i] * cssH;
         }
+      }
+
+      function seedCloudRand(rng) {
+        return rng();
+      }
+
+      function seedCloudGauss(rng, spare) {
+        var u, v, r, m, out;
+        if (spare.v !== null) {
+          out = spare.v;
+          spare.v = null;
+          return out;
+        }
+        do {
+          u = rng() * 2 - 1;
+          v = rng() * 2 - 1;
+          r = u * u + v * v;
+        } while (r === 0 || r >= 1);
+        m = Math.sqrt(-2 * Math.log(r) / r);
+        spare.v = v * m;
+        return u * m;
+      }
+
+      function placeCloudNow() {
+        var i;
+        var rng = mulberry32((exhibitManifest.seed || 0x4e46) >>> 0);
+        var spare = { v: null };
+        var cx = fitX + fitW * 0.5;
+        var cy = fitY + fitH * 0.5;
+        var sx = fitW * SEED_CLOUD_SIG;
+        var sy = fitH * SEED_CLOUD_SIG;
+        var pad = 10;
+        var x0 = fitX - pad;
+        var y0 = fitY - pad;
+        var x1 = fitX + fitW + pad;
+        var y1 = fitY + fitH + pad;
+        var px, py;
+        if (cssW <= 1 || cssH <= 1 || fitW <= 1 || fitH <= 1) {
+          placeNow(false);
+          return;
+        }
+        for (i = 0; i < N; i++) {
+          px = cx + seedCloudGauss(rng, spare) * sx;
+          py = cy + seedCloudGauss(rng, spare) * sy;
+          if (px < x0) px = x0;
+          if (px > x1) px = x1;
+          if (py < y0) py = y0;
+          if (py > y1) py = y1;
+          x[i] = px;
+          y[i] = py;
+          nx[i] = px / cssW;
+          ny[i] = py / cssH;
+          vx[i] = 0;
+          vy[i] = 0;
+          z[i] = 0.18 + seedCloudRand(rng) * 0.82;
+          seedVel(i, nx[i]);
+        }
+      }
+
+      function seedStats() {
+        var i;
+        var d;
+        var dists = [];
+        var inside = 0;
+        var sum = 0;
+        var mid;
+        layoutContain();
+        for (i = 0; i < N; i++) {
+          d = Math.hypot(tx[i] - x[i], ty[i] - y[i]);
+          dists.push(d);
+          sum += d;
+          if (x[i] >= fitX && x[i] <= fitX + fitW && y[i] >= fitY && y[i] <= fitY + fitH) inside++;
+        }
+        dists.sort(function (a, b) { return a - b; });
+        mid = dists.length ? dists[Math.min(dists.length - 1, (dists.length * 0.5) | 0)] : 0;
+        return {
+          mode: exhibitManifest.seedMode || "uniform",
+          n: N,
+          sigma: SEED_CLOUD_SIG,
+          css: { w: cssW, h: cssH },
+          contain: { x: round3(fitX), y: round3(fitY), w: round3(fitW), h: round3(fitH) },
+          median_px: round3(mid),
+          p95_px: dists.length ? round3(dists[Math.min(dists.length - 1, (dists.length * 0.95) | 0)]) : 0,
+          mean_px: dists.length ? round3(sum / dists.length) : 0,
+          inside_frac: N ? round3(inside / N) : 0
+        };
+      }
+
+      function placeStart() {
+        if (exhibitManifest.seedMode === "cloud") placeCloudNow();
+        else placeNow(false);
       }
 
       function formTargets(points) {
@@ -1965,12 +2058,13 @@
         interlude: "none",
         control: { pause: "text" },
         transition: { group: "develop", arc: "on" },
-        seedMode: "uniform"
+        seedMode: "cloud"
       };
       try {
         var _qs = new URLSearchParams(window.location.search);
         if (_qs.get("autoplay") === "0") exhibitManifest.autoplay.enabled = false;
         if (_qs.get("dwell")) exhibitManifest.dwellMs = Math.max(1000, parseInt(_qs.get("dwell"), 10) || 10000);
+        if (_qs.get("seed") === "uniform" || _qs.get("seed") === "cloud") exhibitManifest.seedMode = _qs.get("seed");
       } catch (errQs) {}
       var exhibit = {
         phase: "off",
@@ -1992,6 +2086,7 @@
       var exhibitBar = document.getElementById("exhibit-bar");
       window.__nfManifest = exhibitManifest;
       window.__nfExhibit = exhibit;
+      window.__nfSeedStats = seedStats;
 
       function exhibitNow() {
         return performance.now() - exhibit.clockOffset;
@@ -3200,7 +3295,8 @@
         if (!sprites.length) buildSprites();
         scatterHomes();
         formTargets(points);
-        placeNow(false);
+        placeStart();
+        window.__nfSeedAudit = seedStats();
         setMode("chaos");
         booted = true;
         render();
