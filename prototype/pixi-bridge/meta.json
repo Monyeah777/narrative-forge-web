@@ -11,7 +11,13 @@
     "y",
     "idx"
   ],
-  "headerBytes": 0,
+  "headerBytes": 9,
+  "header": {
+    "magic": "NFPT",
+    "version": 3,
+    "count": 3
+  },
+  "payloadSha256": "9690b47ff117733935b4fb60b2dc9fdb692434204c8856dccb9bc272237999f7",
   "yAxis": "down",
   "space": "painting-source-uint16",
   "quantize": "floor(v+0.5)",
@@ -39,10 +45,10 @@
     }
   ],
   "endianProbe": {
-    "offset": 2,
+    "offset": 11,
     "le": 1023,
     "be": 65283
   },
-  "sha256": "9690b47ff117733935b4fb60b2dc9fdb692434204c8856dccb9bc272237999f7",
-  "bytes": 15
+  "sha256": "a335bec62073335e37aab67bf61304e4212568ad755be1e3ea0c66ebc1819ad1",
+  "bytes": 24
 }

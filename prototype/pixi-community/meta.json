@@ -11,7 +11,7 @@
     "y",
     "idx"
   ],
-  "headerBytes": 0,
+  "headerBytes": 9,
   "yAxis": "down",
   "space": "painting-source-uint16",
   "quantize": "floor(v*65535+0.5)",
@@ -273,8 +273,8 @@
     "#f1e0e2",
     "#e1e9f5"
   ],
-  "sha256": "2e99463230c73af13e3a3b902ebe9f72034d681515a424a66afa914b52388c52",
-  "bytes": 500000,
+  "sha256": "3144fdb9144d95cb0afe30f28629ec1e065bfa5022400a80e1c8e93129779a45",
+  "bytes": 500009,
   "source": {
     "src": "painting/masters/met_fourtrees_3689x3658.jpg",
     "src_px": [
@@ -290,5 +290,11 @@
     "k": 256,
     "relax": 3,
     "dark_cull_pct": 2.5453
-  }
+  },
+  "header": {
+    "magic": "NFPT",
+    "version": 3,
+    "count": 100000
+  },
+  "payloadSha256": "2e99463230c73af13e3a3b902ebe9f72034d681515a424a66afa914b52388c52"
 }

@@ -2,7 +2,6 @@
 """H1-④: sample Dallas ≥2200px → points.bin v3 (100k). Does not touch live 12k JSON."""
 from __future__ import annotations
 
-import hashlib
 import importlib.util
 import json
 import struct
@@ -11,12 +10,12 @@ from pathlib import Path
 
 from PIL import Image
 
+from nf_points_bin import FMT, HEADER_BYTES, STRIDE, VERSION, write_bin
+
 ROOT = Path(__file__).resolve().parents[1]
 MASTER = ROOT / "painting/masters/dallas_lespeupliers_5497x7054.jpg"
 PREVIEW = ROOT / "painting/01-dallas.jpg"
 OUT = ROOT / "prototype/pixi-cloud"
-FMT = "<HHB"
-STRIDE = 5
 COUNT = 100_000
 SHORT_SIDE = 2400  # I-2: source sample ≥2200px
 SEED = 0x4E46
@@ -84,12 +83,11 @@ def main() -> None:
         if idx < 0 or idx > 255:
             raise ValueError(f"idx out of range: {idx}")
         buf.extend(struct.pack(FMT, quantize_u16(x), quantize_u16(y), idx))
-    data = bytes(buf)
-    assert len(data) == COUNT * STRIDE
-    sha = hashlib.sha256(data).hexdigest()
+    raw = bytes(buf)
+    assert len(raw) == COUNT * STRIDE
     OUT.mkdir(parents=True, exist_ok=True)
-    (OUT / "dallas-100k.bin").write_bytes(data)
-    (OUT / "dallas-100k.bin.sha256").write_text(f"{sha}  dallas-100k.bin\n", encoding="utf-8")
+    info = write_bin(OUT / "dallas-100k.bin", raw, COUNT)
+    sha = info["sha256"]
     meta = {
         "id": payload["id"],
         "w": payload["w"],
@@ -99,13 +97,15 @@ def main() -> None:
         "format": FMT,
         "endian": "little",
         "fields": ["x", "y", "idx"],
-        "headerBytes": 0,
+        "headerBytes": HEADER_BYTES,
+        "header": {"magic": "NFPT", "version": VERSION, "count": COUNT},
+        "payloadSha256": info["payloadSha256"],
         "yAxis": "down",
         "space": "painting-source-uint16",
         "quantize": "floor(v*65535+0.5)",
         "palette": payload["palette"],
         "sha256": sha,
-        "bytes": len(data),
+        "bytes": info["bytes"],
         "source": src_meta,
         "sample": {
             "dark_L": DARK_L,
@@ -121,7 +121,7 @@ def main() -> None:
         json.dumps(
             {
                 "sha256": sha,
-                "bytes": len(data),
+                "bytes": info["bytes"],
                 "count": COUNT,
                 "sampled_wh": [payload["w"], payload["h"]],
                 "source": src_meta,

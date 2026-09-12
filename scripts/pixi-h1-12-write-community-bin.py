@@ -5,11 +5,10 @@ Does not overwrite Dallas / Scotland 100k bins.
 Does not write painting/points.json.
 Does not change INTRO / HALL / EGG defaults except COMMUNITY load path.
 Same red lines as H1-④: LANCZOS short side 2400, dark_L=0.19,
-seed 0x4E46, k=256, relax=3, <HHB stride 5, no file header.
+seed 0x4E46, k=256, relax=3, <HHB stride 5, NFPT header.
 """
 from __future__ import annotations
 
-import hashlib
 import importlib.util
 import json
 import struct
@@ -19,14 +18,14 @@ from pathlib import Path
 
 from PIL import Image
 
+from nf_points_bin import FMT, HEADER_BYTES, STRIDE, VERSION, parse_header, write_bin
+
 ROOT = Path(__file__).resolve().parents[1]
 MASTER = ROOT / "painting/masters/met_fourtrees_3689x3658.jpg"
 PREVIEW = ROOT / "painting/05-met-fourtrees.jpg"
 DALLAS_BIN = ROOT / "prototype/pixi-cloud/dallas-100k.bin"
 SCOTLAND_BIN = ROOT / "prototype/pixi-hall/scotland-100k.bin"
 OUT = ROOT / "prototype/pixi-community"
-FMT = "<HHB"
-STRIDE = 5
 COUNT = 100_000
 SHORT_SIDE = 2400
 SEED = 0x4E46
@@ -80,16 +79,16 @@ def load_source() -> tuple[Image.Image, dict]:
 def main() -> None:
     assert struct.calcsize(FMT) == STRIDE
     if DALLAS_BIN.exists():
+        frozen = parse_header(DALLAS_BIN.read_bytes())
         print(
-            "frozen Dallas 100k left untouched sha256="
-            + hashlib.sha256(DALLAS_BIN.read_bytes()).hexdigest(),
+            f"frozen Dallas 100k left untouched sha256={frozen['sha256']} payload={frozen['payloadSha256']}",
             file=sys.stderr,
             flush=True,
         )
     if SCOTLAND_BIN.exists():
+        frozen = parse_header(SCOTLAND_BIN.read_bytes())
         print(
-            "frozen Scotland 100k left untouched sha256="
-            + hashlib.sha256(SCOTLAND_BIN.read_bytes()).hexdigest(),
+            f"frozen Scotland 100k left untouched sha256={frozen['sha256']} payload={frozen['payloadSha256']}",
             file=sys.stderr,
             flush=True,
         )
@@ -111,12 +110,11 @@ def main() -> None:
         if idx < 0 or idx > 255:
             raise ValueError(f"idx out of range: {idx}")
         buf.extend(struct.pack(FMT, quantize_u16(x), quantize_u16(y), idx))
-    data = bytes(buf)
-    assert len(data) == COUNT * STRIDE
-    sha = hashlib.sha256(data).hexdigest()
+    raw = bytes(buf)
+    assert len(raw) == COUNT * STRIDE
     OUT.mkdir(parents=True, exist_ok=True)
-    (OUT / "met-100k.bin").write_bytes(data)
-    (OUT / "met-100k.bin.sha256").write_text(f"{sha}  met-100k.bin\n", encoding="utf-8")
+    info = write_bin(OUT / "met-100k.bin", raw, COUNT)
+    sha = info["sha256"]
     meta = {
         "id": WORK_ID,
         "w": payload["w"],
@@ -126,13 +124,15 @@ def main() -> None:
         "format": FMT,
         "endian": "little",
         "fields": ["x", "y", "idx"],
-        "headerBytes": 0,
+        "headerBytes": HEADER_BYTES,
+        "header": {"magic": "NFPT", "version": VERSION, "count": COUNT},
+        "payloadSha256": info["payloadSha256"],
         "yAxis": "down",
         "space": "painting-source-uint16",
         "quantize": "floor(v*65535+0.5)",
         "palette": payload["palette"],
         "sha256": sha,
-        "bytes": len(data),
+        "bytes": info["bytes"],
         "source": src_meta,
         "sample": {
             "dark_L": DARK_L,
@@ -149,7 +149,7 @@ def main() -> None:
             {
                 "id": WORK_ID,
                 "sha256": sha,
-                "bytes": len(data),
+                "bytes": info["bytes"],
                 "count": COUNT,
                 "sampled_wh": [payload["w"], payload["h"]],
                 "source": src_meta,
