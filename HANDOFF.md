@@ -10,7 +10,7 @@
 
 ## 当前进度（云端 Track A）
 
-手册 **B3 已完成**，停在等「继续」。不要开 B4（bench.html / 60fps / long task）。
+手册 **B3 已完成**。刚做完单点微调：**全屏曲面 CRT**（撤销左右硬切分）。不要开 B4。
 
 - 凌厉弹簧 0.055 / 阻尼 0.90 / vmax 10；临界停止 0.6px / 0.06；驱离 100px 平方反比
 - 成画 1.5s（最早 1.2s）、回退 1.1s；相位时间走固定步长，冻结不计入
@@ -18,7 +18,10 @@
 - SAVE 冻结（aria-pressed 常亮）；SETTINGS 循环 A/B/C（LOW DRIFT / STORM / STILL）
 - `prefers-reduced-motion` → 直接静态成画
 - 本条分支：`cursor/b3-assemble-spring-52ec`（叠在 `cursor/b2-render-atlas-52ec` 上）
-- B2 仍有效：12k ImageBitmap 分桶绘制 + contain
+- B2 仍有效：12k ImageBitmap 分桶绘制
+- CRT 微调：画布 100vw×100vh；成画 70vh、中心偏左 15%；报章无底板；`.crt-shell` 是**空的全屏叠层**（不要拿带 `transform` 的外壳去包 canvas，否则 `position:fixed` 不再相对视口）；厚边框+微曲面（无 WebGL / Pixi / fragment shader）
+- `ntx/nty` 永远是画作源空间 0–1；`tx/ty` 才是屏幕像素。`toNorm()` 不得回写 `ntx/nty`
+- 本条分支：`cursor/crt-fullscreen-tube-52ec`（叠在 `cursor/b3-assemble-spring-52ec` 上）
 
 ---
 
@@ -28,7 +31,7 @@
 |---|---|
 | 本仓 | `C:\Users\mon_7\Downloads\narrative-forge-web` |
 | GitHub | `Monyeah777/narrative-forge-web` |
-| 当前分支 | 云端叠 PR 在 `cursor/b3-assemble-spring-52ec` |
+| 当前分支 | 云端叠 PR 在 `cursor/crt-fullscreen-tube-52ec` |
 | 原型路径 | `prototype/index.html`（live fetch：`assets/points.json`；`gen-points.mjs` 仍写同目录字形 `points.json`） |
 | 画作预览 | `painting/01-dallas.jpg`（primary）+ `02`–`06`；`painting/points.json`（B1-2 v2）；高清不进 git |
 | NF 主仓 | `C:\Users\mon_7\Downloads\NarrativeForge-main` |
@@ -62,7 +65,7 @@ Next.js 16，API 与训练记忆可能不同。改 Next 代码前读 `node_modul
 - 导航：雅黑/苹方。`::before` 画 `>`，不要 HTML 里写勾。只有 hover / `aria-current`。离开立刻隐藏。同时只有一个 `aria-current`。序号 `data-idx` 01–04 用 `::after`。
 - **不要**再加盒装 CTA / 测试按钮。访客控件只有：四项导航 + GitHub/Gitee + 文案里那颗彩蛋 NF。
 - 十字准星已删除。画布恢复普通指针。不要加回 `#sight` / `cursor:none`。
-- 左上角 HUD `NF · VOID / 050505`、胶片颗粒 overlay、径向 veil 仍在。颗粒是静态 CSS，不要用 feTurbulence 当实时粒子噪声。
+- 左上角 HUD `NF · VOID / 050505`、胶片颗粒 overlay 仍在；径向 veil 已关掉（`display:none`），不要加回深色文字遮罩。颗粒是静态 CSS，不要用 feTurbulence 当实时粒子噪声。
 - 禁：backdrop-filter、双色故障、发光、渐变背景、`filter:blur()`。
 
 ### 文案（锁）

@@ -1,0 +1,53 @@
+{
+  "task": "CRT-fullscreen-tube",
+  "title": "全屏曲面 CRT：撤销左右硬切分",
+  "searched": [
+    {
+      "q": "css crt bezel border-radius ellipse inset box-shadow perspective rotateX",
+      "refs": [
+        "https://blog.webguy.pw/blog/simulating-a-crt-monitor-in-css/",
+        "https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/perspective",
+        "https://developer.mozilla.org/en-US/docs/Web/CSS/clip-path"
+      ],
+      "takeaway": "Bezel = thick border + elliptical radius + inset vignette. Mild rotateX under perspective reads as curved glass. clip-path inset(round) needs @supports fallback to radius-only."
+    },
+    {
+      "q": "object-fit contain offset left canvas target mapping",
+      "refs": [
+        "https://github.com/nrkn/object-fit-math",
+        "https://stackoverflow.com/questions/78387434/how-to-convert-mouse-position-to-canvas-coordinate-using-object-fit-contain"
+      ],
+      "takeaway": "Do not clip the painting. Scale the whole image (here ~70vh) then translate so its center sits left of the viewport center. Chaos homes stay in full CSS pixels."
+    },
+    {
+      "q": "position fixed containing block transform ancestor",
+      "refs": [
+        "https://developer.mozilla.org/en-US/docs/Web/CSS/position#fixed",
+        "https://dev.to/salilnaik/the-uncanny-relationship-between-position-fixed-and-transform-property-32f6"
+      ],
+      "takeaway": "A transformed .crt-shell cannot wrap the canvas. Overlay the bezel as a sibling with pointer-events:none so 100vw×100vh stays the real viewport."
+    }
+  ],
+  "red_lines": [
+    "No WebGL / PixiJS / fragment shaders (Track A is Canvas 2D only).",
+    "No right-side fill or dark gradient mask on .paper.",
+    "Do not start B4."
+  ],
+  "measured": {
+    "viewport1280": {
+      "view": [1280, 713],
+      "canvas": [1280, 713],
+      "contain": { "x": 253.55, "y": 106.95, "w": 388.91, "h": 499.10, "cx": 0.35, "hFrac": 0.70 },
+      "paperBg": "rgba(0, 0, 0, 0)",
+      "textShadow": "rgba(0, 0, 0, 0.95) 0px 0px 12px, rgba(0, 0, 0, 0.8) 0px 0px 4px",
+      "shellBorder": "14px solid rgb(26, 26, 26)",
+      "shellRadius": "2.5% / 4%",
+      "formedRunning": false,
+      "idleClass": "crt-shell is-idle"
+    },
+    "inkSpan": {
+      "w1920": 0.9964,
+      "w2560": 0.9965
+    }
+  }
+}

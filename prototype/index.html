@@ -76,6 +76,52 @@
       line-height: 1.5;
     }
 
+    .crt-shell {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      box-sizing: border-box;
+      border: 14px solid #1a1a1a;
+      border-radius: 2.5% / 4%;
+      background: transparent;
+      box-shadow:
+        inset 0 0 120px rgba(0, 0, 0, 0.9),
+        inset 0 0 30px rgba(255, 255, 255, 0.04);
+      transform: perspective(2500px) rotateX(0.6deg);
+      transform-origin: 50% 50%;
+      pointer-events: none;
+    }
+
+    .crt-shell.is-idle {
+      will-change: transform;
+    }
+
+    .crt-shell::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      border-radius: inherit;
+      background: radial-gradient(1100px 620px at 18% 8%, rgba(255, 255, 255, 0.04), transparent 62%);
+    }
+
+    @supports (clip-path: inset(0 round 2%)) {
+      .crt-shell {
+        clip-path: inset(0 round 2.5% / 4%);
+      }
+    }
+
+    @supports not (clip-path: inset(0 round 2%)) {
+      .crt-shell {
+        transform: none;
+        will-change: auto;
+        border-radius: 0;
+      }
+      .fx-crt {
+        border-radius: 0;
+      }
+    }
+
     .fx-grid {
       position: fixed;
       inset: 0;
@@ -92,7 +138,8 @@
     .fx-crt {
       position: fixed;
       inset: 0;
-      z-index: 9999;
+      z-index: 10002;
+      border-radius: 2.5% / 4%;
       pointer-events: none;
       background:
         radial-gradient(720px 400px at 78% -8%, rgba(255, 255, 255, 0.14), transparent 55%),
@@ -130,6 +177,7 @@
       display: block;
       background: transparent;
       touch-action: none;
+      pointer-events: auto;
     }
 
     .paper {
@@ -140,13 +188,19 @@
       width: min(440px, 40vw);
       padding: 0;
       color: #e8eef6;
-      background-color: transparent;
-      background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.028), transparent 180px);
+      background: transparent;
+      background-image: none;
       border: 0;
       overflow: visible;
-      pointer-events: auto;
+      pointer-events: none;
       text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
       container-type: inline-size;
+    }
+
+    .paper a,
+    .paper button,
+    .paper .go {
+      pointer-events: auto;
     }
 
     .hud {
@@ -166,11 +220,7 @@
     }
 
     .veil {
-      position: fixed;
-      inset: 0;
-      z-index: 4;
-      pointer-events: none;
-      background: radial-gradient(ellipse 78% 70% at 36% 46%, transparent 0%, transparent 46%, rgba(5, 5, 5, 0.42) 100%);
+      display: none;
     }
 
     .grain {
@@ -194,7 +244,7 @@
       line-height: 1.05;
       letter-spacing: .06em;
       color: #C9CFD8;
-      text-shadow: none;
+      text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
       animation: strike 0.55s steps(9, end);
     }
 
@@ -412,7 +462,7 @@
       text-transform: none;
       text-align: left;
       cursor: pointer;
-      text-shadow: none;
+      text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
       -webkit-font-smoothing: none;
     }
 
@@ -492,7 +542,7 @@
       letter-spacing: 0.06em;
       text-transform: none;
       color: #f4f7fb;
-      text-shadow: none;
+      text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
       -webkit-font-smoothing: none;
     }
 
@@ -504,7 +554,7 @@
       letter-spacing: 0.08em;
       text-transform: none;
       color: #c8cdd6;
-      text-shadow: none;
+      text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
       -webkit-font-smoothing: none;
     }
 
@@ -532,7 +582,7 @@
       font-weight: 400;
       line-height: 1.55;
       color: #c8cdd6;
-      text-shadow: none;
+      text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
       -webkit-font-smoothing: none;
     }
 
@@ -563,7 +613,7 @@
       color: #d8eaff;
       text-decoration: none;
       border-bottom: 1px solid transparent;
-      text-shadow: none;
+      text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
       -webkit-font-smoothing: none;
     }
 
@@ -590,10 +640,10 @@
       position: fixed;
       right: 8%;
       bottom: 2.75rem;
-      z-index: 10000;
+      z-index: 10001;
       margin: 0;
       pointer-events: none;
-      text-shadow: none;
+      text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
     }
 
     .arcade-row {
@@ -613,7 +663,7 @@
       pointer-events: none;
       user-select: none;
       white-space: nowrap;
-      text-shadow: none;
+      text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
     }
 
     .console {
@@ -646,7 +696,7 @@
       color: #8A8A8A;
       cursor: pointer;
       pointer-events: auto;
-      text-shadow: none;
+      text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
     }
 
     #btn-start {
@@ -686,6 +736,7 @@
       color: #8E959D;
       text-align: right;
       pointer-events: none;
+      text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
     }
 
     .colophon {
@@ -766,6 +817,10 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
+      .crt-shell {
+        transform: none;
+        will-change: auto;
+      }
       .plate-title, .cursor, .lead, .sub { animation: none !important; }
       .cursor { display: none; }
       .nav-item::before,
@@ -791,7 +846,6 @@
   <div class="fx-grid" aria-hidden="true"></div>
   <div class="stage" id="stage" data-mode="chaos">
     <canvas id="void" role="img" aria-label="深空粒子场"></canvas>
-    <div class="veil" aria-hidden="true"></div>
     <div class="grain" aria-hidden="true"></div>
     <p class="hud" aria-hidden="true">NF · VOID / 050505</p>
     <aside class="paper">
@@ -836,7 +890,6 @@
       <p class="colophon"><button type="button" class="egg" id="btn-egg" aria-label="像素 NF">NF</button> · 内容契约层 · 定内容，不定模型</p>
     </aside>
   </div>
-  <div class="fx-crt" aria-hidden="true"></div>
   <div class="viewfinder" aria-hidden="true">
     <span class="vf-corner vf-tl"></span>
     <span class="vf-corner vf-tr"></span>
@@ -856,6 +909,8 @@
       <span class="arcade-meta" aria-hidden="true">CREDIT 01</span>
     </div>
   </div>
+  <div class="crt-shell is-idle" aria-hidden="true"></div>
+  <div class="fx-crt" aria-hidden="true"></div>
 
   <script>
     (function () {
@@ -878,8 +933,10 @@
       var CURL_K = 0.0036;
       var WALL = 36;
       var WALL_K = 0.01;
-      var LEFT_BAND = 0.6;
-      var LEFT_WEIGHT = 0.6;
+      var LEFT_BAND = 1;
+      var LEFT_WEIGHT = 0;
+      var PAINT_H = 0.70;
+      var PAINT_CX = 0.35;
       var REPEL_R = 100;
       var REPEL = 1.1;
       var REPEL_FMAX = 2.4;
@@ -916,6 +973,7 @@
 
       var stage = document.getElementById("stage");
       var canvas = document.getElementById("void");
+      var crtShell = document.querySelector(".crt-shell");
       var dossier = document.getElementById("dossier");
       var volEl = document.getElementById("vol");
       var ctx = canvas.getContext("2d");
@@ -975,7 +1033,7 @@
         atlasPalN: 0,
         sizes: SIZES,
         fxLite: false,
-        contain: { x: 0, y: 0, w: 1, h: 1, srcW: 1, srcH: 1 },
+        contain: { x: 0, y: 0, w: 1, h: 1, srcW: 1, srcH: 1, cx: 0.35, hFrac: 0.7 },
         imageSmoothingEnabled: true
       };
       var animInfo = {
@@ -1047,7 +1105,6 @@
       }
 
       function spawnNormX() {
-        if (rand() < LEFT_WEIGHT) return rand() * LEFT_BAND;
         return rand();
       }
 
@@ -1102,7 +1159,7 @@
       function seedVel(i, nx) {
         var rho = dampOf(i);
         var sig = thermalSig(i, rho);
-        var slow = nx < LEFT_BAND ? 0.55 : 1;
+        var slow = LEFT_WEIGHT > 0 && nx < LEFT_BAND ? 0.55 : 1;
         vx[i] = gauss() * sig * slow;
         vy[i] = gauss() * sig * slow;
       }
@@ -1122,13 +1179,21 @@
       function layoutContain() {
         var rec = window.__nfPoints;
         var s;
+        var inset = 14;
         srcW = rec && rec.w > 0 ? rec.w : 1;
         srcH = rec && rec.h > 0 ? rec.h : 1;
-        s = Math.min(cssW / srcW, cssH / srcH);
+        fitH = cssH * PAINT_H;
+        s = fitH / srcH;
         fitW = srcW * s;
-        fitH = srcH * s;
-        fitX = (cssW - fitW) * 0.5;
+        if (fitW > cssW * 0.72) {
+          s = (cssW * 0.72) / srcW;
+          fitW = srcW * s;
+          fitH = srcH * s;
+        }
+        fitX = cssW * PAINT_CX - fitW * 0.5;
         fitY = (cssH - fitH) * 0.5;
+        if (fitX < inset) fitX = inset;
+        if (fitY < inset) fitY = inset;
       }
 
       function mapPaintingX(px) {
@@ -1137,6 +1202,15 @@
 
       function mapPaintingY(py) {
         return fitY + py * fitH;
+      }
+
+      function applyPaintingTargets() {
+        var i;
+        layoutContain();
+        for (i = 0; i < N; i++) {
+          tx[i] = mapPaintingX(ntx[i]);
+          ty[i] = mapPaintingY(nty[i]);
+        }
       }
 
       function publishRenderInfo() {
@@ -1158,6 +1232,8 @@
         renderInfo.contain.h = fitH;
         renderInfo.contain.srcW = srcW;
         renderInfo.contain.srcH = srcH;
+        renderInfo.contain.cx = PAINT_CX;
+        renderInfo.contain.hFrac = PAINT_H;
         renderInfo.imageSmoothingEnabled = ctx.imageSmoothingEnabled;
         window.__nfRender = renderInfo;
         animInfo.spring = SPRING;
@@ -1442,8 +1518,6 @@
           ny[i] = y[i] * ih;
           nhx[i] = hx[i] * iw;
           nhy[i] = hy[i] * ih;
-          ntx[i] = tx[i] * iw;
-          nty[i] = ty[i] * ih;
         }
       }
 
@@ -1469,9 +1543,8 @@
             if (atlasPalN && pal >= atlasPalN) pal = pal % atlasPalN;
             pid[i] = pal;
             sid[i] = palSize ? palSize[pal] : (i % 3);
-            tx[i] = mapPaintingX(ntx[i]);
-            ty[i] = mapPaintingY(nty[i]);
           }
+          applyPaintingTargets();
           rebuildBuckets();
           return;
         }
@@ -1480,9 +1553,8 @@
           nty[i] = rand();
           pid[i] = i % Math.max(1, atlasPalN);
           sid[i] = palSize ? palSize[pid[i]] : (i % 3);
-          tx[i] = mapPaintingX(ntx[i]);
-          ty[i] = mapPaintingY(nty[i]);
         }
+        applyPaintingTargets();
         rebuildBuckets();
       }
 
@@ -1490,10 +1562,10 @@
         var i;
         for (i = 0; i < N; i++) {
           if (fromTargets) {
-            nx[i] = ntx[i];
-            ny[i] = nty[i];
             x[i] = tx[i];
             y[i] = ty[i];
+            nx[i] = cssW ? x[i] / cssW : ntx[i];
+            ny[i] = cssH ? y[i] / cssH : nty[i];
           } else {
             nx[i] = nhx[i];
             ny[i] = nhy[i];
@@ -2018,11 +2090,18 @@
         raf = requestAnimationFrame(tick);
       }
 
+      function syncCrtIdleHint() {
+        if (!crtShell) return;
+        if (running) crtShell.classList.remove("is-idle");
+        else crtShell.classList.add("is-idle");
+      }
+
       function startLoop() {
         if (running || reduced || !booted || frozen) return;
         lastT = performance.now();
         acc = 0;
         running = true;
+        syncCrtIdleHint();
         raf = requestAnimationFrame(tick);
       }
 
@@ -2032,6 +2111,7 @@
         lastT = performance.now();
         acc = 0;
         running = true;
+        syncCrtIdleHint();
         raf = requestAnimationFrame(tick);
       }
 
@@ -2040,6 +2120,7 @@
         acc = 0;
         if (raf) cancelAnimationFrame(raf);
         raf = 0;
+        syncCrtIdleHint();
         publishRenderInfo();
       }
 
@@ -2327,10 +2408,10 @@
         publishRenderInfo();
       }
 
-      canvas.addEventListener("pointermove", onPointerMove, { passive: true });
-      canvas.addEventListener("pointerleave", onPointerLeave, { passive: true });
-      canvas.addEventListener("pointercancel", onPointerLeave, { passive: true });
-      canvas.addEventListener("pointerdown", onPointerDown, { passive: true });
+      window.addEventListener("pointermove", onPointerMove, { passive: true });
+      window.addEventListener("pointerdown", onPointerDown, { passive: true });
+      document.addEventListener("pointerleave", onPointerLeave, { passive: true });
+      document.addEventListener("pointercancel", onPointerLeave, { passive: true });
       window.addEventListener("resize", onResize, { passive: true });
       document.addEventListener("visibilitychange", onVisibility, { passive: true });
       if (reduceMq.addEventListener) reduceMq.addEventListener("change", syncReduced);
