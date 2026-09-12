@@ -164,6 +164,7 @@ Next.js 16，API 与训练记忆可能不同。改 Next 代码前读 `node_modul
 - `prototype/index.html` 引擎
 - `prototype/assets/points.json` 仍保留 Dallas 12k（与 `painting/points.json` 同字节，兼容旧链接）
 - `prototype/assets/points_poplars.json` INTRO；`points_artwork_b.json` HALL；`points_artwork_c.json` COMMUNITY；`points_nf.json` EGG（v2，`#C9CFD8`/`#6F8FAF`）
+- 现网默认 bin：`prototype/pixi-cloud/dallas-radial-50k.bin`、`pixi-hall/scotland-radial-50k.bin`、`pixi-community/met-radial-50k.bin`（S2b u16 原样拷进 NFPT；100k bin 仍留仓）
 - `prototype/points.json` 仍是 NF 字形生成物（约 1630 `{x,y}`），**不再被 live fetch**
 - `prototype/gen-points.mjs` 确定性栅格 **N / F**（mulberry32 seed `0x4e46`）
 
