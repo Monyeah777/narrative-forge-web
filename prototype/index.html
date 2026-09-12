@@ -1004,6 +1004,11 @@
       var atlasGen = 0;
       var atlasBmp = null;
       var atlasCell = 0;
+      var spriteBmp = null;
+      var renderWorker = null;
+      var workerReady = false;
+      var workerPending = false;
+      var workerHasFrame = false;
       var atlasPalN = 0;
       var palSize = null;
       var bucketCount = null;
@@ -1017,6 +1022,15 @@
       var srcH = 1;
       var activeCount = 0;
       var tickCount = 0;
+      var PERF_RING = 240;
+      var workMs = new Float64Array(PERF_RING);
+      var rafMs = new Float64Array(PERF_RING);
+      var workN = 0;
+      var workI = 0;
+      var lastRafT = 0;
+      var longTasks = [];
+      var loafs = [];
+      var perfArmed = false;
       var frozen = false;
       var fxLite = false;
       var renderInfo = {
@@ -1033,6 +1047,8 @@
         atlasPalN: 0,
         sizes: SIZES,
         fxLite: false,
+        workerBlit: false,
+        workerHasFrame: false,
         contain: { x: 0, y: 0, w: 1, h: 1, srcW: 1, srcH: 1, cx: 0.35, hFrac: 0.7 },
         imageSmoothingEnabled: true
       };
@@ -1156,6 +1172,54 @@
         return curlScratch;
       }
 
+      var CURL_CELL = 48;
+      var curlUX = null;
+      var curlUY = null;
+      var curlGW = 0;
+      var curlGH = 0;
+
+      function refreshCurlGrid(t) {
+        var gw = ((cssW / CURL_CELL) | 0) + 2;
+        var gh = ((cssH / CURL_CELL) | 0) + 2;
+        var x, y, i, fl;
+        if (gw !== curlGW || gh !== curlGH || !curlUX) {
+          curlGW = gw;
+          curlGH = gh;
+          curlUX = new Float32Array(gw * gh);
+          curlUY = new Float32Array(gw * gh);
+        }
+        for (y = 0; y < gh; y++) {
+          for (x = 0; x < gw; x++) {
+            fl = curlVel(x * CURL_CELL, y * CURL_CELL, t);
+            i = y * gw + x;
+            curlUX[i] = fl.ux;
+            curlUY[i] = fl.uy;
+          }
+        }
+      }
+
+      function curlAt(px, py) {
+        var fx, fy, x0, y0, tx, ty, i00, i10, i01, i11;
+        if (!curlUX || curlGW < 2 || curlGH < 2) return curlVel(px, py, lastT * 0.001);
+        fx = px / CURL_CELL;
+        fy = py / CURL_CELL;
+        x0 = fx | 0;
+        y0 = fy | 0;
+        if (x0 < 0) x0 = 0;
+        if (y0 < 0) y0 = 0;
+        if (x0 >= curlGW - 1) x0 = curlGW - 2;
+        if (y0 >= curlGH - 1) y0 = curlGH - 2;
+        tx = fx - x0;
+        ty = fy - y0;
+        i00 = y0 * curlGW + x0;
+        i10 = i00 + 1;
+        i01 = i00 + curlGW;
+        i11 = i01 + 1;
+        curlScratch.ux = curlUX[i00] * (1 - tx) * (1 - ty) + curlUX[i10] * tx * (1 - ty) + curlUX[i01] * (1 - tx) * ty + curlUX[i11] * tx * ty;
+        curlScratch.uy = curlUY[i00] * (1 - tx) * (1 - ty) + curlUY[i10] * tx * (1 - ty) + curlUY[i01] * (1 - tx) * ty + curlUY[i11] * tx * ty;
+        return curlScratch;
+      }
+
       function seedVel(i, nx) {
         var rho = dampOf(i);
         var sig = thermalSig(i, rho);
@@ -1213,6 +1277,90 @@
         }
       }
 
+      function ringStats(buf, n, next) {
+        var i, v, vals, k, p50, p95, sum, mean, fps;
+        if (!n) {
+          return { n: 0, mean: 0, p50: 0, p95: 0, fps: 0 };
+        }
+        vals = [];
+        if (n < PERF_RING) {
+          for (i = 0; i < n; i++) if (buf[i] > 0) vals.push(buf[i]);
+        } else {
+          for (i = 0; i < PERF_RING; i++) {
+            v = buf[(next + i) % PERF_RING];
+            if (v > 0) vals.push(v);
+          }
+        }
+        vals.sort(function (a, b) { return a - b; });
+        k = vals.length;
+        p50 = vals[Math.min(k - 1, (k * 0.50) | 0)];
+        p95 = vals[Math.min(k - 1, (k * 0.95) | 0)];
+        sum = 0;
+        for (i = 0; i < k; i++) sum += vals[i];
+        mean = sum / k;
+        fps = mean > 0 ? 1000 / mean : 0;
+        return { n: k, mean: mean, p50: p50, p95: p95, fps: fps };
+      }
+
+      var lastPhysMs = 0;
+      var lastDrawMs = 0;
+
+      function perfStats() {
+        return {
+          work: ringStats(workMs, workN, workI),
+          raf: ringStats(rafMs, workN, workI),
+          lastPhysMs: lastPhysMs,
+          lastDrawMs: lastDrawMs,
+          longtaskCount: longTasks.length,
+          loafCount: loafs.length,
+          longTasks: longTasks.slice(-20),
+          loafs: loafs.slice(-20)
+        };
+      }
+
+      function recordWork(ms) {
+        workMs[workI] = ms;
+        if (workN < PERF_RING) workN++;
+        workI = (workI + 1) % PERF_RING;
+      }
+
+      function resetPerf() {
+        workN = 0;
+        workI = 0;
+        lastRafT = 0;
+        longTasks.length = 0;
+        loafs.length = 0;
+        window.__nfGetPerf = perfStats;
+      }
+
+      function armPerf() {
+        if (perfArmed) return;
+        perfArmed = true;
+        try {
+          if (typeof PerformanceObserver === "function") {
+            var o1 = new PerformanceObserver(function (list) {
+              list.getEntries().forEach(function (e) {
+                longTasks.push({ t: e.startTime, d: e.duration, name: e.name });
+              });
+            });
+            o1.observe({ type: "longtask", buffered: false });
+            try {
+              var o2 = new PerformanceObserver(function (list) {
+                list.getEntries().forEach(function (e) {
+                  loafs.push({
+                    t: e.startTime,
+                    d: e.duration,
+                    block: e.blockingDuration || 0
+                  });
+                });
+              });
+              o2.observe({ type: "long-animation-frame", buffered: false });
+            } catch (e2) {}
+          }
+        } catch (err) {}
+        window.__nfResetPerf = resetPerf;
+      }
+
       function publishRenderInfo() {
         renderInfo.n = N;
         renderInfo.running = running;
@@ -1226,6 +1374,8 @@
         renderInfo.atlasCell = atlasCell;
         renderInfo.atlasPalN = atlasPalN;
         renderInfo.fxLite = fxLite;
+        renderInfo.workerBlit = !!(workerReady && renderWorker);
+        renderInfo.workerHasFrame = !!workerHasFrame;
         renderInfo.contain.x = fitX;
         renderInfo.contain.y = fitY;
         renderInfo.contain.w = fitW;
@@ -1236,6 +1386,7 @@
         renderInfo.contain.hFrac = PAINT_H;
         renderInfo.imageSmoothingEnabled = ctx.imageSmoothingEnabled;
         window.__nfRender = renderInfo;
+        window.__nfGetPerf = perfStats;
         animInfo.spring = SPRING;
         animInfo.damp = DAMP;
         animInfo.vmax = VMAX;
@@ -1307,11 +1458,112 @@
         }
       }
 
+      function closeSprites() {
+        var i;
+        if (spriteBmp) {
+          for (i = 0; i < spriteBmp.length; i++) {
+            if (spriteBmp[i] && typeof spriteBmp[i].close === "function") spriteBmp[i].close();
+          }
+        }
+        spriteBmp = null;
+      }
+
       function closeAtlas() {
+        closeSprites();
         if (atlasBmp && typeof atlasBmp.close === "function") {
           atlasBmp.close();
         }
         atlasBmp = null;
+      }
+
+      function sliceSpriteBitmaps() {
+        var p, cell, row, jobs;
+        if (!atlasBmp || !atlasPalN || !atlasCell) {
+          spriteBmp = null;
+          return Promise.resolve(null);
+        }
+        cell = atlasCell;
+        jobs = [];
+        for (p = 0; p < atlasPalN; p++) {
+          row = palSize ? palSize[p] : 0;
+          jobs.push(createImageBitmap(atlasBmp, p * cell, row * cell, cell, cell));
+        }
+        return Promise.all(jobs).then(function (bmps) {
+          closeSprites();
+          spriteBmp = bmps;
+          bootRenderWorker();
+          return bmps;
+        });
+      }
+
+      function stopRenderWorker() {
+        workerReady = false;
+        workerPending = false;
+        workerHasFrame = false;
+        if (renderWorker) {
+          renderWorker.terminate();
+          renderWorker = null;
+        }
+      }
+
+      function bootRenderWorker() {
+        if (typeof Worker === "undefined" || typeof OffscreenCanvas === "undefined" || !spriteBmp) return;
+        try {
+          if (!renderWorker) {
+            renderWorker = new Worker("render-worker.js");
+            renderWorker.onmessage = onRenderWorker;
+            renderWorker.onerror = function () {
+              workerReady = false;
+            };
+          }
+          workerReady = false;
+          Promise.all(spriteBmp.map(function (s) { return createImageBitmap(s); })).then(function (clones) {
+            if (!renderWorker) return;
+            renderWorker.postMessage({
+              t: "init",
+              w: canvas.width,
+              h: canvas.height,
+              cell: atlasCell,
+              dpr: dpr,
+              sprites: clones
+            }, clones);
+          }).catch(function () {
+            workerReady = false;
+          });
+        } catch (err) {
+          workerReady = false;
+        }
+      }
+
+      function onRenderWorker(e) {
+        var bmp;
+        if (!e.data) return;
+        if (e.data.t === "ready") {
+          workerReady = true;
+          return;
+        }
+        if (e.data.t !== "frame") return;
+        workerPending = false;
+        bmp = e.data.bitmap;
+        if (!bmp || !ctx) return;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(bmp, 0, 0);
+        workerHasFrame = true;
+        if (typeof bmp.close === "function") bmp.close();
+        publishRenderInfo();
+      }
+
+      function postWorkerFrame() {
+        var xb, yb, pb;
+        if (!workerReady || !renderWorker || !N || !pid) return false;
+        if (workerPending) return true;
+        workerPending = true;
+        xb = new Float32Array(x);
+        yb = new Float32Array(y);
+        pb = new Uint16Array(pid);
+        renderWorker.postMessage({ t: "frame", x: xb.buffer, y: yb.buffer, pid: pb.buffer }, [xb.buffer, yb.buffer, pb.buffer]);
+        return true;
       }
 
       function buildPaletteAtlas() {
@@ -1351,7 +1603,7 @@
           }
           closeAtlas();
           atlasBmp = bmp;
-          return bmp;
+          return sliceSpriteBitmaps().then(function () { return bmp; });
         });
       }
 
@@ -1849,12 +2101,16 @@
         var nextDpr = quantizeDpr();
         var dprChanged = nextDpr !== dpr;
         var firstSprites = sprites.length === 0;
+        if (N) toNorm();
         cssW = nextW;
         cssH = nextH;
         dpr = nextDpr;
         canvas.width = cssW * dpr;
         canvas.height = cssH * dpr;
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        if (renderWorker && workerReady) {
+          renderWorker.postMessage({ t: "resize", w: canvas.width, h: canvas.height, dpr: dpr, cell: atlasCell });
+        }
         if (firstSprites) buildSprites();
         if ((firstSprites || dprChanged) && window.__nfPoints) {
           buildPaletteAtlas().then(function () {
@@ -1899,7 +2155,7 @@
         var rho = dampOf(i);
         var sig = thermalSig(i, rho);
         var term = V_TERM * radiusOf(i) * radiusOf(i);
-        var fl = curlVel(x[i], y[i], lastT * 0.001);
+        var fl = curlAt(x[i], y[i]);
         var amp = 0.42 + z[i] * 0.58;
         vx[i] = vx[i] * rho + (1 - rho) * fl.ux * amp + gauss() * sig * amp;
         vy[i] = vy[i] * rho + (1 - rho) * (fl.uy * amp + term * amp) + gauss() * sig * amp;
@@ -1992,6 +2248,7 @@
         dispersing = mode === "disperse";
         mx += (mxT - mx) * POINTER_LERP;
         my += (myT - my) * POINTER_LERP;
+        refreshCurlGrid(lastT * 0.001);
         activeCount = 0;
         for (i = 0; i < N; i++) {
           applyRepel(i, live);
@@ -2013,7 +2270,6 @@
           }
           if (unlocked) activeCount++;
         }
-        toNorm();
         phaseElapsed += DT;
         if (assembling && N > 0) {
           if (phaseElapsed >= ASSEMBLE_S || (phaseElapsed >= ASSEMBLE_MIN_S && settled / N >= 0.97)) {
@@ -2027,31 +2283,56 @@
       }
 
       function render(now) {
-        var p, k, i, start, end, row, sx, sy, dx, dy, half;
-        var cell = atlasCell;
+        var p, k, i, start, end, dx, dy, half, spr, cell;
+        cell = atlasCell;
         tickCount++;
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
         if (!atlasBmp || !N || !cell) {
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
           publishRenderInfo();
           return;
         }
+        if (workerReady && postWorkerFrame()) {
+          publishRenderInfo();
+          return;
+        }
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         half = cell * 0.5;
         ctx.globalAlpha = 1;
-        for (p = 0; p < atlasPalN; p++) {
-          start = bucketPrefix[p];
-          end = bucketPrefix[p + 1];
-          if (start === end) continue;
-          row = palSize ? palSize[p] : 0;
-          sx = p * cell;
-          sy = row * cell;
-          for (k = start; k < end; k++) {
-            i = bucketIndex[k];
-            dx = (x[i] * dpr - half) | 0;
-            dy = (y[i] * dpr - half) | 0;
-            ctx.drawImage(atlasBmp, sx, sy, cell, cell, dx, dy, cell, cell);
+        ctx.imageSmoothingEnabled = false;
+        if (spriteBmp && spriteBmp.length === atlasPalN) {
+          var xMin = -cell;
+          var yMin = -cell;
+          var xMax = canvas.width;
+          var yMax = canvas.height;
+          for (p = 0; p < atlasPalN; p++) {
+            start = bucketPrefix[p];
+            end = bucketPrefix[p + 1];
+            if (start === end) continue;
+            spr = spriteBmp[p];
+            for (k = start; k < end; k++) {
+              i = bucketIndex[k];
+              dx = (x[i] * dpr - half) | 0;
+              dy = (y[i] * dpr - half) | 0;
+              if (dx < xMin || dy < yMin || dx > xMax || dy > yMax) continue;
+              ctx.drawImage(spr, dx, dy);
+            }
+          }
+        } else {
+          for (p = 0; p < atlasPalN; p++) {
+            start = bucketPrefix[p];
+            end = bucketPrefix[p + 1];
+            if (start === end) continue;
+            for (k = start; k < end; k++) {
+              i = bucketIndex[k];
+              dx = (x[i] * dpr - half) | 0;
+              dy = (y[i] * dpr - half) | 0;
+              ctx.drawImage(atlasBmp, p * cell, (palSize ? palSize[p] : 0) * cell, cell, cell, dx, dy, cell, cell);
+            }
           }
         }
+        ctx.imageSmoothingEnabled = true;
         publishRenderInfo();
       }
 
@@ -2065,10 +2346,20 @@
         if (!running) return;
         var ft;
         var steps;
+        var tPhys;
+        var tDraw;
+        var phys = 0;
+        var draw = 0;
+        if (lastRafT > 0) {
+          rafMs[workI] = now - lastRafT;
+        }
+        lastRafT = now;
         if (frozen) {
           lastT = now;
           acc = 0;
+          tDraw = performance.now();
           render(now);
+          recordWork(performance.now() - tDraw);
           stopLoop();
           return;
         }
@@ -2078,11 +2369,18 @@
         acc += ft;
         steps = 0;
         while (acc >= DT && steps < MAX_STEPS) {
+          tPhys = performance.now();
           physics();
+          phys = performance.now() - tPhys;
+          lastPhysMs = phys;
           acc -= DT;
           steps++;
         }
+        tDraw = performance.now();
         render(now);
+        draw = performance.now() - tDraw;
+        lastDrawMs = draw;
+        recordWork(phys + draw);
         if (shouldStopLoop()) {
           stopLoop();
           return;
@@ -2392,6 +2690,7 @@
       }
 
       function boot(points) {
+        armPerf();
         hasGlyph = !!(points && points.length);
         layoutContain();
         alloc(engineCount());

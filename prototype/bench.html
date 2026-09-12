@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#050505" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>B4 · 60fps / long task / 相似度</title>
+  <style>
+    :root { color-scheme: dark; }
+    html, body {
+      margin: 0;
+      background: #050505;
+      color: #e8eef6;
+      font: 13px/1.5 ui-monospace, "Courier New", monospace;
+    }
+    main { padding: 20px 22px 28px; }
+    h1 { font-size: 15px; font-weight: 600; margin: 0 0 8px; }
+    p { color: #8a8a8a; max-width: 52rem; margin: 0 0 14px; }
+    button {
+      appearance: none;
+      background: transparent;
+      color: #e8eef6;
+      border: 1px solid #6F8FAF;
+      padding: 8px 14px;
+      font: inherit;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    button:focus-visible { outline: 2px solid #6F8FAF; outline-offset: 3px; }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+    #status { margin-left: 12px; color: #6F8FAF; }
+    iframe {
+      width: min(960px, 100%);
+      height: 540px;
+      border: 1px solid #2a2a2a;
+      background: #050505;
+      display: block;
+      margin: 16px 0;
+    }
+    pre {
+      margin: 0;
+      padding: 12px;
+      border: 1px solid #2a2a2a;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .pass { color: #8faf6f; }
+    .fail { color: #A33B2A; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>B4 · 性能自检（不改视觉档）</h1>
+    <p>
+      60fps 门闩看 <code>tick</code> 内 physics+render 的 p95 ≤ 16.67ms（headless rAF 常被锁在 ~30Hz，不拿帧计数当闸）。
+      long task 用 <code>PerformanceObserver</code>，阈值 50ms，热身后计。
+      相似度：成画 contain 裁块 vs 达拉斯源图，一次 readback，禁止进 rAF。
+    </p>
+    <p>
+      <button type="button" id="run">RUN</button>
+      <span id="status">idle</span>
+    </p>
+    <iframe id="stage" title="原型" src="index.html?dpr=1"></iframe>
+    <pre id="out">{}</pre>
+  </main>
+  <script>
+    (function () {
+      "use strict";
+      var runBtn = document.getElementById("run");
+      var statusEl = document.getElementById("status");
+      var outEl = document.getElementById("out");
+      var frame = document.getElementById("stage");
+
+      function sleep(ms) {
+        return new Promise(function (resolve) { setTimeout(resolve, ms); });
+      }
+
+      function win() {
+        return frame.contentWindow;
+      }
+
+      function waitReady(timeoutMs) {
+        var deadline = Date.now() + timeoutMs;
+        return new Promise(function (resolve, reject) {
+          (function poll() {
+            var w = win();
+            var info = w && w.__nfRender;
+            if (info && info.n > 0 && info.atlasIsImageBitmap) {
+              resolve(info);
+              return;
+            }
+            if (Date.now() > deadline) {
+              reject(new Error("atlas not ready"));
+              return;
+            }
+            setTimeout(poll, 50);
+          })();
+        });
+      }
+
+      function cropFormed() {
+        var w = win();
+        var canvas = w.document.getElementById("void");
+        var c = w.__nfRender.contain;
+        var dpr = w.__nfRender.dpr || 1;
+        var off = document.createElement("canvas");
+        off.width = Math.max(1, Math.round(c.w));
+        off.height = Math.max(1, Math.round(c.h));
+        var g = off.getContext("2d");
+        g.drawImage(
+          canvas,
+          c.x * dpr, c.y * dpr, c.w * dpr, c.h * dpr,
+          0, 0, off.width, off.height
+        );
+        return { w: off.width, h: off.height, dataUrl: off.toDataURL("image/png") };
+      }
+
+      async function run() {
+        runBtn.disabled = true;
+        statusEl.textContent = "warming";
+        var report = { task: "B4", gates: {}, chaos: null, assemble: null, formed: null };
+        try {
+          await waitReady(20000);
+          var paintedDeadline = Date.now() + 4000;
+          while (Date.now() < paintedDeadline) {
+            var painted = win().__nfRender;
+            if (painted && (painted.workerHasFrame || painted.workerBlit === false)) break;
+            await sleep(40);
+          }
+          await sleep(200);
+          var w = win();
+          if (w.__nfResetPerf) w.__nfResetPerf();
+          statusEl.textContent = "chaos 2s";
+          await sleep(2000);
+          report.chaos = {
+            n: w.__nfRender.n,
+            running: w.__nfRender.running,
+            mode: w.__nfRender.mode,
+            perf: JSON.parse(JSON.stringify((w.__nfGetPerf && w.__nfGetPerf()) || w.__nfPerf || {}))
+          };
+          if (w.__nfResetPerf) w.__nfResetPerf();
+          statusEl.textContent = "assemble";
+          var t0 = performance.now();
+          w.document.getElementById("btn-intro").click();
+          var voidEl = w.document.getElementById("void");
+          if (voidEl) voidEl.dispatchEvent(new PointerEvent("pointerleave", { bubbles: true }));
+          var formed = null;
+          var deadline = Date.now() + 5000;
+          while (Date.now() < deadline) {
+            formed = {
+              mode: w.__nfRender.mode,
+              running: w.__nfRender.running,
+              activeCount: w.__nfRender.activeCount,
+              contain: w.__nfRender.contain,
+              perf: w.__nfGetPerf ? w.__nfGetPerf() : w.__nfPerf
+            };
+            if (formed.mode === "formed" && formed.running === false) break;
+            await sleep(40);
+          }
+          report.assemble_ms = Math.round(performance.now() - t0);
+          report.assemble = {
+            mode: formed && formed.mode,
+            running: formed && formed.running,
+            perf: JSON.parse(JSON.stringify(w.__nfPerf || {}))
+          };
+          var voidEl = w.document.getElementById("void");
+          if (voidEl) voidEl.dispatchEvent(new PointerEvent("pointerleave", { bubbles: true }));
+          await sleep(200);
+          report.formed = {
+            mode: w.__nfRender.mode,
+            running: w.__nfRender.running,
+            activeCount: w.__nfRender.activeCount,
+            contain: w.__nfRender.contain,
+            crop: cropFormed()
+          };
+          var workP95 = report.chaos.perf && report.chaos.perf.work ? report.chaos.perf.work.p95 : 99;
+          var lt = report.chaos.perf ? report.chaos.perf.longtaskCount : 99;
+          report.gates = {
+            n_12000: report.chaos.n === 12000,
+            work_p95_le_16_67: workP95 <= 16.67,
+            chaos_longtask_0: lt === 0,
+            formed_idle: report.formed.mode === "formed" && report.formed.running === false
+          };
+          window.__nfBench = report;
+          outEl.textContent = JSON.stringify({
+            task: report.task,
+            chaos: report.chaos,
+            assemble_ms: report.assemble_ms,
+            assemble: report.assemble,
+            formed: {
+              mode: report.formed.mode,
+              running: report.formed.running,
+              activeCount: report.formed.activeCount,
+              contain: report.formed.contain,
+              crop: { w: report.formed.crop.w, h: report.formed.crop.h }
+            },
+            gates: report.gates
+          }, null, 2);
+          var pass = Object.keys(report.gates).every(function (k) { return report.gates[k]; });
+          statusEl.className = pass ? "pass" : "fail";
+          statusEl.textContent = pass ? "PASS (ssim in node harness)" : "FAIL";
+        } catch (err) {
+          statusEl.className = "fail";
+          statusEl.textContent = String(err && err.message ? err.message : err);
+          outEl.textContent = String(err && err.stack ? err.stack : err);
+        }
+        runBtn.disabled = false;
+      }
+
+      runBtn.addEventListener("click", function () { run(); });
+      if (/[?&]auto=1/.test(location.search)) {
+        frame.addEventListener("load", function () { run(); }, { once: true });
+      }
+    })();
+  </script>
+</body>
+</html>

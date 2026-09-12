@@ -1,0 +1,115 @@
+{
+  "task": "B4",
+  "ready": {
+    "n": 12000,
+    "atlasIsImageBitmap": true,
+    "dpr": 1
+  },
+  "chaos": {
+    "n": 12000,
+    "running": true,
+    "mode": "chaos",
+    "dpr": 1,
+    "workerBlit": true,
+    "workerHasFrame": true,
+    "perf": {
+      "work": {
+        "n": 121,
+        "mean": 1.7735537192053046,
+        "p50": 1.3999999985098839,
+        "p95": 5.300000000745058,
+        "fps": 563.8397017080943
+      },
+      "raf": {
+        "n": 120,
+        "mean": 16.66583333333333,
+        "p50": 16.699999999999818,
+        "p95": 16.799999999999955,
+        "fps": 60.00300015000751
+      },
+      "lastPhysMs": 1.300000000745058,
+      "lastDrawMs": 0.10000000149011612,
+      "longtaskCount": 0,
+      "loafCount": 0,
+      "longTasks": [],
+      "loafs": []
+    },
+    "ink_frac": 0.6135611735330836
+  },
+  "assemble_ms": 1630,
+  "formed": {
+    "mode": "formed",
+    "running": false,
+    "activeCount": 0,
+    "contain": {
+      "x": 229.5454545454546,
+      "y": 120.15000000000003,
+      "w": 436.9090909090908,
+      "h": 560.6999999999999,
+      "srcW": 1200,
+      "srcH": 1540,
+      "cx": 0.35,
+      "hFrac": 0.7
+    },
+    "perf": {
+      "work": {
+        "n": 96,
+        "mean": 0.9656250000310441,
+        "p50": 0.6000000014901161,
+        "p95": 3.399999998509884,
+        "fps": 1035.5987054683244
+      },
+      "raf": {
+        "n": 96,
+        "mean": 16.665625000000006,
+        "p50": 16.699999999999818,
+        "p95": 16.700000000000728,
+        "fps": 60.00375023438963
+      },
+      "lastPhysMs": 4.699999999254942,
+      "lastDrawMs": 0,
+      "longtaskCount": 0,
+      "loafCount": 0,
+      "longTasks": [],
+      "loafs": []
+    }
+  },
+  "similarity": {
+    "w": 437,
+    "h": 561,
+    "ssim_blur": 0.879252,
+    "ink_mae": 9.843,
+    "ink_n": 244845,
+    "hist_corr": 0.99303,
+    "ink_frac": 0.998727
+  },
+  "logs": [],
+  "screenshots": {
+    "home": "/opt/cursor/artifacts/b4_chaos_60fps.png",
+    "intro": "/opt/cursor/artifacts/b4_formed_similarity.png",
+    "crop": "/opt/cursor/artifacts/b4_formed_contain_crop.png",
+    "vs_source": "/opt/cursor/artifacts/b4_formed_vs_source.png",
+    "bench": "/opt/cursor/artifacts/b4_bench_harness.png"
+  },
+  "acceptance": {
+    "n_12000": true,
+    "atlas_imagebitmap": true,
+    "work_p95_le_16_67": true,
+    "chaos_longtask_0": true,
+    "formed_idle": true,
+    "chaos_visible": true,
+    "ssim_blur_ge_0_35": true,
+    "hist_corr_ge_0_70": true,
+    "no_getImageData_in_tick": true,
+    "dpr_le_2": true,
+    "pass": true
+  },
+  "notes": {
+    "raf_fps_headless": 60.00300015000751,
+    "work_mean_ms": 1.7735537192053046,
+    "work_p95_ms": 5.300000000745058,
+    "chaos_ink_frac": 0.6135611735330836,
+    "chaos_ink_warmup": 0.6201622971285893,
+    "gate": "60fps is work p95 ≤ 16.67ms; headless rAF Hz is informational"
+  }
+}
