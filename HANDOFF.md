@@ -26,6 +26,7 @@
 - 本条分支：`cursor/b4-perf-gate-52ec`（叠在 `cursor/crt-fullscreen-tube-52ec` 上）
 - §5：`prototype/bench.html` 试炼场。U10 = longtask + 工作 1% low + 成画停帧；U11 = 32×32 亮度相关 + 亮度直方图；打断 START/首页/SAVE ×20。数字在 `painting/s5-trial.json`
 - 本条分支：`cursor/s5-device-trial-52ec`（叠在 `cursor/b4-perf-gate-52ec` 上）
+- 多画作路由：`TARGETS` 绑定介绍/大厅/社区/NF；本条分支 `cursor/multi-target-routes-52ec`（叠在 `cursor/s5-device-trial-52ec` 上）
 
 ---
 
@@ -84,7 +85,7 @@ Next.js 16，API 与训练记忆可能不同。改 Next 代码前读 `node_modul
 
 `#stage` `#void` `#dossier` `#btn-home` `#btn-intro` `#btn-hall` `#btn-community` `#btn-egg`
 
-`window.assemble()` → 等同点「介绍」；`window.disperse()` → 等同点「首页」。
+`window.assemble()` → 等同点「介绍」；`window.assemble(TARGETS.*)` 走对应数据源；`window.disperse()` → 等同点「首页」。
 
 事件架构保留：Pointer Events、`prefers-reduced-motion`、`visibilitychange`、resize debounce ~150ms、固定步长 1/60 + 累加器（每帧最多 2 步）。
 
@@ -96,11 +97,13 @@ Next.js 16，API 与训练记忆可能不同。改 Next 代码前读 `node_modul
 
 | 动作 | 粒子 | 右侧 |
 |---|---|---|
-| 首页 | `disperse` → `chaos` | 报头+导航，dossier 隐藏 |
-| 介绍 | 若已 formed 只换面板；否则 `assemble` | 介绍两句 |
-| 数据大厅 | 同上 | 官方 13 模块 + P00/P01/P90 + 三资产键 +「打开完整大厅」 |
-| 社区 | 同上 | 货架说明 +「打开社区页」 |
-| 彩蛋 NF | `assemble`，**不改导航** | 若人在首页，仍不显示介绍文案 |
+| 首页 | `disperse()` → `chaos` | 报头+导航，dossier 隐藏 |
+| 介绍 | `assemble(TARGETS.INTRO)` → `points_poplars.json`（Dallas 白杨） | 介绍两句 |
+| 数据大厅 | `assemble(TARGETS.HALL)` → `points_artwork_b.json`（Scotland 白杨） | 官方 13 模块 + P00/P01/P90 + 三资产键 +「打开完整大厅」 |
+| 社区 | `assemble(TARGETS.COMMUNITY)` → `points_artwork_c.json`（Met 四树） | 货架说明 +「打开社区页」 |
+| 彩蛋 NF | `assemble(TARGETS.EGG)` → `points_nf.json`，银白/钢蓝，**不改导航** | 若人在首页，仍不显示介绍文案 |
+
+已 formed 再点另一个导航也会换数据源并重新 assemble。image 用该 json 调色板；text 强制 `#C9CFD8` / `#6F8FAF`。没有自动呼吸轮播（代码里本来就没有，不要加）。
 
 `currentView`：`home | intro | hall | community`。`setMode` 不再抢导航；导航只由 `openArchive` / 彩蛋处理。
 
@@ -121,7 +124,8 @@ Next.js 16，API 与训练记忆可能不同。改 Next 代码前读 `node_modul
 文件：
 
 - `prototype/index.html` 引擎
-- `prototype/assets/points.json` 契约 v2：`{id,w,h,count,note,palette,points:[[x,y,i],...]}`，12k，与 `painting/points.json` 同字节
+- `prototype/assets/points.json` 仍保留 Dallas 12k（与 `painting/points.json` 同字节，兼容旧链接）
+- `prototype/assets/points_poplars.json` INTRO；`points_artwork_b.json` HALL；`points_artwork_c.json` COMMUNITY；`points_nf.json` EGG（v2，`#C9CFD8`/`#6F8FAF`）
 - `prototype/points.json` 仍是 NF 字形生成物（约 1630 `{x,y}`），**不再被 live fetch**
 - `prototype/gen-points.mjs` 确定性栅格 **N / F**（mulberry32 seed `0x4e46`）
 
