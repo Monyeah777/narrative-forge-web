@@ -1,0 +1,364 @@
+{
+  "task": "S2c \u8d28\u68c0",
+  "handbook": "docs/NF_\u5f84\u5411\u91cd\u6620\u5c04_\u603b\u7ed3\u7248\u6700\u7ec8\u65b9\u6848_v2.0.md",
+  "timestamp_note": "QC locked S2b u16; no resample; no live write",
+  "qc_spectrum": "on (optional; visual primary)",
+  "live_count_unchanged": 100000,
+  "palette_unchanged": true,
+  "spring_unchanged": true,
+  "section8": {
+    "1_density": true,
+    "2_holes": true,
+    "8_hash": true,
+    "10_spectrum_optional": true,
+    "3_to_7_and_9": "S3\u2013S5 / \u73b0\u7f51\u56de\u5f52\uff0c\u672c\u95f8\u4e0d\u505a"
+  },
+  "upgrade": {
+    "trigger": false,
+    "upgrade_2_wse": false,
+    "post_5_lec": false,
+    "reason": "\u00a78#1 \u4e0e #2 \u590d\u6d4b\u4ecd\u8fc7\u3002\u2461/\u2464 \u4e0d\u89e6\u53d1\u3002\u2462 \u4ecd\u4f11\u7720\u3002"
+  },
+  "table": [
+    {
+      "name": "dallas",
+      "n": 50601,
+      "center_over_edge": 2.4241,
+      "pass_8_1": true,
+      "nn_p99_over_median": 1.457,
+      "pass_8_2": true,
+      "holes_16px": 0,
+      "hash_match_s2b": true,
+      "mid_axis_over_off": 0.868,
+      "mid_pass_no_grid_spike": true
+    },
+    {
+      "name": "scotland",
+      "n": 50441,
+      "center_over_edge": 2.6127,
+      "pass_8_1": true,
+      "nn_p99_over_median": 1.55,
+      "pass_8_2": true,
+      "holes_16px": 0,
+      "hash_match_s2b": true,
+      "mid_axis_over_off": 0.7269,
+      "mid_pass_no_grid_spike": true
+    },
+    {
+      "name": "met",
+      "n": 50471,
+      "center_over_edge": 2.6351,
+      "pass_8_1": true,
+      "nn_p99_over_median": 1.5532,
+      "pass_8_2": true,
+      "holes_16px": 0,
+      "hash_match_s2b": true,
+      "mid_axis_over_off": 0.7391,
+      "mid_pass_no_grid_spike": true
+    }
+  ],
+  "live_sha256": {
+    "prototype/pixi-cloud/dallas-100k.bin": "6406d7012e7f637ad2e31661a85f619ebd14b85bb48a6341a1ec9c3a2dbcea82",
+    "prototype/pixi-hall/scotland-100k.bin": "bbeab899140521bad56e82766f92a3d63305b8bc8f802de22db804fad3bfcf5f",
+    "prototype/pixi-community/met-100k.bin": "3144fdb9144d95cb0afe30f28629ec1e065bfa5022400a80e1c8e93129779a45",
+    "painting/points.json": "d35cae4c65a1c17ebbb609176b908750ff7aef5479aa7c563e7a1faf4e68d134",
+    "prototype/assets/points.json": "d35cae4c65a1c17ebbb609176b908750ff7aef5479aa7c563e7a1faf4e68d134"
+  },
+  "preview": {
+    "bands": "/opt/cursor/artifacts/radial_s2c_dallas_bands.png",
+    "zoom_center": "/opt/cursor/artifacts/radial_s2c_dallas_zoom_center.png",
+    "zoom_edge": "/opt/cursor/artifacts/radial_s2c_dallas_zoom_edge.png",
+    "fft_mid": "/opt/cursor/artifacts/radial_s2c_dallas_fft_mid.png",
+    "radial_mid": "/opt/cursor/artifacts/radial_s2c_dallas_radial_mid.png"
+  },
+  "cases": [
+    {
+      "name": "s2c-dallas",
+      "count": 50601,
+      "field": {
+        "analysis_wh": [
+          1200,
+          1540
+        ],
+        "c_star": [
+          0.5,
+          0.5
+        ],
+        "R95": 0.599042,
+        "eligible_n": 1847999,
+        "dark_L": 0.19,
+        "dark_cull_pct": 0.0001
+      },
+      "radial": {
+        "bands": [
+          "0.0-0.3",
+          "0.3-0.6",
+          "0.6-0.85",
+          "0.85-1.0"
+        ],
+        "points": [
+          8872,
+          17761,
+          17107,
+          6861
+        ],
+        "eligible_px": [
+          187492,
+          562508,
+          746519,
+          351480
+        ],
+        "density_pts_per_eligible_px": [
+          0.04731935,
+          0.03157466,
+          0.02291569,
+          0.01952031
+        ],
+        "center_over_edge": 2.4241,
+        "design_W0_over_W1": 3.7641,
+        "pass_ge_2x": true
+      },
+      "nn_px": {
+        "n": 50601,
+        "cell_px": 2.7195,
+        "mean": 4.8134,
+        "median": 4.9976,
+        "p95": 6.3837,
+        "p99": 7.2815,
+        "max": 10.6333,
+        "p99_over_median": 1.457,
+        "pass_p99_le_1_8_median": true,
+        "note": "5x5 hash neighborhood; distances in source pixels of the analysis image"
+      },
+      "holes_16px": {
+        "cell_px": 16,
+        "grid": [
+          75,
+          96
+        ],
+        "eligible_cells": 7200,
+        "empty_eligible": 0,
+        "empty_eligible_frac": 0.0,
+        "max_count": 20,
+        "mean_count_eligible": 7.0279,
+        "p90_count_eligible": 10.0
+      },
+      "source_image": "painting/01-dallas.jpg",
+      "isolation_u16": "painting/radial-s2b-dallas-50k.u16",
+      "u16_sha256": "f6df3397eb97fef511377cdf903a89544860086a78d07c1eb0191f6ff4f3add6",
+      "matches_s2b": true,
+      "count_in_tol": true,
+      "spectrum_full": {
+        "grid": 256,
+        "low_over_mid": 216.4846,
+        "axis_over_off": 2.3549,
+        "peak_k_bins": 1,
+        "k_nyquist": 128.0,
+        "pass_no_grid_spike": true,
+        "note": "low_over_mid on the full set is raised by W(r); use mid-band window for blue-noise"
+      },
+      "spectrum_mid": {
+        "grid": 256,
+        "low_over_mid": 9.5597,
+        "axis_over_off": 0.868,
+        "peak_k_bins": 1,
+        "k_nyquist": 128.0,
+        "pass_no_grid_spike": true,
+        "note": "filled 0.32-square window inside r\u2208[0.3,0.6); not a donut mask",
+        "n_window": 8867
+      }
+    },
+    {
+      "name": "s2c-scotland",
+      "count": 50441,
+      "field": {
+        "analysis_wh": [
+          1200,
+          1200
+        ],
+        "c_star": [
+          0.5,
+          0.5
+        ],
+        "R95": 0.599053,
+        "eligible_n": 1439999,
+        "dark_L": 0.19,
+        "dark_cull_pct": 0.0001
+      },
+      "radial": {
+        "bands": [
+          "0.0-0.3",
+          "0.3-0.6",
+          "0.6-0.85",
+          "0.85-1.0"
+        ],
+        "points": [
+          9271,
+          17317,
+          17200,
+          6653
+        ],
+        "eligible_px": [
+          146072,
+          438292,
+          581764,
+          273871
+        ],
+        "density_pts_per_eligible_px": [
+          0.0634687,
+          0.03951019,
+          0.02956525,
+          0.02429246
+        ],
+        "center_over_edge": 2.6127,
+        "design_W0_over_W1": 3.7641,
+        "pass_ge_2x": true
+      },
+      "nn_px": {
+        "n": 50441,
+        "cell_px": 2.4044,
+        "mean": 4.2571,
+        "median": 4.1346,
+        "p95": 5.6711,
+        "p99": 6.4085,
+        "max": 9.8921,
+        "p99_over_median": 1.55,
+        "pass_p99_le_1_8_median": true,
+        "note": "5x5 hash neighborhood; distances in source pixels of the analysis image"
+      },
+      "holes_16px": {
+        "cell_px": 16,
+        "grid": [
+          75,
+          75
+        ],
+        "eligible_cells": 5625,
+        "empty_eligible": 0,
+        "empty_eligible_frac": 0.0,
+        "max_count": 23,
+        "mean_count_eligible": 8.9673,
+        "p90_count_eligible": 13.0
+      },
+      "source_image": "painting/02-scotland.jpg",
+      "isolation_u16": "painting/radial-s2b-scotland-50k.u16",
+      "u16_sha256": "700e9d525a731766fd17f4c4872754138c81a09ca40db1928dfc5865b97d914f",
+      "matches_s2b": true,
+      "count_in_tol": true,
+      "spectrum_full": {
+        "grid": 256,
+        "low_over_mid": 223.427,
+        "axis_over_off": 3.6958,
+        "peak_k_bins": 1,
+        "k_nyquist": 128.0,
+        "pass_no_grid_spike": false,
+        "note": "low_over_mid on the full set is raised by W(r); use mid-band window for blue-noise"
+      },
+      "spectrum_mid": {
+        "grid": 256,
+        "low_over_mid": 5.8646,
+        "axis_over_off": 0.7269,
+        "peak_k_bins": 1,
+        "k_nyquist": 128.0,
+        "pass_no_grid_spike": true,
+        "note": "filled 0.32-square window inside r\u2208[0.3,0.6); not a donut mask",
+        "n_window": 9299
+      }
+    },
+    {
+      "name": "s2c-met",
+      "count": 50471,
+      "field": {
+        "analysis_wh": [
+          1200,
+          1190
+        ],
+        "c_star": [
+          0.501449,
+          0.500991
+        ],
+        "R95": 0.592304,
+        "eligible_n": 1392676,
+        "dark_L": 0.19,
+        "dark_cull_pct": 2.4737
+      },
+      "radial": {
+        "bands": [
+          "0.0-0.3",
+          "0.3-0.6",
+          "0.6-0.85",
+          "0.85-1.0"
+        ],
+        "points": [
+          9245,
+          17283,
+          17420,
+          6523
+        ],
+        "eligible_px": [
+          141638,
+          424968,
+          562730,
+          263340
+        ],
+        "density_pts_per_eligible_px": [
+          0.06527203,
+          0.04066894,
+          0.03095623,
+          0.02477026
+        ],
+        "center_over_edge": 2.6351,
+        "design_W0_over_W1": 3.7641,
+        "pass_ge_2x": true
+      },
+      "nn_px": {
+        "n": 50471,
+        "cell_px": 2.3936,
+        "mean": 4.1844,
+        "median": 4.1198,
+        "p95": 5.6474,
+        "p99": 6.399,
+        "max": 9.2303,
+        "p99_over_median": 1.5532,
+        "pass_p99_le_1_8_median": true,
+        "note": "5x5 hash neighborhood; distances in source pixels of the analysis image"
+      },
+      "holes_16px": {
+        "cell_px": 16,
+        "grid": [
+          75,
+          74
+        ],
+        "eligible_cells": 5491,
+        "empty_eligible": 0,
+        "empty_eligible_frac": 0.0,
+        "max_count": 23,
+        "mean_count_eligible": 9.1696,
+        "p90_count_eligible": 14.0
+      },
+      "source_image": "painting/05-met-fourtrees.jpg",
+      "isolation_u16": "painting/radial-s2b-met-50k.u16",
+      "u16_sha256": "a4f4a7a1579858445140595b08883829237f466df1eb781efaed02c12b1efc46",
+      "matches_s2b": true,
+      "count_in_tol": true,
+      "spectrum_full": {
+        "grid": 256,
+        "low_over_mid": 230.8553,
+        "axis_over_off": 4.949,
+        "peak_k_bins": 1,
+        "k_nyquist": 128.0,
+        "pass_no_grid_spike": false,
+        "note": "low_over_mid on the full set is raised by W(r); use mid-band window for blue-noise"
+      },
+      "spectrum_mid": {
+        "grid": 256,
+        "low_over_mid": 4.685,
+        "axis_over_off": 0.7391,
+        "peak_k_bins": 1,
+        "k_nyquist": 128.0,
+        "pass_no_grid_spike": true,
+        "note": "filled 0.32-square window inside r\u2208[0.3,0.6); not a donut mask",
+        "n_window": 9436
+      }
+    }
+  ]
+}
