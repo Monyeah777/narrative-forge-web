@@ -1,0 +1,37 @@
+{
+  "task": "B4",
+  "title": "性能自检：60fps 预算 / long task / 成画相似度",
+  "searched": [
+    {
+      "q": "PerformanceObserver longtask 50ms / Long Animation Frames API",
+      "refs": [
+        "https://developer.mozilla.org/en-US/docs/Web/API/PerformanceLongTaskTiming",
+        "https://developer.mozilla.org/en-US/docs/Web/API/Performance_API/Long_animation_frame_timing",
+        "https://developer.chrome.com/docs/web-platform/long-animation-frames"
+      ],
+      "takeaway": "A long task occupies the main thread ≥50ms. Observe type=longtask (and long-animation-frame when present) after warmup so atlas boot is not counted. RAIL: 50ms task ⇒ input still <100ms."
+    },
+    {
+      "q": "requestAnimationFrame timestamp FPS / 16.67ms frame budget",
+      "refs": [
+        "https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame",
+        "https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API/Tutorial/Optimizing_canvas"
+      ],
+      "takeaway": "rAF follows the display. Headless Chrome often delivers ~30Hz, so the 60fps gate is work-per-tick p95 ≤ 16.67ms, not raw rAF count. Measure physics+render with performance.now() inside tick."
+    },
+    {
+      "q": "SSIM Wang 2004 / stipple vs source masked blur compare",
+      "refs": [
+        "https://ece.uwaterloo.ca/~z70wang/publications/ssim.html",
+        "https://en.wikipedia.org/wiki/Structural_similarity_index_measure"
+      ],
+      "takeaway": "Formed output is 12k dots on #050505, not a raster of the photo. Blur both crops then SSIM; also correlate RGB histograms of inked pixels. One-shot readback only, never in rAF."
+    }
+  ],
+  "red_lines": [
+    "Do not change the locked visual档 (spring, atlas, contain, CRT overlay).",
+    "No per-frame getImageData / ctx.arc / WebGL.",
+    "Do not start Track B / Next transplant.",
+    "Default N=12000; only ?fx=lite is the debug cap."
+  ]
+}

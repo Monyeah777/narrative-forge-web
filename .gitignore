@@ -68,4 +68,6 @@ painting/*
 !painting/b3-refs.json
 !painting/b3-anim.json
 !painting/crt-shell-refs.json
+!painting/b4-refs.json
+!painting/b4-perf.json
 

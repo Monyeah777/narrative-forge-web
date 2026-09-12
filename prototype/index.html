@@ -1017,6 +1017,15 @@
       var srcH = 1;
       var activeCount = 0;
       var tickCount = 0;
+      var PERF_RING = 240;
+      var workMs = new Float64Array(PERF_RING);
+      var rafMs = new Float64Array(PERF_RING);
+      var workN = 0;
+      var workI = 0;
+      var lastRafT = 0;
+      var longTasks = [];
+      var loafs = [];
+      var perfArmed = false;
       var frozen = false;
       var fxLite = false;
       var renderInfo = {
@@ -1213,6 +1222,85 @@
         }
       }
 
+      function ringStats(buf, n, next) {
+        var i, v, vals, k, p50, p95, sum, mean, fps;
+        if (!n) {
+          return { n: 0, mean: 0, p50: 0, p95: 0, fps: 0 };
+        }
+        vals = [];
+        if (n < PERF_RING) {
+          for (i = 0; i < n; i++) if (buf[i] > 0) vals.push(buf[i]);
+        } else {
+          for (i = 0; i < PERF_RING; i++) {
+            v = buf[(next + i) % PERF_RING];
+            if (v > 0) vals.push(v);
+          }
+        }
+        vals.sort(function (a, b) { return a - b; });
+        k = vals.length;
+        p50 = vals[Math.min(k - 1, (k * 0.50) | 0)];
+        p95 = vals[Math.min(k - 1, (k * 0.95) | 0)];
+        sum = 0;
+        for (i = 0; i < k; i++) sum += vals[i];
+        mean = sum / k;
+        fps = mean > 0 ? 1000 / mean : 0;
+        return { n: k, mean: mean, p50: p50, p95: p95, fps: fps };
+      }
+
+      function perfStats() {
+        return {
+          work: ringStats(workMs, workN, workI),
+          raf: ringStats(rafMs, workN, workI),
+          longtaskCount: longTasks.length,
+          loafCount: loafs.length,
+          longTasks: longTasks.slice(-20),
+          loafs: loafs.slice(-20)
+        };
+      }
+
+      function recordWork(t0) {
+        workMs[workI] = performance.now() - t0;
+        if (workN < PERF_RING) workN++;
+        workI = (workI + 1) % PERF_RING;
+      }
+
+      function resetPerf() {
+        workN = 0;
+        workI = 0;
+        lastRafT = 0;
+        longTasks.length = 0;
+        loafs.length = 0;
+        window.__nfPerf = perfStats();
+      }
+
+      function armPerf() {
+        if (perfArmed) return;
+        perfArmed = true;
+        try {
+          if (typeof PerformanceObserver === "function") {
+            var o1 = new PerformanceObserver(function (list) {
+              list.getEntries().forEach(function (e) {
+                longTasks.push({ t: e.startTime, d: e.duration, name: e.name });
+              });
+            });
+            o1.observe({ type: "longtask", buffered: false });
+            try {
+              var o2 = new PerformanceObserver(function (list) {
+                list.getEntries().forEach(function (e) {
+                  loafs.push({
+                    t: e.startTime,
+                    d: e.duration,
+                    block: e.blockingDuration || 0
+                  });
+                });
+              });
+              o2.observe({ type: "long-animation-frame", buffered: false });
+            } catch (e2) {}
+          }
+        } catch (err) {}
+        window.__nfResetPerf = resetPerf;
+      }
+
       function publishRenderInfo() {
         renderInfo.n = N;
         renderInfo.running = running;
@@ -1235,7 +1323,9 @@
         renderInfo.contain.cx = PAINT_CX;
         renderInfo.contain.hFrac = PAINT_H;
         renderInfo.imageSmoothingEnabled = ctx.imageSmoothingEnabled;
+        renderInfo.perf = perfStats();
         window.__nfRender = renderInfo;
+        window.__nfPerf = renderInfo.perf;
         animInfo.spring = SPRING;
         animInfo.damp = DAMP;
         animInfo.vmax = VMAX;
@@ -1849,6 +1939,7 @@
         var nextDpr = quantizeDpr();
         var dprChanged = nextDpr !== dpr;
         var firstSprites = sprites.length === 0;
+        if (N) toNorm();
         cssW = nextW;
         cssH = nextH;
         dpr = nextDpr;
@@ -2013,7 +2104,6 @@
           }
           if (unlocked) activeCount++;
         }
-        toNorm();
         phaseElapsed += DT;
         if (assembling && N > 0) {
           if (phaseElapsed >= ASSEMBLE_S || (phaseElapsed >= ASSEMBLE_MIN_S && settled / N >= 0.97)) {
@@ -2065,10 +2155,16 @@
         if (!running) return;
         var ft;
         var steps;
+        var t0 = performance.now();
+        if (lastRafT > 0) {
+          rafMs[workI] = now - lastRafT;
+        }
+        lastRafT = now;
         if (frozen) {
           lastT = now;
           acc = 0;
           render(now);
+          recordWork(t0);
           stopLoop();
           return;
         }
@@ -2083,6 +2179,7 @@
           steps++;
         }
         render(now);
+        recordWork(t0);
         if (shouldStopLoop()) {
           stopLoop();
           return;
@@ -2392,6 +2489,7 @@
       }
 
       function boot(points) {
+        armPerf();
         hasGlyph = !!(points && points.length);
         layoutContain();
         alloc(engineCount());
