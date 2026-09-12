@@ -1,0 +1,48 @@
+{
+  "id": "fixed5_3",
+  "w": 65535,
+  "h": 65535,
+  "count": 3,
+  "stride": 5,
+  "format": "<HHB",
+  "endian": "little",
+  "fields": [
+    "x",
+    "y",
+    "idx"
+  ],
+  "headerBytes": 0,
+  "yAxis": "down",
+  "space": "painting-source-uint16",
+  "quantize": "floor(v+0.5)",
+  "paletteCount": 256,
+  "palette": {
+    "0": "#C9CFD8",
+    "1": "#6F8FAF",
+    "255": "#A33B2A"
+  },
+  "points": [
+    {
+      "x": 0,
+      "y": 1023,
+      "idx": 0
+    },
+    {
+      "x": 65535,
+      "y": 0,
+      "idx": 1
+    },
+    {
+      "x": 1,
+      "y": 65535,
+      "idx": 255
+    }
+  ],
+  "endianProbe": {
+    "offset": 2,
+    "le": 1023,
+    "be": 65283
+  },
+  "sha256": "9690b47ff117733935b4fb60b2dc9fdb692434204c8856dccb9bc272237999f7",
+  "bytes": 15
+}

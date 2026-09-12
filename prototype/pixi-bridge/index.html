@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#050505" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NF · Pixi H1-3 points.bin data bridge</title>
+  <style>
+    html, body {
+      margin: 0;
+      background: #050505;
+      color: #e8eef6;
+      font: 13px/1.5 ui-monospace, "Courier New", monospace;
+    }
+    main { padding: 16px 18px 20px; }
+    #log { margin-top: 12px; white-space: pre-wrap; word-break: break-word; }
+    .fail { color: #A33B2A; }
+    .pass { color: #8faf6f; }
+  </style>
+</head>
+<body>
+  <main>
+    <p>H1-3 data bridge · points.bin v3 · DataView LE · no Pixi particles · live Canvas2D exhibit untouched</p>
+    <pre id="log">booting</pre>
+  </main>
+  <script src="points-bin.js"></script>
+  <script>
+    (function () {
+      "use strict";
+      var logEl = document.getElementById("log");
+      var errors = [];
+      window.addEventListener("error", function (e) {
+        errors.push(String(e.message || e.error || e));
+      });
+      window.addEventListener("unhandledrejection", function (e) {
+        errors.push(String(e.reason || e));
+      });
+
+      function fail(msg) {
+        logEl.className = "fail";
+        logEl.textContent = msg;
+        window.__nfPixiBridge = { ok: false, error: msg, errors: errors.slice() };
+      }
+
+      function hexOf(buffer) {
+        var view = new DataView(buffer);
+        var out = [];
+        var i;
+        for (i = 0; i < view.byteLength; i++) {
+          out.push((view.getUint8(i) + 256).toString(16).slice(1));
+        }
+        return out.join("");
+      }
+
+      async function sha256Hex(buffer) {
+        var digest = await crypto.subtle.digest("SHA-256", buffer);
+        return hexOf(digest);
+      }
+
+      (async function () {
+        if (!window.NFPointsBin) {
+          fail("NFPointsBin missing");
+          return;
+        }
+        /* B9: arrayBuffer(), never text. */
+        var binRes = await fetch("fixed5_3.bin");
+        var metaRes = await fetch("meta.json");
+        var buffer = await binRes.arrayBuffer();
+        var meta = await metaRes.json();
+        var points = NFPointsBin.readPointsBin(buffer, meta.count);
+        var probe = NFPointsBin.endianProbe1023(buffer);
+        var sha = await sha256Hex(buffer);
+        var i;
+        var match = points.length === meta.points.length;
+        for (i = 0; i < points.length; i++) {
+          if (
+            points[i].x !== meta.points[i].x ||
+            points[i].y !== meta.points[i].y ||
+            points[i].idx !== meta.points[i].idx
+          ) {
+            match = false;
+          }
+        }
+        var info = {
+          ok:
+            errors.length === 0 &&
+            match &&
+            buffer.byteLength === meta.count * NFPointsBin.STRIDE &&
+            sha === meta.sha256 &&
+            probe.le === 1023 &&
+            probe.be === 65283 &&
+            meta.headerBytes === 0,
+          version: "points.bin-v3",
+          stride: NFPointsBin.STRIDE,
+          byteLength: buffer.byteLength,
+          headerBytes: meta.headerBytes,
+          sha256: sha,
+          hex: hexOf(buffer),
+          points: points,
+          endianProbe: probe,
+          match: match,
+          loadedPixi: typeof window.PIXI !== "undefined",
+          errors: errors.slice()
+        };
+        window.__nfPixiBridge = info;
+        console.log("[H1-3] points", points);
+        console.log("[H1-3] hex", info.hex);
+        console.log("[H1-3] sha256", sha);
+        console.log("[H1-3] endianProbe", probe);
+        logEl.className = info.ok ? "pass" : "fail";
+        logEl.textContent = JSON.stringify(info, null, 2);
+      })().catch(function (err) {
+        fail(String(err && err.stack ? err.stack : err));
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,134 @@
+{
+  "task": "H1-③ data bridge",
+  "handbook": "docs/NF_PixiJS迁移总手册_整合版_v1_2026-09-11.md",
+  "timestamp": "2026-09-12T08:22:04.123Z",
+  "roundtrip": {
+    "command": "python3 scripts/pixi-h1-3-write-fixed5.py",
+    "stdout": {
+      "byteorder": "little",
+      "calcsize_le": 5,
+      "calcsize_native_HHB": 5,
+      "calcsize_native_HBH": 6,
+      "calcsize_le_HBH": 5,
+      "sha256": "9690b47ff117733935b4fb60b2dc9fdb692434204c8856dccb9bc272237999f7",
+      "bytes": 15,
+      "hex": "0000ff0300ffff0000010100ffffff",
+      "points": [
+        [
+          0,
+          1023,
+          0
+        ],
+        [
+          65535,
+          0,
+          1
+        ],
+        [
+          1,
+          65535,
+          255
+        ]
+      ],
+      "path": "/workspace/prototype/pixi-bridge/fixed5_3.bin"
+    },
+    "sha256sum": "9690b47ff117733935b4fb60b2dc9fdb692434204c8856dccb9bc272237999f7  /workspace/prototype/pixi-bridge/fixed5_3.bin",
+    "sha": "9690b47ff117733935b4fb60b2dc9fdb692434204c8856dccb9bc272237999f7",
+    "hex": "0000ff0300ffff0000010100ffffff",
+    "nodePoints": [
+      {
+        "x": 0,
+        "y": 1023,
+        "idx": 0
+      },
+      {
+        "x": 65535,
+        "y": 0,
+        "idx": 1
+      },
+      {
+        "x": 1,
+        "y": 65535,
+        "idx": 255
+      }
+    ],
+    "probe": {
+      "le": 1023,
+      "be": 65283
+    },
+    "pass": true
+  },
+  "grep": {
+    "hits": {
+      "at_pixi": false,
+      "typed_u16": false,
+      "pixi_script": false,
+      "header_magic": false,
+      "getUint16_missing_true": false
+    },
+    "u16Calls": [
+      "getUint16(o, true)",
+      "getUint16(o, true)",
+      "getUint16(2, true)",
+      "getUint16(2, false)"
+    ],
+    "pass": true
+  },
+  "bridge": {
+    "ok": true,
+    "version": "points.bin-v3",
+    "stride": 5,
+    "byteLength": 15,
+    "headerBytes": 0,
+    "sha256": "9690b47ff117733935b4fb60b2dc9fdb692434204c8856dccb9bc272237999f7",
+    "hex": "0000ff0300ffff0000010100ffffff",
+    "points": [
+      {
+        "x": 0,
+        "y": 1023,
+        "idx": 0
+      },
+      {
+        "x": 65535,
+        "y": 0,
+        "idx": 1
+      },
+      {
+        "x": 1,
+        "y": 65535,
+        "idx": 255
+      }
+    ],
+    "endianProbe": {
+      "le": 1023,
+      "be": 65283
+    },
+    "match": true,
+    "loadedPixi": false,
+    "errors": []
+  },
+  "pageErrors": [],
+  "console": [
+    "[H1-3] points JSHandle@array",
+    "[H1-3] hex 0000ff0300ffff0000010100ffffff",
+    "[H1-3] sha256 9690b47ff117733935b4fb60b2dc9fdb692434204c8856dccb9bc272237999f7",
+    "[H1-3] endianProbe JSHandle@object"
+  ],
+  "screenshot": "/opt/cursor/artifacts/pixi_h1_3_bridge.png",
+  "live_exhibit_untouched": true,
+  "live_points_still_json": true,
+  "acceptance": {
+    "frozen_sha": true,
+    "frozen_hex": true,
+    "grep_clean": true,
+    "bridge_ok": true,
+    "points_match": true,
+    "endian_le": true,
+    "endian_be_trap": true,
+    "no_header": true,
+    "no_pixi": true,
+    "no_pageerror": true,
+    "exhibit_untouched": true,
+    "pass": true
+  }
+}
