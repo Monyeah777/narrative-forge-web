@@ -95,4 +95,8 @@ painting/*
 !painting/pixi-h1-13-ctx.json
 !painting/pixi-h1-14-approve.json
 !painting/radial-s0.json
+!painting/radial-s2a.json
+!painting/radial-s2a-dallas-50k.u16
+!painting/radial-s2a-scotland-50k.u16
+!painting/radial-s2a-met-50k.u16
 
