@@ -201,6 +201,19 @@ async function assembleFormed(page) {
   }
   await leavePointer(page);
   await waitPainted(page, 2000);
+  const settleDeadline = Date.now() + 2000;
+  while (Date.now() < settleDeadline) {
+    formed = await page.evaluate(() => ({
+      mode: window.__nfRender.mode,
+      running: window.__nfRender.running,
+      activeCount: window.__nfRender.activeCount,
+      tickCount: window.__nfRender.tickCount,
+      contain: window.__nfRender.contain,
+      nanHeals: window.__nfAnim ? window.__nfAnim.nanHeals : -1,
+    }));
+    if (formed.mode === "formed" && formed.running === false) break;
+    await new Promise((r) => setTimeout(r, 40));
+  }
   const ticks = formed ? formed.tickCount : 0;
   await new Promise((r) => setTimeout(r, 400));
   const after = await page.evaluate(() => ({
@@ -271,6 +284,7 @@ async function visibilityPause(page) {
     const hiddenRunning = window.__nfRender.running;
     Object.defineProperty(document, "hidden", { configurable: true, get: function () { return false; } });
     document.dispatchEvent(new Event("visibilitychange"));
+    document.dispatchEvent(new PointerEvent("pointerleave", { bubbles: true }));
     return {
       wasRunning: before,
       hiddenRunning: hiddenRunning,
