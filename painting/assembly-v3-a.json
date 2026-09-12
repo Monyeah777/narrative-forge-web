@@ -1,0 +1,35 @@
+{
+  "task": "assembly-v3-A",
+  "volume": "docs/NF_粒子装配模块_整合总卷_v3.0.md",
+  "branch": "cursor/assembly-v3-a-diag-84d9",
+  "base": "cursor/radial-strict-opt-84d9",
+  "resampled": false,
+  "phase": "A",
+  "protocol": "single-step; wait 继续 before B",
+  "gate": {
+    "evidence_closed": true,
+    "advance_to_B": false,
+    "W_triple": true,
+    "migrate_table": true,
+    "G1_G2_G3": true
+  },
+  "artifacts": {
+    "w": "painting/assembly-v3-a-w.json",
+    "migrate": "painting/assembly-v3-a-migrate.json",
+    "memo": "docs/research/粒子装配-A诊断.md",
+    "panels": [
+      "painting/assembly-v3-a-w-dallas.png",
+      "painting/assembly-v3-a-w-scotland.png",
+      "painting/assembly-v3-a-w-met.png"
+    ],
+    "rms": "painting/assembly-v3-a-rms.svg"
+  },
+  "headline": {
+    "W_area_element": "locked S2b matches p(r)∝r·W(r) via 2D rejection; L1≈0.035 vs illegal 0.58",
+    "count": "50601 / 50441 / 50471 within ±5% of 50k",
+    "modules_pass": "2/10",
+    "clock": "elapsedMS + MAX_STEPS=2 + FRAME_CLAMP=0.25, not deltaMS/50ms",
+    "G2": "snapAll at 2.417s; trail ratio 7.2× > 3×",
+    "complete_eq_stop": true
+  }
+}
