@@ -38,7 +38,7 @@
 - Pixi H1-②：分支 `cursor/pixi-h1-hello-52ec`。隔离空场景 `prototype/pixi-hello/index.html`。证据 `painting/pixi-h1-2-hello.json`。
 - Pixi H1-③：分支 `cursor/pixi-h1-bridge-52ec`。契约 v3 黄金样本 `fixed5_3.bin`。证据 `painting/pixi-h1-3-bridge.json`。
 - Pixi H1-④：分支 `cursor/pixi-h1-cloud-52ec`。隔离 100k `ParticleContainer`：`prototype/pixi-cloud/`。证据 `painting/pixi-h1-4-cloud.json`。
-- Pixi H1-⑤：本条分支 `cursor/pixi-h1-physics-52ec`（叠在 `cursor/pixi-h1-cloud-52ec` 上）。隔离 assemble 弹簧挂 `app.ticker` `UPDATE_PRIORITY.HIGH`；C2 黄金 `prototype/pixi-physics/golden-1000.f64`。现网 12k JSON / 物理 / rAF 未改。下一刀是现网切轨（或用户改口）。
+- Pixi H1-⑤：本条分支 `cursor/pixi-h1-physics-52ec`（叠在 `cursor/pixi-h1-cloud-52ec` 上）。隔离 assemble 弹簧挂 `app.ticker` `UPDATE_PRIORITY.HIGH`；C2 黄金 `prototype/pixi-physics/golden-1000.f64`。证据 `painting/pixi-h1-5-physics.json`。现网 12k JSON / 物理 / rAF 未改。下一刀是现网切轨（或用户改口）。
 
 ---
 

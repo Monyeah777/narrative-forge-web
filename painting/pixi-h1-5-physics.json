@@ -1,0 +1,100 @@
+{
+  "task": "H1-⑤ physics on ticker",
+  "handbook": "docs/NF_PixiJS迁移总手册_整合版_v1_2026-09-11.md",
+  "timestamp": "2026-09-12T08:38:33.855Z",
+  "golden": {
+    "command": {
+      "sha256sum": "dc1f16092d775ee1462c94eb964bb95523470bd7fd7770b1efab02c6940f320a  /workspace/prototype/pixi-physics/golden-1000.f64",
+      "wc": "48000 /workspace/prototype/pixi-physics/golden-1000.f64"
+    },
+    "frozenSha": "dc1f16092d775ee1462c94eb964bb95523470bd7fd7770b1efab02c6940f320a",
+    "runSha": "dc1f16092d775ee1462c94eb964bb95523470bd7fd7770b1efab02c6940f320a",
+    "bytes": 48000,
+    "locked": true,
+    "sameBytes": true,
+    "spring": 0.055,
+    "damp": 0.9,
+    "vmax": 10,
+    "pass": true
+  },
+  "grep": {
+    "hits": {
+      "at_pixi": false,
+      "sprite": false,
+      "addChild_particle": false,
+      "beginFill": false,
+      "app_view": false,
+      "ctor_options": false,
+      "second_raf": false,
+      "set_interval": false
+    },
+    "required": {
+      "addParticle": true,
+      "particle": true,
+      "boundsArea": true,
+      "update": true,
+      "ticker_high": true,
+      "nf_spring": true,
+      "elapsed_ms": true,
+      "app_init": true,
+      "app_canvas": true
+    },
+    "pass": true
+  },
+  "live": {
+    "no_pixi": true,
+    "has_raf": true,
+    "has_physics": true,
+    "has_apply_spring": true,
+    "spring": true,
+    "pass": true
+  },
+  "vendorSha": "9948591083793305468d73915a3ea85032dcf8e32eee7a1328585050d7a14d53",
+  "binSha": "1499db850a9da7856763f974ec79ff1d14be42503a66ab7fb8193954711f1880",
+  "physics": {
+    "ok": true,
+    "version": "8.20.1",
+    "rendererName": "webgl",
+    "count": 100000,
+    "goldenSha": "dc1f16092d775ee1462c94eb964bb95523470bd7fd7770b1efab02c6940f320a",
+    "frozenFileSha": "dc1f16092d775ee1462c94eb964bb95523470bd7fd7770b1efab02c6940f320a",
+    "goldenMatch": true,
+    "priority": "HIGH",
+    "spring": 0.055,
+    "damp": 0.9,
+    "vmax": 10,
+    "mode": "formed",
+    "phaseElapsed": 1.5166666666666662,
+    "ticks": 46,
+    "physSteps": 91,
+    "settled": 76110,
+    "tickerStarted": false,
+    "usedSecondRaf": false,
+    "errors": [],
+    "fps": 14.992503748125875
+  },
+  "pageErrors": [],
+  "screenshots": {
+    "assemble": "/opt/cursor/artifacts/pixi_h1_5_physics_assemble.png",
+    "formed": "/opt/cursor/artifacts/pixi_h1_5_physics_formed.png"
+  },
+  "live_exhibit_untouched": true,
+  "acceptance": {
+    "golden_sha": true,
+    "grep_clean": true,
+    "vendor_lock": true,
+    "bin_reuse": true,
+    "physics_ok": true,
+    "golden_match": true,
+    "count_100k": true,
+    "webgl": true,
+    "version": true,
+    "priority_high": true,
+    "phys_moved": true,
+    "formed": true,
+    "no_second_raf": true,
+    "no_pageerror": true,
+    "exhibit_untouched": true,
+    "pass": true
+  }
+}
