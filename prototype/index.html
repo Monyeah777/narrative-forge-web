@@ -1036,14 +1036,11 @@
       var dossier = document.getElementById("dossier");
       var volEl = document.getElementById("vol");
       var ctx = canvas.getContext("2d");
-      /* == RENDERER-SWAP == default Pixi; ?pixi=0 keeps Canvas2D rAF (C9). Do not delete physics. */
+      /* == RENDERER-SWAP == live clock = app.ticker. Canvas2D/worker/rAF exit retired.
+         Replacement: renderer.pixi.js draw + NFPixiRenderer.onTick.
+         Physics firewall: tick() still calls physics(). C9 rollback = git, not ?pixi=0. */
       var pixiTrack = true;
       var pixiReady = false;
-      try {
-        pixiTrack = new URLSearchParams(window.location.search).get("pixi") !== "0";
-      } catch (errPixiQs) {
-        pixiTrack = true;
-      }
       var btnHome = document.getElementById("btn-home");
       var btnIntro = document.getElementById("btn-intro");
       var btnHall = document.getElementById("btn-hall");
@@ -1418,12 +1415,8 @@
       }
 
       function scheduleQuietTick() {
+        /* == RENDERER-SWAP == retired rAF/setTimeout clock. Replacement: NFPixiRenderer ticker. */
         clearQuietWait();
-        quietWait = setTimeout(function () {
-          quietWait = 0;
-          if (!running) return;
-          raf = requestAnimationFrame(tick);
-        }, 33);
       }
 
       function publishB41() {
@@ -1624,6 +1617,7 @@
             ready: pixiReady,
             ok: pixiReady && !window.NFPixiRenderer.info().contextLost,
             usedSecondRaf: false,
+            workerBlit: false,
             n: N,
             mode: mode,
             ticks: tickCount,
@@ -1796,6 +1790,7 @@
       }
 
       function bootRenderWorker() {
+        /* == RENDERER-SWAP == worker blit retired. Replacement: renderer.pixi.js draw. */
         if (pixiTrack) return;
         if (typeof Worker === "undefined" || typeof OffscreenCanvas === "undefined" || !spriteBmp) return;
         try {
@@ -3722,8 +3717,7 @@
           stopLoop();
           return;
         }
-        /* == RENDERER-SWAP == pixi track: ticker is the only clock (C1). */
-        if (!pixiTrack) raf = requestAnimationFrame(tick);
+        /* == RENDERER-SWAP == no second rAF; ticker continues until stopLoop. */
       }
 
       function syncCrtIdleHint() {
@@ -3742,9 +3736,8 @@
         syncCrtIdleHint();
         if (raf) cancelAnimationFrame(raf);
         raf = 0;
-        /* == RENDERER-SWAP == */
-        if (pixiTrack && window.NFPixiRenderer) window.NFPixiRenderer.start();
-        else raf = requestAnimationFrame(tick);
+        /* == RENDERER-SWAP == replacement clock: NFPixiRenderer.start() */
+        if (window.NFPixiRenderer) window.NFPixiRenderer.start();
         renderInfo.running = true;
         window.__nfRender = renderInfo;
       }
@@ -3759,9 +3752,8 @@
         syncCrtIdleHint();
         if (raf) cancelAnimationFrame(raf);
         raf = 0;
-        /* == RENDERER-SWAP == */
-        if (pixiTrack && window.NFPixiRenderer) window.NFPixiRenderer.start();
-        else raf = requestAnimationFrame(tick);
+        /* == RENDERER-SWAP == replacement clock: NFPixiRenderer.start() */
+        if (window.NFPixiRenderer) window.NFPixiRenderer.start();
         renderInfo.running = true;
         window.__nfRender = renderInfo;
       }
