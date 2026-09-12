@@ -19,8 +19,9 @@ const BRIDGE = path.join(PROTO, "pixi-bridge");
 const BIN = path.join(BRIDGE, "fixed5_3.bin");
 const ART = "/opt/cursor/artifacts";
 const PORT = Number(process.env.NF_BENCH_PORT || 8780);
-const FROZEN_SHA = "9690b47ff117733935b4fb60b2dc9fdb692434204c8856dccb9bc272237999f7";
-const FROZEN_HEX = "0000ff0300ffff0000010100ffffff";
+const FROZEN_SHA = "a335bec62073335e37aab67bf61304e4212568ad755be1e3ea0c66ebc1819ad1";
+const FROZEN_HEX = "4e46505403030000000000ff0300ffff0000010100ffffff";
+const FROZEN_PAYLOAD = "9690b47ff117733935b4fb60b2dc9fdb692434204c8856dccb9bc272237999f7";
 const CHROME =
   process.env.CHROME_PATH ||
   ["/usr/local/bin/google-chrome", "/usr/bin/google-chrome", "/usr/bin/chromium"].find((p) =>
@@ -80,20 +81,29 @@ function pythonRoundTrip() {
   const buf = fs.readFileSync(BIN);
   const sha = createHash("sha256").update(buf).digest("hex");
   const hex = buf.toString("hex");
-  const nodePoints = NFPointsBin.readPointsBin(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength), 3);
-  const probe = NFPointsBin.endianProbe1023(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength));
+  const ab = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+  const header = NFPointsBin.readHeader(ab);
+  const nodePoints = NFPointsBin.readPointsBin(ab, 3);
+  const probe = NFPointsBin.endianProbe1023(ab);
+  const payloadSha = createHash("sha256").update(buf.subarray(NFPointsBin.HEADER_BYTES)).digest("hex");
   return {
     command: "python3 scripts/pixi-h1-3-write-fixed5.py",
     stdout: report,
     sha256sum: spawnSync("sha256sum", [BIN], { encoding: "utf8" }).stdout.trim(),
     sha,
     hex,
+    payloadSha,
+    header,
     nodePoints,
     probe,
     pass:
       sha === FROZEN_SHA &&
       hex === FROZEN_HEX &&
+      payloadSha === FROZEN_PAYLOAD &&
       report.sha256 === FROZEN_SHA &&
+      header.magic === "NFPT" &&
+      header.version === 3 &&
+      header.count === 3 &&
       probe.le === 1023 &&
       probe.be === 65283 &&
       nodePoints[0].x === 0 &&
@@ -108,14 +118,21 @@ function grepBridge() {
   );
   const src = files.join("\n");
   const u16Calls = src.match(/getUint16\s*\([^)]*\)/g) || [];
-  const hits = {
+  const forbidden = {
     at_pixi: /@pixi\//.test(src),
     typed_u16: /new\s+(Uint16|Float32|Uint32)Array\s*\(/.test(src),
     pixi_script: /pixi\.min\.js/.test(src),
-    header_magic: /magic\s*\+|NFPT/.test(src),
     getUint16_missing_true: u16Calls.some((c) => !c.includes("true") && !c.includes("false")),
   };
-  return { hits, u16Calls, pass: Object.values(hits).every((hit) => hit === false) };
+  const required = {
+    header_magic: /NFPT/.test(src),
+  };
+  return {
+    forbidden,
+    required,
+    u16Calls,
+    pass: Object.values(forbidden).every((hit) => hit === false) && required.header_magic,
+  };
 }
 
 async function main() {
@@ -160,10 +177,10 @@ async function main() {
       pageErrors,
       console: logs.filter((l) => l.startsWith("[H1-3]")),
       screenshot: shot,
-      live_exhibit_untouched: !fs
-        .readFileSync(path.join(PROTO, "index.html"), "utf8")
-        .includes("pixi.min.js"),
       live_points_still_json: fs.existsSync(path.join(PROTO, "assets/points.json")),
+      live_physics_kept: /function physics\s*\(/.test(
+        fs.readFileSync(path.join(PROTO, "index.html"), "utf8")
+      ),
       acceptance: {
         frozen_sha: roundtrip.sha === FROZEN_SHA,
         frozen_hex: roundtrip.hex === FROZEN_HEX,
@@ -172,13 +189,13 @@ async function main() {
         points_match: !!(bridge && bridge.match),
         endian_le: !!(bridge && bridge.endianProbe && bridge.endianProbe.le === 1023),
         endian_be_trap: !!(bridge && bridge.endianProbe && bridge.endianProbe.be === 65283),
-        no_header: !!(bridge && bridge.headerBytes === 0),
+        has_header: !!(bridge && bridge.headerBytes === 9 && bridge.header && bridge.header.magic === "NFPT"),
+        payload_frozen: roundtrip.payloadSha === FROZEN_PAYLOAD,
         no_pixi: !!(bridge && bridge.loadedPixi === false),
         no_pageerror: pageErrors.length === 0,
-        exhibit_untouched: true,
       },
     };
-    report.acceptance.exhibit_untouched = report.live_exhibit_untouched;
+    report.acceptance.live_physics_kept = report.live_physics_kept;
     report.acceptance.pass = Object.values(report.acceptance).every(Boolean);
     fs.writeFileSync(path.join(ROOT, "painting/pixi-h1-3-bridge.json"), JSON.stringify(report, null, 2) + "\n");
     console.log(JSON.stringify(report, null, 2));

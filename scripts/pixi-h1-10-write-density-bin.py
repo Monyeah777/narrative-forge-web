@@ -4,11 +4,10 @@
 Does not overwrite prototype/pixi-cloud/dallas-100k.bin.
 Does not write painting/points.json or change live INTRO.
 Same red lines as H1-④: master LANCZOS short side 2400, dark_L=0.19,
-seed 0x4E46, k=256, relax=3, <HHB stride 5, no file header.
+seed 0x4E46, k=256, relax=3, <HHB stride 5, NFPT header.
 """
 from __future__ import annotations
 
-import hashlib
 import importlib.util
 import json
 import struct
@@ -18,13 +17,13 @@ from pathlib import Path
 
 from PIL import Image
 
+from nf_points_bin import FMT, HEADER_BYTES, STRIDE, VERSION, parse_header, write_bin
+
 ROOT = Path(__file__).resolve().parents[1]
 MASTER = ROOT / "painting/masters/dallas_lespeupliers_5497x7054.jpg"
 PREVIEW = ROOT / "painting/01-dallas.jpg"
 CLOUD_BIN = ROOT / "prototype/pixi-cloud/dallas-100k.bin"
 OUT = ROOT / "prototype/pixi-density"
-FMT = "<HHB"
-STRIDE = 5
 SHORT_SIDE = 2400  # I-2: source sample ≥2200px
 SEED = 0x4E46
 DARK_L = 0.19
@@ -90,14 +89,13 @@ def write_tier(im: Image.Image, src_meta: dict, sampler, count: int) -> dict:
         if idx < 0 or idx > 255:
             raise ValueError(f"idx out of range: {idx}")
         buf.extend(struct.pack(FMT, quantize_u16(x), quantize_u16(y), idx))
-    data = bytes(buf)
-    assert len(data) == count * STRIDE
-    sha = hashlib.sha256(data).hexdigest()
+    raw = bytes(buf)
+    assert len(raw) == count * STRIDE
     stem = f"dallas-{count // 1000}k"
     OUT.mkdir(parents=True, exist_ok=True)
     bin_path = OUT / f"{stem}.bin"
-    bin_path.write_bytes(data)
-    (OUT / f"{stem}.bin.sha256").write_text(f"{sha}  {stem}.bin\n", encoding="utf-8")
+    info = write_bin(bin_path, raw, count)
+    sha = info["sha256"]
     meta = {
         "id": payload["id"],
         "w": payload["w"],
@@ -107,13 +105,15 @@ def write_tier(im: Image.Image, src_meta: dict, sampler, count: int) -> dict:
         "format": FMT,
         "endian": "little",
         "fields": ["x", "y", "idx"],
-        "headerBytes": 0,
+        "headerBytes": HEADER_BYTES,
+        "header": {"magic": "NFPT", "version": VERSION, "count": count},
+        "payloadSha256": info["payloadSha256"],
         "yAxis": "down",
         "space": "painting-source-uint16",
         "quantize": "floor(v*65535+0.5)",
         "palette": payload["palette"],
         "sha256": sha,
-        "bytes": len(data),
+        "bytes": info["bytes"],
         "source": src_meta,
         "sample": {
             "dark_L": DARK_L,
@@ -129,7 +129,7 @@ def write_tier(im: Image.Image, src_meta: dict, sampler, count: int) -> dict:
     )
     rec = {
         "sha256": sha,
-        "bytes": len(data),
+        "bytes": info["bytes"],
         "count": count,
         "file": str(bin_path.relative_to(ROOT)),
         "sampled_wh": [payload["w"], payload["h"]],
@@ -146,8 +146,12 @@ def write_tier(im: Image.Image, src_meta: dict, sampler, count: int) -> dict:
 def main() -> None:
     assert struct.calcsize(FMT) == STRIDE
     if CLOUD_BIN.exists():
-        frozen = hashlib.sha256(CLOUD_BIN.read_bytes()).hexdigest()
-        print(f"frozen 100k left untouched sha256={frozen}", file=sys.stderr, flush=True)
+        frozen = parse_header(CLOUD_BIN.read_bytes())
+        print(
+            f"frozen 100k left untouched sha256={frozen['sha256']} payload={frozen['payloadSha256']}",
+            file=sys.stderr,
+            flush=True,
+        )
     sampler = load_sampler()
     im, src_meta = load_source()
     counts = [int(a) for a in sys.argv[1:]] if len(sys.argv) > 1 else list(TIERS)

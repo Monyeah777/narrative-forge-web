@@ -11,7 +11,7 @@
     "y",
     "idx"
   ],
-  "headerBytes": 0,
+  "headerBytes": 9,
   "yAxis": "down",
   "space": "painting-source-uint16",
   "quantize": "floor(v*65535+0.5)",
@@ -273,8 +273,8 @@
     "#efe3e2",
     "#f5eee7"
   ],
-  "sha256": "1499db850a9da7856763f974ec79ff1d14be42503a66ab7fb8193954711f1880",
-  "bytes": 500000,
+  "sha256": "6406d7012e7f637ad2e31661a85f619ebd14b85bb48a6341a1ec9c3a2dbcea82",
+  "bytes": 500009,
   "source": {
     "src": "painting/masters/dallas_lespeupliers_5497x7054.jpg",
     "src_px": [
@@ -290,5 +290,11 @@
     "k": 256,
     "relax": 3,
     "dark_cull_pct": 0.0001
-  }
+  },
+  "header": {
+    "magic": "NFPT",
+    "version": 3,
+    "count": 100000
+  },
+  "payloadSha256": "1499db850a9da7856763f974ec79ff1d14be42503a66ab7fb8193954711f1880"
 }

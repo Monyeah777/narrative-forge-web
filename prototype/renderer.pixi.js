@@ -195,7 +195,8 @@
       priority: "HIGH",
       contextLost: contextLost,
       usedCanvas: !!(app && app.canvas),
-      softDot: softSize
+      softDot: softSize,
+      resolution: app && app.renderer ? app.renderer.resolution : 0
     };
   }
 

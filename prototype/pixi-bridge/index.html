@@ -21,7 +21,7 @@
 </head>
 <body>
   <main>
-    <p>H1-3 data bridge · points.bin v3 · DataView LE · no Pixi particles · live Canvas2D exhibit untouched</p>
+    <p>H1-3 data bridge · points.bin v3 · NFPT header · DataView LE · no Pixi particles</p>
     <pre id="log">booting</pre>
   </main>
   <script src="points-bin.js"></script>
@@ -68,6 +68,7 @@
         var metaRes = await fetch("meta.json");
         var buffer = await binRes.arrayBuffer();
         var meta = await metaRes.json();
+        var header = NFPointsBin.readHeader(buffer);
         var points = NFPointsBin.readPointsBin(buffer, meta.count);
         var probe = NFPointsBin.endianProbe1023(buffer);
         var sha = await sha256Hex(buffer);
@@ -86,15 +87,19 @@
           ok:
             errors.length === 0 &&
             match &&
-            buffer.byteLength === meta.count * NFPointsBin.STRIDE &&
+            header.magic === "NFPT" &&
+            header.version === 3 &&
+            header.count === meta.count &&
+            buffer.byteLength === NFPointsBin.HEADER_BYTES + meta.count * NFPointsBin.STRIDE &&
             sha === meta.sha256 &&
             probe.le === 1023 &&
             probe.be === 65283 &&
-            meta.headerBytes === 0,
+            meta.headerBytes === NFPointsBin.HEADER_BYTES,
           version: "points.bin-v3",
           stride: NFPointsBin.STRIDE,
           byteLength: buffer.byteLength,
           headerBytes: meta.headerBytes,
+          header: header,
           sha256: sha,
           hex: hexOf(buffer),
           points: points,

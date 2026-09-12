@@ -11,7 +11,7 @@
     "y",
     "idx"
   ],
-  "headerBytes": 0,
+  "headerBytes": 9,
   "yAxis": "down",
   "space": "painting-source-uint16",
   "quantize": "floor(v*65535+0.5)",
@@ -273,8 +273,8 @@
     "#f9f0cf",
     "#fbf9ea"
   ],
-  "sha256": "4d161d39bbf9b500e423926017287db32b2133a1f40c06b4b6fd390c7a7f0571",
-  "bytes": 500000,
+  "sha256": "bbeab899140521bad56e82766f92a3d63305b8bc8f802de22db804fad3bfcf5f",
+  "bytes": 500009,
   "source": {
     "src": "painting/masters/scotland_GAP_4001.jpg",
     "src_px": [
@@ -290,5 +290,11 @@
     "k": 256,
     "relax": 3,
     "dark_cull_pct": 0.0001
-  }
+  },
+  "header": {
+    "magic": "NFPT",
+    "version": 3,
+    "count": 100000
+  },
+  "payloadSha256": "4d161d39bbf9b500e423926017287db32b2133a1f40c06b4b6fd390c7a7f0571"
 }

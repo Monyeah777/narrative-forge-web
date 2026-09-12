@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """NF points.bin v3 contract (H2 / §2-B)
 
-stride=5, little-endian <HHB, no padding, no file header
+Header 9B: magic NFPT + version u8=3 + count u32le
+Payload: stride=5, little-endian <HHB, no padding
 offset 0 = x(u16) / 2 = y(u16) / 4 = idx(u8)
 x increases right; y increases down (painting source space)
 quantize: floor(v + 0.5); out-of-range throws, never silent wrap
@@ -9,14 +10,12 @@ Python: struct.pack('<HHB', x, y, idx)
 """
 from __future__ import annotations
 
-import hashlib
 import json
 import struct
 import sys
 from pathlib import Path
 
-FMT = "<HHB"
-STRIDE = 5
+from nf_points_bin import FMT, HEADER_BYTES, STRIDE, VERSION, write_bin
 # B10: three known points including boundaries 0 / 65535 / 255.
 # P0.y = 1023 is the Q8 / B6 endian probe (LE ff 03, BE 03 ff).
 POINTS = ((0, 1023, 0), (65535, 0, 1), (1, 65535, 255))
@@ -54,17 +53,17 @@ def main() -> None:
     buf = bytearray()
     for x, y, idx in POINTS:
         buf.extend(struct.pack(FMT, quantize_u16(x), quantize_u16(y), check_idx(idx)))
-    data = bytes(buf)
-    assert len(data) == len(POINTS) * STRIDE
-    unpacked = list(struct.iter_unpack(FMT, data))
+    payload = bytes(buf)
+    assert len(payload) == len(POINTS) * STRIDE
+    unpacked = list(struct.iter_unpack(FMT, payload))
     assert unpacked == list(POINTS), unpacked
-    assert data[2:4] == probe
+    assert payload[2:4] == probe
 
-    sha = hashlib.sha256(data).hexdigest()
     OUT.mkdir(parents=True, exist_ok=True)
     bin_path = OUT / "fixed5_3.bin"
-    bin_path.write_bytes(data)
-    (OUT / "fixed5_3.bin.sha256").write_text(f"{sha}  fixed5_3.bin\n", encoding="utf-8")
+    info = write_bin(bin_path, payload, len(POINTS))
+    data = bin_path.read_bytes()
+    sha = info["sha256"]
     meta = {
         "id": "fixed5_3",
         "w": 65535,
@@ -74,16 +73,18 @@ def main() -> None:
         "format": FMT,
         "endian": "little",
         "fields": ["x", "y", "idx"],
-        "headerBytes": 0,
+        "headerBytes": HEADER_BYTES,
+        "header": {"magic": "NFPT", "version": VERSION, "count": 3},
+        "payloadSha256": info["payloadSha256"],
         "yAxis": "down",
         "space": "painting-source-uint16",
         "quantize": "floor(v+0.5)",
         "paletteCount": 256,
         "palette": {"0": "#C9CFD8", "1": "#6F8FAF", "255": "#A33B2A"},
         "points": [{"x": x, "y": y, "idx": idx} for x, y, idx in POINTS],
-        "endianProbe": {"offset": 2, "le": 1023, "be": 65283},
+        "endianProbe": {"offset": HEADER_BYTES + 2, "le": 1023, "be": 65283},
         "sha256": sha,
-        "bytes": len(data),
+        "bytes": info["bytes"],
     }
     (OUT / "meta.json").write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
     print(
