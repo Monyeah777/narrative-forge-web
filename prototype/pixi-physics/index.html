@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#050505" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NF · Pixi H1-5 physics on ticker</title>
+  <style>
+    html, body {
+      margin: 0;
+      background: #050505;
+      color: #e8eef6;
+      font: 13px/1.5 ui-monospace, "Courier New", monospace;
+    }
+    main { padding: 12px 16px 16px; }
+    #host canvas { display: block; border: 1px solid #2a2a2a; }
+    #log { margin-top: 10px; white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow: auto; }
+    .fail { color: #A33B2A; }
+    .pass { color: #8faf6f; }
+  </style>
+</head>
+<body>
+  <main>
+    <p>H1-5 physics on app.ticker HIGH · spring 0.055 / damp 0.90 · isolated; live rAF untouched</p>
+    <div id="host"></div>
+    <pre id="log">booting</pre>
+  </main>
+  <script src="../vendor/pixi.min.js"></script>
+  <script src="../pixi-bridge/points-bin.js"></script>
+  <script src="nf-spring.js"></script>
+  <script>
+    (function () {
+      "use strict";
+      var FROZEN_GOLDEN = "dc1f16092d775ee1462c94eb964bb95523470bd7fd7770b1efab02c6940f320a";
+      var logEl = document.getElementById("log");
+      var host = document.getElementById("host");
+      var errors = [];
+      window.addEventListener("error", function (e) {
+        errors.push(String(e.message || e.error || e));
+      });
+      window.addEventListener("unhandledrejection", function (e) {
+        errors.push(String(e.reason || e));
+      });
+
+      function fail(msg) {
+        logEl.className = "fail";
+        logEl.textContent = msg;
+        window.__nfPixiPhysics = { ok: false, error: msg, errors: errors.slice() };
+      }
+
+      function parseHex(hex) {
+        return parseInt(String(hex).replace("#", ""), 16);
+      }
+
+      function mulberry32(seed) {
+        var a = seed >>> 0;
+        return function rand() {
+          a |= 0;
+          a = (a + 0x6d2b79f5) | 0;
+          var t = Math.imul(a ^ (a >>> 15), 1 | a);
+          t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+      }
+
+      function makeSoftDot(size) {
+        var c = document.createElement("canvas");
+        c.width = size;
+        c.height = size;
+        var ctx = c.getContext("2d");
+        var mid = size * 0.5;
+        var g = ctx.createRadialGradient(mid, mid, 0, mid, mid, mid);
+        g.addColorStop(0, "rgba(255,255,255,1)");
+        g.addColorStop(0.35, "rgba(255,255,255,0.85)");
+        g.addColorStop(1, "rgba(255,255,255,0)");
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, size, size);
+        return PIXI.Texture.from(c);
+      }
+
+      async function sha256Hex(buf) {
+        var digest = await crypto.subtle.digest("SHA-256", buf);
+        var view = new DataView(digest);
+        var out = "";
+        var i;
+        for (i = 0; i < view.byteLength; i++) {
+          out += (view.getUint8(i) + 256).toString(16).slice(1);
+        }
+        return out;
+      }
+
+      (async function () {
+        if (!window.PIXI || !PIXI.ParticleContainer || !PIXI.UPDATE_PRIORITY) {
+          fail("PIXI ParticleContainer / UPDATE_PRIORITY missing");
+          return;
+        }
+        if (!window.NFSpring || !window.NFPointsBin) {
+          fail("NFSpring / NFPointsBin missing");
+          return;
+        }
+        if (PIXI.UPDATE_PRIORITY.HIGH == null) {
+          fail("UPDATE_PRIORITY.HIGH missing");
+          return;
+        }
+
+        var golden = NFSpring.runGolden(1000);
+        var goldenView = NFSpring.goldenBytes(golden.seq);
+        var goldenSha = await sha256Hex(goldenView);
+        var frozenFile = await (await fetch("golden-1000.f64")).arrayBuffer();
+        var frozenFileSha = await sha256Hex(frozenFile);
+        if (goldenSha !== FROZEN_GOLDEN || frozenFileSha !== FROZEN_GOLDEN) {
+          fail("golden sha mismatch run=" + goldenSha + " file=" + frozenFileSha);
+          return;
+        }
+        if (frozenFile.byteLength !== goldenView.byteLength) {
+          fail("golden length mismatch");
+          return;
+        }
+        var frozenView = new Uint8Array(frozenFile);
+        var bi;
+        for (bi = 0; bi < goldenView.length; bi++) {
+          if (goldenView[bi] !== frozenView[bi]) {
+            fail("golden byte mismatch at " + bi);
+            return;
+          }
+        }
+
+        var meta = await (await fetch("../pixi-cloud/meta.json")).json();
+        var buffer = await (await fetch("../pixi-cloud/dallas-100k.bin")).arrayBuffer();
+        var pts = NFPointsBin.readPointsBin(buffer, meta.count);
+        var n = pts.length;
+        var viewW = 640;
+        var viewH = Math.round(viewW * meta.h / meta.w);
+        var margin = 8;
+        var innerW = viewW - margin * 2;
+        var innerH = viewH - margin * 2;
+
+        var app = new PIXI.Application();
+        await app.init({
+          width: viewW,
+          height: viewH,
+          backgroundColor: 0x050505,
+          preference: "webgl",
+          antialias: false,
+          autoStart: true,
+          resolution: 1,
+          autoDensity: true
+        });
+        host.appendChild(app.canvas);
+
+        var texture = makeSoftDot(128);
+        var container = new PIXI.ParticleContainer({
+          texture: texture,
+          dynamicProperties: { position: true, color: false }
+        });
+        container.boundsArea = new PIXI.Rectangle(0, 0, viewW, viewH);
+
+        var tx = new Float64Array(n);
+        var ty = new Float64Array(n);
+        var x = new Float64Array(n);
+        var y = new Float64Array(n);
+        var vx = new Float64Array(n);
+        var vy = new Float64Array(n);
+        var particles = new Array(n);
+        var rand = mulberry32(0x4e46);
+        var scale = 3 / 128;
+        var i;
+        var p;
+        for (i = 0; i < n; i++) {
+          tx[i] = margin + (pts[i].x / 65535) * innerW;
+          ty[i] = margin + (pts[i].y / 65535) * innerH;
+          x[i] = tx[i] + (rand() - 0.5) * 220;
+          y[i] = ty[i] + (rand() - 0.5) * 220;
+          vx[i] = 0;
+          vy[i] = 0;
+          p = new PIXI.Particle({
+            texture: texture,
+            x: x[i],
+            y: y[i],
+            tint: parseHex(meta.palette[pts[i].idx]),
+            alpha: 1,
+            anchorX: 0.5,
+            anchorY: 0.5,
+            scaleX: scale,
+            scaleY: scale
+          });
+          container.addParticle(p);
+          particles[i] = p;
+        }
+        container.update();
+        app.stage.addChild(container);
+
+        var acc = NFSpring.createAccumulator();
+        var phaseElapsed = 0;
+        var mode = "assemble";
+        var ticks = 0;
+        var physSteps = 0;
+        var settled = 0;
+        var scratch = { x: 0, y: 0, vx: 0, vy: 0, tx: 0, ty: 0 };
+
+        function publish(extra) {
+          var info = {
+            ok: errors.length === 0 && goldenSha === FROZEN_GOLDEN,
+            version: PIXI.VERSION || "",
+            rendererName: app.renderer && app.renderer.name ? String(app.renderer.name) : "",
+            count: n,
+            goldenSha: goldenSha,
+            frozenFileSha: frozenFileSha,
+            goldenMatch: goldenSha === FROZEN_GOLDEN && frozenFileSha === FROZEN_GOLDEN,
+            priority: "HIGH",
+            spring: NFSpring.SPRING,
+            damp: NFSpring.DAMP,
+            vmax: NFSpring.VMAX,
+            mode: mode,
+            phaseElapsed: phaseElapsed,
+            ticks: ticks,
+            physSteps: physSteps,
+            settled: settled,
+            tickerStarted: !!(app.ticker && app.ticker.started),
+            usedSecondRaf: false,
+            errors: errors.slice()
+          };
+          if (extra) {
+            var k;
+            for (k in extra) info[k] = extra[k];
+          }
+          window.__nfPixiPhysics = info;
+          logEl.className = info.ok ? "pass" : "fail";
+          if (ticks === 1 || ticks % 30 === 0 || mode === "formed") {
+            logEl.textContent = JSON.stringify({
+              ok: info.ok,
+              goldenMatch: info.goldenMatch,
+              mode: info.mode,
+              physSteps: info.physSteps,
+              settled: info.settled,
+              count: info.count
+            }, null, 2);
+          }
+        }
+
+        function physicsStep() {
+          var j;
+          if (mode !== "assemble") return;
+          settled = 0;
+          for (j = 0; j < n; j++) {
+            scratch.x = x[j];
+            scratch.y = y[j];
+            scratch.vx = vx[j];
+            scratch.vy = vy[j];
+            scratch.tx = tx[j];
+            scratch.ty = ty[j];
+            NFSpring.stepParticle(scratch);
+            x[j] = scratch.x;
+            y[j] = scratch.y;
+            vx[j] = scratch.vx;
+            vy[j] = scratch.vy;
+            particles[j].x = x[j];
+            particles[j].y = y[j];
+            if (
+              Math.abs(tx[j] - x[j]) < NFSpring.STOP_PX &&
+              Math.abs(ty[j] - y[j]) < NFSpring.STOP_PX &&
+              Math.abs(vx[j]) < NFSpring.STOP_V &&
+              Math.abs(vy[j]) < NFSpring.STOP_V
+            ) {
+              settled++;
+            }
+          }
+          phaseElapsed += NFSpring.DT;
+          physSteps += 1;
+          if (
+            phaseElapsed >= NFSpring.ASSEMBLE_S ||
+            (phaseElapsed >= NFSpring.ASSEMBLE_MIN_S && settled / n >= 0.97)
+          ) {
+            for (j = 0; j < n; j++) {
+              x[j] = tx[j];
+              y[j] = ty[j];
+              vx[j] = 0;
+              vy[j] = 0;
+              particles[j].x = tx[j];
+              particles[j].y = ty[j];
+            }
+            mode = "formed";
+            app.stop();
+          }
+        }
+
+        /* Q13: physics on UPDATE_PRIORITY.HIGH so it runs before render. */
+        app.ticker.add(
+          function (ticker) {
+            ticks += 1;
+            NFSpring.drain(acc, ticker.elapsedMS / 1000, physicsStep);
+            publish({ fps: app.ticker.FPS });
+          },
+          undefined,
+          PIXI.UPDATE_PRIORITY.HIGH
+        );
+        publish();
+      })().catch(function (err) {
+        fail(String(err && err.stack ? err.stack : err));
+      });
+    })();
+  </script>
+</body>
+</html>
