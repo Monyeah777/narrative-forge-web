@@ -9,7 +9,7 @@
   "idleResumeMs": 30000,
   "hoverResumeMs": 1500,
   "captionSwapMs": 300,
-  "seed": 20166,
+  "seed": 20038,
   "catalog": ["INTRO", "HALL", "COMMUNITY"],
   "interlude": "none",
   "control": { "pause": "text" },
