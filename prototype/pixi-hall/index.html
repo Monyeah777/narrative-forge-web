@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#050505" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NF · Pixi H1-11 HALL 100k Scotland</title>
+  <style>
+    html, body {
+      margin: 0;
+      background: #050505;
+      color: #e8eef6;
+      font: 13px/1.5 ui-monospace, "Courier New", monospace;
+    }
+    main { padding: 12px 16px 16px; }
+    #host canvas { display: block; border: 1px solid #2a2a2a; }
+    #log { margin-top: 10px; white-space: pre-wrap; word-break: break-word; max-height: 180px; overflow: auto; }
+    .fail { color: #A33B2A; }
+    .pass { color: #8faf6f; }
+  </style>
+</head>
+<body>
+  <main>
+    <p>H1-11 HALL 100k ParticleContainer · Scotland · isolated; INTRO Dallas 100k / COMMUNITY 12k untouched</p>
+    <div id="host"></div>
+    <pre id="log">booting</pre>
+  </main>
+  <script src="../vendor/pixi.min.js"></script>
+  <script src="../pixi-bridge/points-bin.js"></script>
+  <script>
+    (function () {
+      "use strict";
+      var logEl = document.getElementById("log");
+      var host = document.getElementById("host");
+      var errors = [];
+      window.addEventListener("error", function (e) {
+        errors.push(String(e.message || e.error || e));
+      });
+      window.addEventListener("unhandledrejection", function (e) {
+        errors.push(String(e.reason || e));
+      });
+
+      function fail(msg) {
+        logEl.className = "fail";
+        logEl.textContent = msg;
+        window.__nfPixiHall = { ok: false, error: msg, errors: errors.slice() };
+      }
+
+      function parseHex(hex) {
+        return parseInt(String(hex).replace("#", ""), 16);
+      }
+
+      function makeSoftDot(size) {
+        var c = document.createElement("canvas");
+        c.width = size;
+        c.height = size;
+        var ctx = c.getContext("2d");
+        var mid = size * 0.5;
+        var g = ctx.createRadialGradient(mid, mid, 0, mid, mid, mid);
+        g.addColorStop(0, "rgba(255,255,255,1)");
+        g.addColorStop(0.35, "rgba(255,255,255,0.85)");
+        g.addColorStop(1, "rgba(255,255,255,0)");
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, size, size);
+        return PIXI.Texture.from(c);
+      }
+
+      (async function () {
+        if (!window.PIXI || typeof PIXI.Application !== "function") {
+          fail("PIXI.Application missing");
+          return;
+        }
+        if (!PIXI.ParticleContainer || !PIXI.Particle || !PIXI.Rectangle) {
+          fail("ParticleContainer / Particle / Rectangle missing");
+          return;
+        }
+        if (!window.NFPointsBin) {
+          fail("NFPointsBin missing");
+          return;
+        }
+
+        var metaRes = await fetch("meta.json");
+        var binRes = await fetch("scotland-100k.bin");
+        if (!metaRes.ok || !binRes.ok) {
+          fail("fetch failed scotland-100k.bin / meta.json");
+          return;
+        }
+        var meta = await metaRes.json();
+        var buffer = await binRes.arrayBuffer();
+        var pts = NFPointsBin.readPointsBin(buffer, meta.count);
+        if (pts.length !== 100000) {
+          fail("count " + pts.length + " !== 100000");
+          return;
+        }
+
+        var viewW = 640;
+        var viewH = Math.round(viewW * meta.h / meta.w);
+        var app = new PIXI.Application();
+        await app.init({
+          width: viewW,
+          height: viewH,
+          backgroundColor: 0x050505,
+          preference: "webgl",
+          antialias: false,
+          autoStart: true,
+          resolution: 1,
+          autoDensity: true
+        });
+        host.appendChild(app.canvas);
+
+        var texture = makeSoftDot(128);
+        var container = new PIXI.ParticleContainer({
+          texture: texture,
+          dynamicProperties: { position: true, color: false }
+        });
+        container.boundsArea = new PIXI.Rectangle(0, 0, viewW, viewH);
+
+        var margin = 8;
+        var innerW = viewW - margin * 2;
+        var innerH = viewH - margin * 2;
+        var scale = 3 / 128;
+        var i;
+        var nx;
+        var ny;
+        for (i = 0; i < pts.length; i++) {
+          nx = pts[i].x / 65535;
+          ny = pts[i].y / 65535;
+          container.addParticle(new PIXI.Particle({
+            texture: texture,
+            x: margin + nx * innerW,
+            y: margin + ny * innerH,
+            tint: parseHex(meta.palette[pts[i].idx]),
+            alpha: 1,
+            anchorX: 0.5,
+            anchorY: 0.5,
+            scaleX: scale,
+            scaleY: scale
+          }));
+        }
+        container.update();
+        app.stage.addChild(container);
+
+        var ticks = 0;
+        var info = {
+          ok: errors.length === 0,
+          version: PIXI.VERSION || "",
+          rendererName: app.renderer && app.renderer.name ? String(app.renderer.name) : "",
+          count: container.particleChildren ? container.particleChildren.length : pts.length,
+          id: meta.id,
+          stageChildren: app.stage.children.length,
+          usedAddParticle: true,
+          usedSprite: false,
+          softDot: 128,
+          view: { w: viewW, h: viewH },
+          sha256: meta.sha256,
+          ticks: 0,
+          fps: 0,
+          tickerStarted: !!(app.ticker && app.ticker.started),
+          errors: errors.slice()
+        };
+        app.ticker.add(function () {
+          ticks += 1;
+          info.ticks = ticks;
+          info.fps = app.ticker.FPS;
+          info.ok = errors.length === 0 && info.count === 100000 && info.id === "poplars-scotland";
+          window.__nfPixiHall = info;
+        });
+        window.__nfPixiHall = info;
+        logEl.className = info.ok ? "pass" : "fail";
+        logEl.textContent = JSON.stringify({
+          ok: info.ok,
+          id: info.id,
+          version: info.version,
+          rendererName: info.rendererName,
+          count: info.count,
+          view: info.view,
+          sha256: info.sha256
+        }, null, 2);
+      })().catch(function (err) {
+        fail(String(err && err.stack ? err.stack : err));
+      });
+    })();
+  </script>
+</body>
+</html>
