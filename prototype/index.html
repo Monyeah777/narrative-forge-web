@@ -2855,7 +2855,7 @@
       }
 
       function usesPointsBin() {
-        /* == RENDERER-SWAP == INTRO + HALL default = v3 100k bin. ?bin=0 keeps 12k JSON. */
+        /* == RENDERER-SWAP == INTRO + HALL + COMMUNITY default = v3 100k bin. ?bin=0 keeps 12k JSON. */
         try {
           return new URLSearchParams(window.location.search).get("bin") !== "0";
         } catch (errBin) {
@@ -2930,6 +2930,10 @@
         return loadPointsBinRecord("pixi-hall/scotland-100k.bin", "pixi-hall/meta.json", t0);
       }
 
+      function loadCommunityBin(t0) {
+        return loadPointsBinRecord("pixi-community/met-100k.bin", "pixi-community/meta.json", t0);
+      }
+
       function loadTargetRecord(target) {
         var href = targetHref(target);
         var t0 = performance.now();
@@ -2950,6 +2954,11 @@
         }
         if (usesPointsBin() && target && (target === TARGETS.HALL || target.path === "points_artwork_b.json")) {
           return loadHallBin(t0).catch(function (err) {
+            return finishPlaceholder(t0, String(err && err.message ? err.message : err));
+          });
+        }
+        if (usesPointsBin() && target && (target === TARGETS.COMMUNITY || target.path === "points_artwork_c.json")) {
+          return loadCommunityBin(t0).catch(function (err) {
             return finishPlaceholder(t0, String(err && err.message ? err.message : err));
           });
         }
