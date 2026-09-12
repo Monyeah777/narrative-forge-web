@@ -1,0 +1,59 @@
+{
+  "task": "H1-① vendor",
+  "handbook": "docs/NF_PixiJS迁移总手册_整合版_v1_2026-09-11.md",
+  "timestamp": "2026-09-12T08:07:24.979Z",
+  "hash": {
+    "command": {
+      "sha256sum": "9948591083793305468d73915a3ea85032dcf8e32eee7a1328585050d7a14d53  /workspace/prototype/vendor/pixi.min.js",
+      "wc": "818871 /workspace/prototype/vendor/pixi.min.js",
+      "gzip9": "230584",
+      "version": "PixiJS - v8.20.1"
+    },
+    "sha256": "9948591083793305468d73915a3ea85032dcf8e32eee7a1328585050d7a14d53",
+    "bytes": 818871,
+    "gzip9": 230584,
+    "version": "PixiJS - v8.20.1",
+    "pass": true
+  },
+  "grep": {
+    "hits": {
+      "at_pixi": false,
+      "beginFill": false,
+      "app_view": false,
+      "base_texture": false,
+      "ctor_options": false
+    },
+    "pass": true
+  },
+  "smoke": {
+    "ok": true,
+    "version": "8.20.1",
+    "canvas": {
+      "w": 640,
+      "h": 400
+    },
+    "rendererType": "1",
+    "rendererName": "webgl",
+    "usedCanvas": true,
+    "tickerStarted": false,
+    "errors": []
+  },
+  "pageErrors": [],
+  "screenshot": "/opt/cursor/artifacts/pixi_h1_1_vendor_smoke_2.png",
+  "live_exhibit_untouched": true,
+  "acceptance": {
+    "e0_sha": true,
+    "e0_bytes": true,
+    "e0_gzip9": true,
+    "version_8_20_1": true,
+    "grep_clean": true,
+    "smoke_ok": true,
+    "smoke_version": true,
+    "no_pageerror": true,
+    "ticker_stopped": true,
+    "used_canvas": true,
+    "webgl_backend": true,
+    "exhibit_untouched": true,
+    "pass": true
+  }
+}
