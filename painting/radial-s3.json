@@ -1,0 +1,452 @@
+{
+  "task": "S3 物理层",
+  "handbook": "docs/NF_径向重映射_总结版最终方案_v2.0.md",
+  "timestamp_note": "isolation module + 60/120Hz regression; no live write; live spring 0.055 untouched",
+  "seed": 1395871795,
+  "module": "prototype/pixi-physics/nf-radial-physics.js",
+  "runner": "scripts/radial-s3-physics.mjs",
+  "live_count_unchanged": 100000,
+  "palette_unchanged": true,
+  "spring_unchanged": true,
+  "wired_into_live_ticker": false,
+  "constants": {
+    "H": 0.016666666666666666,
+    "dt_clamp_s": 0.05,
+    "gaffer_article_clamp_s": 0.25,
+    "live_frame_clamp_s": 0.25,
+    "live_max_steps": 2,
+    "lut": "64x64@30Hz",
+    "sleep_v": 0.05,
+    "sleep_x": 0.5,
+    "f_s": 0.006,
+    "f_t": 0.05,
+    "A_max": 5,
+    "reset_offset_px": 24
+  },
+  "switches_default": {
+    "field": true,
+    "anisotropy": true,
+    "drift": true,
+    "noiseLut": true,
+    "sleep": true,
+    "gating": true,
+    "interpolate": true,
+    "reducedMotion": false
+  },
+  "field_table": [
+    {
+      "r": 0,
+      "S": 0,
+      "k": 0.1,
+      "c": 0.92,
+      "A": 0
+    },
+    {
+      "r": 0.5,
+      "S": 0,
+      "k": 0.1,
+      "c": 0.92,
+      "A": 0
+    },
+    {
+      "r": 0.69,
+      "S": 0.5,
+      "k": 0.06,
+      "c": 0.85,
+      "A": 1.605828
+    },
+    {
+      "r": 0.88,
+      "S": 1,
+      "k": 0.02,
+      "c": 0.78,
+      "A": 4.837325
+    },
+    {
+      "r": 1,
+      "S": 1,
+      "k": 0.02,
+      "c": 0.78,
+      "A": 5
+    }
+  ],
+  "section8": {
+    "3_drift": true,
+    "4_smear": true,
+    "5_reset": false,
+    "5_reset_sleep": false,
+    "5_reset_stay": false,
+    "6_rate": true,
+    "8_hash": true,
+    "1_2_sampling": "S2c locked; S3 does not resample",
+    "7_9_live": "S4/S5; live ticker not wired"
+  },
+  "dual_run": {
+    "a": "5377356c8d9d371040e067038be132c1a28271e7976d0b93bb907fc40d95a91e",
+    "b": "5377356c8d9d371040e067038be132c1a28271e7976d0b93bb907fc40d95a91e",
+    "match": true
+  },
+  "hz_state_match_after_1s": true,
+  "reset": {
+    "ic_px": 24,
+    "ic_note": "handbook §8#5 does not specify the start offset; S3 locks +Y 24px from T on the r-ring (tangential, so c_tan enters). Official #5 clock = sleep (and stay-in-0.5). Do not retune k/c.",
+    "center_r": 0.1,
+    "edge_r": 0.95,
+    "hz60": {
+      "center": {
+        "seconds_sleep": 1.6833333333333322,
+        "seconds_first_in_0_5": 0.08333333333333333,
+        "seconds_stay_in_0_5": 1.5499999999999994,
+        "seconds_last_out_1_0": 1.2000000000000006,
+        "frames": 108,
+        "steps": 108,
+        "err": 0.17430513710189643,
+        "r": 0.09999999999999995,
+        "k": 0.1,
+        "c": 0.92,
+        "crossings": 10,
+        "max_abs_err": 24,
+        "slept": true
+      },
+      "edge": {
+        "seconds_sleep": 0.9333333333333346,
+        "seconds_first_in_0_5": 0.9333333333333346,
+        "seconds_stay_in_0_5": 0.9333333333333346,
+        "seconds_last_out_1_0": 0.7666666666666674,
+        "frames": 71,
+        "steps": 71,
+        "err": 0.38868470997645693,
+        "r": 0.9499999999999997,
+        "k": 0.020000000000000004,
+        "c": 0.78,
+        "crossings": 0,
+        "max_abs_err": 24,
+        "slept": true
+      }
+    },
+    "hz120": {
+      "center": {
+        "seconds_sleep": 1.6833333333333298,
+        "seconds_first_in_0_5": 0.08333333333333333,
+        "seconds_stay_in_0_5": 1.549999999999997,
+        "seconds_last_out_1_0": 1.2083333333333315,
+        "frames": 216,
+        "steps": 108,
+        "err": 0.17430513710189643,
+        "r": 0.09999999999999995,
+        "k": 0.1,
+        "c": 0.92,
+        "crossings": 10,
+        "max_abs_err": 24,
+        "slept": true
+      },
+      "edge": {
+        "seconds_sleep": 0.9333333333333325,
+        "seconds_first_in_0_5": 0.9333333333333325,
+        "seconds_stay_in_0_5": 0.9333333333333325,
+        "seconds_last_out_1_0": 0.7749999999999997,
+        "frames": 142,
+        "steps": 71,
+        "err": 0.38868470997645693,
+        "r": 0.9499999999999997,
+        "k": 0.020000000000000004,
+        "c": 0.78,
+        "crossings": 0,
+        "max_abs_err": 24,
+        "slept": true
+      }
+    },
+    "sensitivity_60hz": [
+      {
+        "offset_px": 8,
+        "center": {
+          "seconds_sleep": 1.183333333333334,
+          "seconds_first_in_0_5": 0.08333333333333333,
+          "seconds_stay_in_0_5": 1.0500000000000012,
+          "seconds_last_out_1_0": 0.7166666666666672,
+          "frames": 78,
+          "steps": 78,
+          "err": 0.21002772865381303,
+          "r": 0.09999999999999995,
+          "k": 0.1,
+          "c": 0.92,
+          "crossings": 7,
+          "max_abs_err": 8,
+          "slept": true
+        },
+        "edge": {
+          "seconds_sleep": 0.7000000000000005,
+          "seconds_first_in_0_5": 0.7000000000000005,
+          "seconds_stay_in_0_5": 0.7000000000000005,
+          "seconds_last_out_1_0": 0.5333333333333333,
+          "frames": 56,
+          "steps": 56,
+          "err": 0.38306173892028167,
+          "r": 0.9499999999999997,
+          "k": 0.020000000000000004,
+          "c": 0.78,
+          "crossings": 0,
+          "max_abs_err": 8,
+          "slept": true
+        }
+      },
+      {
+        "offset_px": 16,
+        "center": {
+          "seconds_sleep": 1.5166666666666662,
+          "seconds_first_in_0_5": 0.08333333333333333,
+          "seconds_stay_in_0_5": 1.3833333333333333,
+          "seconds_last_out_1_0": 1.0333333333333345,
+          "frames": 98,
+          "steps": 98,
+          "err": 0.1790223482142892,
+          "r": 0.09999999999999995,
+          "k": 0.1,
+          "c": 0.92,
+          "crossings": 9,
+          "max_abs_err": 16,
+          "slept": true
+        },
+        "edge": {
+          "seconds_sleep": 0.850000000000001,
+          "seconds_first_in_0_5": 0.850000000000001,
+          "seconds_stay_in_0_5": 0.850000000000001,
+          "seconds_last_out_1_0": 0.6833333333333338,
+          "frames": 66,
+          "steps": 66,
+          "err": 0.37968264563695464,
+          "r": 0.9499999999999997,
+          "k": 0.020000000000000004,
+          "c": 0.78,
+          "crossings": 0,
+          "max_abs_err": 16,
+          "slept": true
+        }
+      },
+      {
+        "offset_px": 24,
+        "center": {
+          "seconds_sleep": 1.6833333333333322,
+          "seconds_first_in_0_5": 0.08333333333333333,
+          "seconds_stay_in_0_5": 1.5499999999999994,
+          "seconds_last_out_1_0": 1.2000000000000006,
+          "frames": 108,
+          "steps": 108,
+          "err": 0.17430513710189643,
+          "r": 0.09999999999999995,
+          "k": 0.1,
+          "c": 0.92,
+          "crossings": 10,
+          "max_abs_err": 24,
+          "slept": true
+        },
+        "edge": {
+          "seconds_sleep": 0.9333333333333346,
+          "seconds_first_in_0_5": 0.9333333333333346,
+          "seconds_stay_in_0_5": 0.9333333333333346,
+          "seconds_last_out_1_0": 0.7666666666666674,
+          "frames": 71,
+          "steps": 71,
+          "err": 0.38868470997645693,
+          "r": 0.9499999999999997,
+          "k": 0.020000000000000004,
+          "c": 0.78,
+          "crossings": 0,
+          "max_abs_err": 24,
+          "slept": true
+        }
+      },
+      {
+        "offset_px": 40,
+        "center": {
+          "seconds_sleep": 1.8499999999999983,
+          "seconds_first_in_0_5": 0.08333333333333333,
+          "seconds_stay_in_0_5": 1.733333333333332,
+          "seconds_last_out_1_0": 1.3833333333333333,
+          "frames": 119,
+          "steps": 119,
+          "err": 0.17054259578810615,
+          "r": 0.09999999999999995,
+          "k": 0.1,
+          "c": 0.92,
+          "crossings": 11,
+          "max_abs_err": 40,
+          "slept": true
+        },
+        "edge": {
+          "seconds_sleep": 1.0500000000000012,
+          "seconds_first_in_0_5": 1.0500000000000012,
+          "seconds_stay_in_0_5": 1.0500000000000012,
+          "seconds_last_out_1_0": 0.8833333333333344,
+          "frames": 78,
+          "steps": 78,
+          "err": 0.3792925787277753,
+          "r": 0.9499999999999997,
+          "k": 0.020000000000000004,
+          "c": 0.78,
+          "crossings": 0,
+          "max_abs_err": 40,
+          "slept": true
+        }
+      }
+    ],
+    "rate_rel": {
+      "center": 0,
+      "edge": 0
+    },
+    "pass_8_5_sleep": false,
+    "pass_8_5_stay": false,
+    "pass_8_5": false,
+    "center_rings": true,
+    "pass_8_6": true
+  },
+  "dwell": {
+    "n": 50601,
+    "u16": "painting/radial-s2b-dallas-50k.u16",
+    "u16_sha256": "f6df3397eb97fef511377cdf903a89544860086a78d07c1eb0191f6ff4f3add6",
+    "seconds": 2,
+    "center": {
+      "n": 8872,
+      "mean": 0,
+      "std": 0,
+      "max": 0
+    },
+    "edge": {
+      "n": 6861,
+      "mean": 2.516993567910323,
+      "std": 1.1172840566107396,
+      "max": 5.8182807457176535
+    },
+    "edge_over_center": null,
+    "edge_over_center_infinite": true,
+    "pass_8_3": true,
+    "smear": {
+      "n": 816459,
+      "p50": 0.002018284897868946,
+      "p99": 0.037348403396840556,
+      "max": 0.043424084749057824
+    },
+    "pass_8_4": true
+  },
+  "switch_matrix": {
+    "rows": [
+      {
+        "key": "field",
+        "phase": "INTRO",
+        "defaultOn": true,
+        "flippedTo": false,
+        "physicsChanged": true,
+        "renderChanged": true
+      },
+      {
+        "key": "anisotropy",
+        "phase": "INTRO",
+        "defaultOn": true,
+        "flippedTo": false,
+        "physicsChanged": true,
+        "renderChanged": true
+      },
+      {
+        "key": "sleep",
+        "phase": "INTRO",
+        "defaultOn": true,
+        "flippedTo": false,
+        "physicsChanged": true,
+        "renderChanged": true
+      },
+      {
+        "key": "drift",
+        "phase": "DWELL",
+        "defaultOn": true,
+        "flippedTo": false,
+        "physicsChanged": false,
+        "renderChanged": true
+      },
+      {
+        "key": "noiseLut",
+        "phase": "DWELL",
+        "defaultOn": true,
+        "flippedTo": false,
+        "physicsChanged": false,
+        "renderChanged": true
+      },
+      {
+        "key": "gating",
+        "phase": "INTRO-rest",
+        "defaultOn": true,
+        "flippedTo": false,
+        "physicsChanged": false,
+        "renderChanged": true
+      },
+      {
+        "key": "interpolate",
+        "phase": "INTRO",
+        "defaultOn": true,
+        "flippedTo": false,
+        "physicsChanged": false,
+        "renderChanged": true
+      },
+      {
+        "key": "reducedMotion",
+        "phase": "INTRO",
+        "defaultOn": false,
+        "flippedTo": true,
+        "physicsChanged": true,
+        "renderChanged": true,
+        "frozen": true
+      }
+    ],
+    "expect": {
+      "field_physics": true,
+      "anisotropy_physics": true,
+      "sleep_physics": true,
+      "drift_render": true,
+      "noiseLut_render": true,
+      "gating_render": true,
+      "interpolate_render_only": true,
+      "reduced_frozen": true
+    },
+    "got": {
+      "field_physics": true,
+      "anisotropy_physics": true,
+      "sleep_physics": true,
+      "drift_render": true,
+      "noiseLut_render": true,
+      "gating_render": true,
+      "interpolate_render_only": true,
+      "reduced_frozen": true
+    },
+    "interpolateIsRenderOnly": true,
+    "pass": true
+  },
+  "clamp": {
+    "fed_s": 0.2,
+    "clamp_s": 0.05,
+    "steps": 3,
+    "expected_steps": 3,
+    "live_would_clamp_at": 0.25,
+    "live_max_steps": 2
+  },
+  "c2_golden": {
+    "sha256": "dc1f16092d775ee1462c94eb964bb95523470bd7fd7770b1efab02c6940f320a",
+    "match": true,
+    "source": "nf-spring.runGolden; file golden-1000.f64 not required this gate"
+  },
+  "live_sha256": {
+    "prototype/pixi-cloud/dallas-100k.bin": "6406d7012e7f637ad2e31661a85f619ebd14b85bb48a6341a1ec9c3a2dbcea82",
+    "prototype/pixi-hall/scotland-100k.bin": "bbeab899140521bad56e82766f92a3d63305b8bc8f802de22db804fad3bfcf5f",
+    "prototype/pixi-community/met-100k.bin": "3144fdb9144d95cb0afe30f28629ec1e065bfa5022400a80e1c8e93129779a45",
+    "painting/points.json": "d35cae4c65a1c17ebbb609176b908750ff7aef5479aa7c563e7a1faf4e68d134",
+    "prototype/assets/points.json": "d35cae4c65a1c17ebbb609176b908750ff7aef5479aa7c563e7a1faf4e68d134"
+  },
+  "nf_spring_js_sha256": "0c3cc1f0f8c4dfd1955f63905e69e3b9d83c30e28ab81aee61377564ec1cdb5e",
+  "live_index_spring_sharp_present": true,
+  "booked": {
+    "live_vs_handbook_spring": "live applySpring stays 0.055/0.90/vmax10; this module is isolation-only",
+    "count": "handbook 50k isolation vs live 100k; no live overwrite",
+    "gaffer_clamp": "Gaffer article clamps frameTime at 0.25s; handbook §4 says 50ms — S3 follows handbook",
+    "vmax": "handbook §4 has no vmax; isolation module does not invent one",
+    "reset_ic": "§8#5 start offset unspecified; locked at +Y 24px for this gate",
+    "section8_5_center_ring": "§4 center k=0.10 / c=0.92 is underdamped: 24px first |e|<0.5 at ~0.08s but rings (stay-in-0.5 ~1.55s, sleep ~1.68s). Edge overdamped, sleep=stay. Did not retune k/c."
+  }
+}

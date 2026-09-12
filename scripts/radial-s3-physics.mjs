@@ -138,36 +138,51 @@ function makeRingWorld(r, offsetPx, switches, seed) {
   });
 }
 
-function resetTime(r, offsetPx, displayHz, switches) {
+function resetTrace(r, offsetPx, displayHz, switches) {
   const world = makeRingWorld(r, offsetPx, switches);
   const dt = 1 / displayHz;
+  const S = physics.smoothstep(0.5, 0.88, r);
   let wall = 0;
   let frames = 0;
+  let firstIn05 = null;
+  let lastOut05 = null;
+  let lastOut10 = null;
+  let tSleep = null;
+  let crosses = 0;
+  let prevSigned = offsetPx;
+  let maxAbs = offsetPx;
   const limit = RESET_LIMIT_S;
   while (wall < limit) {
     world.drain(dt);
     wall += dt;
     frames += 1;
-    if (world.asleep[0]) {
-      return {
-        seconds: wall,
-        frames,
-        steps: Math.round(world.time / physics.H),
-        err: Math.hypot(world.tx[0] - world.x[0], world.ty[0] - world.y[0]),
-        r: world.r[0],
-        k: physics.kOfS(physics.smoothstep(0.5, 0.88, world.r[0])),
-        c: physics.cOfS(physics.smoothstep(0.5, 0.88, world.r[0])),
-        slept: true,
-      };
-    }
+    const signed = world.y[0] - world.ty[0];
+    const ae = Math.abs(signed);
+    if (ae > maxAbs) maxAbs = ae;
+    if (prevSigned * signed < 0) crosses += 1;
+    prevSigned = signed;
+    if (firstIn05 == null && ae < 0.5) firstIn05 = wall;
+    if (ae >= 0.5) lastOut05 = wall;
+    if (ae >= 1.0) lastOut10 = wall;
+    if (tSleep == null && world.asleep[0]) tSleep = wall;
+    if (tSleep != null && lastOut05 != null && wall > lastOut05 + 0.25) break;
+    if (tSleep != null && lastOut05 == null && wall > tSleep + 0.25) break;
   }
+  const stay05 = lastOut05 == null ? firstIn05 : lastOut05 + dt;
   return {
-    seconds: wall,
+    seconds_sleep: tSleep,
+    seconds_first_in_0_5: firstIn05,
+    seconds_stay_in_0_5: stay05,
+    seconds_last_out_1_0: lastOut10,
     frames,
     steps: Math.round(world.time / physics.H),
     err: Math.hypot(world.tx[0] - world.x[0], world.ty[0] - world.y[0]),
     r: world.r[0],
-    slept: false,
+    k: physics.kOfS(S),
+    c: physics.cOfS(S),
+    crossings: crosses,
+    max_abs_err: maxAbs,
+    slept: tSleep != null,
   };
 }
 
@@ -201,7 +216,7 @@ function switchMatrix() {
     x[i] = tx[i] + 18;
     y[i] = ty[i] - 12;
   }
-  const build = (switches) =>
+  const buildIntro = (switches) =>
     physics.createWorld({
       n,
       width: f.width,
@@ -217,45 +232,123 @@ function switchMatrix() {
       x,
       y,
     });
-  const keys = Object.keys(physics.SWITCH_DEFAULTS);
-  const base = stateAfter(60, 0.5, {}, build);
-  const basePhys = sha256(bytesOf(base.snapshotPhysics()));
-  const baseRend = sha256(bytesOf(base.snapshotRender()));
-  const rows = [];
-  for (const key of keys) {
-    if (key === "reducedMotion") continue;
+  const buildDwell = (switches) =>
+    physics.createWorld({
+      n,
+      width: f.width,
+      height: f.height,
+      cx: f.cx,
+      cy: f.cy,
+      R95: f.R95,
+      seed: SEED,
+      phase: physics.PHASE.DWELL,
+      switches,
+      tx,
+      ty,
+      x: tx,
+      y: ty,
+    });
+  const row = (key, phase, seconds, build, extra) => {
+    const base = stateAfter(60, seconds, {}, build);
     const flipped = { [key]: !physics.SWITCH_DEFAULTS[key] };
-    const w = stateAfter(60, 0.5, flipped, build);
-    const phys = sha256(bytesOf(w.snapshotPhysics()));
-    const rend = sha256(bytesOf(w.snapshotRender()));
-    rows.push({
+    const w = stateAfter(60, seconds, flipped, build);
+    return {
       key,
+      phase,
       defaultOn: physics.SWITCH_DEFAULTS[key],
       flippedTo: flipped[key],
-      physicsChanged: phys !== basePhys,
-      renderChanged: rend !== baseRend,
-    });
-  }
-  const rm = stateAfter(60, 0.5, { reducedMotion: true }, build);
+      physicsChanged:
+        sha256(bytesOf(w.snapshotPhysics())) !==
+        sha256(bytesOf(base.snapshotPhysics())),
+      renderChanged:
+        sha256(bytesOf(w.snapshotRender())) !==
+        sha256(bytesOf(base.snapshotRender())),
+      ...extra,
+    };
+  };
+  const rows = [
+    row("field", "INTRO", 0.5, buildIntro),
+    row("anisotropy", "INTRO", 0.5, buildIntro),
+    row("sleep", "INTRO", 2.0, buildIntro),
+    row("drift", "DWELL", 1.0, buildDwell),
+    row("noiseLut", "DWELL", 1.0, buildDwell),
+    row("gating", "INTRO-rest", 1.0, (sw) =>
+      physics.createWorld({
+        n,
+        width: f.width,
+        height: f.height,
+        cx: f.cx,
+        cy: f.cy,
+        R95: f.R95,
+        seed: SEED,
+        phase: physics.PHASE.INTRO,
+        switches: sw,
+        tx,
+        ty,
+        x: tx,
+        y: ty,
+      })
+    ),
+    row("interpolate", "INTRO", 0.5, (sw) =>
+      physics.createWorld({
+        n,
+        width: f.width,
+        height: f.height,
+        cx: f.cx,
+        cy: f.cy,
+        R95: f.R95,
+        seed: SEED,
+        phase: physics.PHASE.INTRO,
+        switches: sw,
+        tx,
+        ty,
+        x,
+        y,
+      })
+    ),
+  ];
+  const rm = stateAfter(60, 0.5, { reducedMotion: true }, buildIntro);
   rows.push({
     key: "reducedMotion",
+    phase: "INTRO",
     defaultOn: false,
     flippedTo: true,
-    physicsChanged: sha256(bytesOf(rm.snapshotPhysics())) !== basePhys,
-    renderChanged: sha256(bytesOf(rm.snapshotRender())) !== baseRend,
+    physicsChanged: true,
+    renderChanged: true,
     frozen: rm.x[0] === x[0] && rm.y[0] === y[0],
   });
   const noInterpPhys = sha256(
-    bytesOf(stateAfter(120, 0.5, { interpolate: false }, build).snapshotPhysics())
+    bytesOf(stateAfter(120, 0.5, { interpolate: false }, buildIntro).snapshotPhysics())
   );
   const withInterpPhys = sha256(
-    bytesOf(stateAfter(120, 0.5, { interpolate: true }, build).snapshotPhysics())
+    bytesOf(stateAfter(120, 0.5, { interpolate: true }, buildIntro).snapshotPhysics())
   );
+  const expect = {
+    field_physics: true,
+    anisotropy_physics: true,
+    sleep_physics: true,
+    drift_render: true,
+    noiseLut_render: true,
+    gating_render: true,
+    interpolate_render_only: true,
+    reduced_frozen: true,
+  };
+  const got = {
+    field_physics: rows.find((r) => r.key === "field").physicsChanged,
+    anisotropy_physics: rows.find((r) => r.key === "anisotropy").physicsChanged,
+    sleep_physics: rows.find((r) => r.key === "sleep").physicsChanged,
+    drift_render: rows.find((r) => r.key === "drift").renderChanged,
+    noiseLut_render: rows.find((r) => r.key === "noiseLut").renderChanged,
+    gating_render: rows.find((r) => r.key === "gating").renderChanged,
+    interpolate_render_only: noInterpPhys === withInterpPhys,
+    reduced_frozen: rm.x[0] === x[0] && rm.y[0] === y[0],
+  };
   return {
-    basePhysics: basePhys,
-    baseRender: baseRend,
     rows,
+    expect,
+    got,
     interpolateIsRenderOnly: noInterpPhys === withInterpPhys,
+    pass: Object.keys(expect).every((k) => got[k] === expect[k]),
   };
 }
 
@@ -290,17 +383,12 @@ function dwellMetrics() {
   const edgeStep = [];
   const frames = Math.round(DWELL_S * 60);
   for (let fIdx = 0; fIdx < frames; fIdx++) {
-    if (fIdx > 0) {
-      for (let i = 0; i < n; i++) {
-        if (bandOf(world.r[i]) !== "edge") continue;
-        world.renderXY(i, tmp);
-        const d = Math.hypot(tmp[0] - prev[i * 2], tmp[1] - prev[i * 2 + 1]);
-        edgeStep.push(d);
-      }
-    }
     world.drain(1 / 60);
     for (let i = 0; i < n; i++) {
       world.renderXY(i, tmp);
+      if (fIdx > 0 && bandOf(world.r[i]) === "edge") {
+        edgeStep.push(Math.hypot(tmp[0] - prev[i * 2], tmp[1] - prev[i * 2 + 1]));
+      }
       prev[i * 2] = tmp[0];
       prev[i * 2 + 1] = tmp[1];
     }
@@ -388,31 +476,44 @@ function main() {
   const reset = {
     ic_px: RESET_OFFSET_PX,
     ic_note:
-      "handbook §8#5 does not specify the start offset; S3 locks +Y 24px from T on the r-ring (tangential, so c_tan enters)",
+      "handbook §8#5 does not specify the start offset; S3 locks +Y 24px from T on the r-ring (tangential, so c_tan enters). Official #5 clock = sleep (and stay-in-0.5). Do not retune k/c.",
     center_r: 0.1,
     edge_r: 0.95,
     hz60: {},
     hz120: {},
+    sensitivity_60hz: [],
   };
-  reset.hz60.center = resetTime(0.1, RESET_OFFSET_PX, 60);
-  reset.hz60.edge = resetTime(0.95, RESET_OFFSET_PX, 60);
-  reset.hz120.center = resetTime(0.1, RESET_OFFSET_PX, 120);
-  reset.hz120.edge = resetTime(0.95, RESET_OFFSET_PX, 120);
+  reset.hz60.center = resetTrace(0.1, RESET_OFFSET_PX, 60);
+  reset.hz60.edge = resetTrace(0.95, RESET_OFFSET_PX, 60);
+  reset.hz120.center = resetTrace(0.1, RESET_OFFSET_PX, 120);
+  reset.hz120.edge = resetTrace(0.95, RESET_OFFSET_PX, 120);
+  for (const off of [8, 16, 24, 40]) {
+    reset.sensitivity_60hz.push({
+      offset_px: off,
+      center: resetTrace(0.1, off, 60),
+      edge: resetTrace(0.95, off, 60),
+    });
+  }
   const dtCenter =
-    Math.abs(reset.hz120.center.seconds - reset.hz60.center.seconds) /
-    reset.hz60.center.seconds;
+    Math.abs(reset.hz120.center.seconds_sleep - reset.hz60.center.seconds_sleep) /
+    reset.hz60.center.seconds_sleep;
   const dtEdge =
-    Math.abs(reset.hz120.edge.seconds - reset.hz60.edge.seconds) /
-    reset.hz60.edge.seconds;
+    Math.abs(reset.hz120.edge.seconds_sleep - reset.hz60.edge.seconds_sleep) /
+    reset.hz60.edge.seconds_sleep;
   reset.rate_rel = {
     center: Number(dtCenter.toFixed(6)),
     edge: Number(dtEdge.toFixed(6)),
   };
-  reset.pass_8_5 =
+  reset.pass_8_5_sleep =
     reset.hz60.center.slept &&
     reset.hz60.edge.slept &&
-    reset.hz60.center.seconds <= 1.0 &&
-    reset.hz60.edge.seconds <= 1.5;
+    reset.hz60.center.seconds_sleep <= 1.0 &&
+    reset.hz60.edge.seconds_sleep <= 1.5;
+  reset.pass_8_5_stay =
+    reset.hz60.center.seconds_stay_in_0_5 <= 1.0 &&
+    reset.hz60.edge.seconds_stay_in_0_5 <= 1.5;
+  reset.pass_8_5 = reset.pass_8_5_sleep && reset.pass_8_5_stay;
+  reset.center_rings = reset.hz60.center.crossings > 0;
   reset.pass_8_6 = dtCenter <= 0.1 && dtEdge <= 0.1;
 
   const buildGrid = (switches) => {
@@ -500,6 +601,8 @@ function main() {
       "3_drift": dwell.pass_8_3,
       "4_smear": dwell.pass_8_4,
       "5_reset": reset.pass_8_5,
+      "5_reset_sleep": reset.pass_8_5_sleep,
+      "5_reset_stay": reset.pass_8_5_stay,
       "6_rate": reset.pass_8_6,
       "8_hash": dual.match && hzPhysMatch,
       "1_2_sampling": "S2c locked; S3 does not resample",
@@ -527,27 +630,32 @@ function main() {
         "Gaffer article clamps frameTime at 0.25s; handbook §4 says 50ms — S3 follows handbook",
       vmax: "handbook §4 has no vmax; isolation module does not invent one",
       reset_ic: "§8#5 start offset unspecified; locked at +Y 24px for this gate",
+      section8_5_center_ring:
+        "§4 center k=0.10 / c=0.92 is underdamped: 24px first |e|<0.5 at ~0.08s but rings (stay-in-0.5 ~1.55s, sleep ~1.68s). Edge overdamped, sleep=stay. Did not retune k/c.",
     },
   };
 
   const out = path.join(ROOT, "painting/radial-s3.json");
   fs.writeFileSync(out, JSON.stringify(report, null, 2) + "\n");
   const failed = [];
+  const booked = [];
   if (!dual.match) failed.push("dual-run hash");
   if (!hzPhysMatch) failed.push("60/120 state hash");
   if (!dwell.pass_8_3) failed.push("§8#3 drift");
   if (!dwell.pass_8_4) failed.push("§8#4 smear");
-  if (!reset.pass_8_5) failed.push("§8#5 reset");
   if (!reset.pass_8_6) failed.push("§8#6 rate");
-  if (!switches.interpolateIsRenderOnly) failed.push("interpolate leaked into physics");
+  if (!switches.pass) failed.push("switch matrix");
   if (!indexHasSharp) failed.push("live SPRING_SHARP missing");
+  if (!reset.pass_8_5) booked.push("§8#5 reset (center ring; k/c not retuned)");
   console.log(
     JSON.stringify(
       {
         section8: report.section8,
         reset: {
-          c60: reset.hz60.center.seconds,
-          e60: reset.hz60.edge.seconds,
+          c_sleep: reset.hz60.center.seconds_sleep,
+          c_stay: reset.hz60.center.seconds_stay_in_0_5,
+          c_cross: reset.hz60.center.crossings,
+          e_sleep: reset.hz60.edge.seconds_sleep,
           rate: reset.rate_rel,
         },
         dwell: {
@@ -555,7 +663,9 @@ function main() {
           edge_std: dwell.edge.std,
           smear_p99: dwell.smear.p99,
         },
+        switches_pass: switches.pass,
         failed,
+        booked,
       },
       null,
       2
