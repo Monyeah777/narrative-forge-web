@@ -53,8 +53,8 @@ onmessage = function (e) {
     p = pid[i];
     spr = sprites[p];
     if (!spr) continue;
-    dx = (x[i] * dpr - half) | 0;
-    dy = (y[i] * dpr - half) | 0;
+    dx = Math.round(x[i] * dpr - half);
+    dy = Math.round(y[i] * dpr - half);
     if (dx < -cell || dy < -cell || dx > W || dy > H) continue;
     ctx.drawImage(spr, dx, dy);
   }

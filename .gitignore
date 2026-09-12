@@ -76,4 +76,5 @@ painting/*
 !painting/s5-trial.json
 !painting/seed-cloud.json
 !painting/handover-invariants.json
+!painting/pixel-block-dust.json
 

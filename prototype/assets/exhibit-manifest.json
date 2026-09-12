@@ -15,7 +15,8 @@
   "control": { "pause": "text" },
   "transition": { "group": "develop", "arc": "on", "handover": "on" },
   "seedMode": "cloud",
-  "pixelBlock": { "enabled": false, "size": 2 },
+  "pixelBlock": { "enabled": true, "size": 2 },
+  "dust": { "enabled": true, "n": 640 },
   "frameScale": 1.0,
   "colorVersion": "v1"
 }
