@@ -1,0 +1,77 @@
+{
+  "task": "H1-④ 100k cloud",
+  "handbook": "docs/NF_PixiJS迁移总手册_整合版_v1_2026-09-11.md",
+  "timestamp": "2026-09-12T08:30:27.349Z",
+  "bin": {
+    "command": {
+      "sha256sum": "1499db850a9da7856763f974ec79ff1d14be42503a66ab7fb8193954711f1880  /workspace/prototype/pixi-cloud/dallas-100k.bin",
+      "wc": "500000 /workspace/prototype/pixi-cloud/dallas-100k.bin",
+      "gzip9": "498860"
+    },
+    "sha": "1499db850a9da7856763f974ec79ff1d14be42503a66ab7fb8193954711f1880",
+    "bytes": 500000,
+    "gzip9": 498860,
+    "count": 100000,
+    "pass": true
+  },
+  "grep": {
+    "hits": {
+      "at_pixi": false,
+      "sprite": false,
+      "addChild_particle": false,
+      "beginFill": false,
+      "app_view": false,
+      "ctor_options": false,
+      "second_raf": false
+    },
+    "required": {
+      "addParticle": true,
+      "particle": true,
+      "boundsArea": true,
+      "update": true,
+      "soft128": true
+    },
+    "pass": true
+  },
+  "cloud": {
+    "ok": true,
+    "version": "8.20.1",
+    "rendererName": "webgl",
+    "count": 100000,
+    "stageChildren": 1,
+    "usedAddParticle": true,
+    "usedSprite": false,
+    "softDot": 128,
+    "view": {
+      "w": 640,
+      "h": 821
+    },
+    "sha256": "1499db850a9da7856763f974ec79ff1d14be42503a66ab7fb8193954711f1880",
+    "ticks": 29,
+    "fps": 14.992503748125875,
+    "tickerStarted": true,
+    "errors": []
+  },
+  "pageErrors": [],
+  "screenshots": {
+    "pixi_100k": "/opt/cursor/artifacts/pixi_h1_4_cloud_100k_3.png",
+    "live_12k": "/opt/cursor/artifacts/pixi_h1_4_live_12k_ref_3.png"
+  },
+  "live_n": 12000,
+  "live_mode": "formed",
+  "live_exhibit_untouched": true,
+  "acceptance": {
+    "frozen_sha": true,
+    "bytes_500k": true,
+    "grep_clean": true,
+    "cloud_ok": true,
+    "count_100k": true,
+    "webgl": true,
+    "version": true,
+    "no_pageerror": true,
+    "live_still_12k": true,
+    "live_formed": true,
+    "exhibit_untouched": true,
+    "pass": true
+  }
+}

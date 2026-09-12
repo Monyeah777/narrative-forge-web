@@ -188,10 +188,11 @@ async function main() {
       const snap = await live.evaluate(() => ({
         n: (window.__nfRender && window.__nfRender.n) || 0,
         mode: (window.__nfRender && window.__nfRender.mode) || "",
+        workerHasFrame: !!(window.__nfRender && window.__nfRender.workerHasFrame),
       }));
       liveN = snap.n;
       liveMode = snap.mode;
-      if (snap.mode === "formed" && snap.n === 12000) break;
+      if (snap.mode === "formed" && snap.n === 12000 && snap.workerHasFrame) break;
       await new Promise((r) => setTimeout(r, 100));
     }
     await new Promise((r) => setTimeout(r, 250));
@@ -222,6 +223,7 @@ async function main() {
         version: !!(cloud && cloud.version === "8.20.1"),
         no_pageerror: pageErrors.length === 0,
         live_still_12k: liveN === 12000,
+        live_formed: liveMode === "formed",
         exhibit_untouched: true,
       },
     };
