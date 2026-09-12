@@ -1,0 +1,45 @@
+{
+  "task": "§9.4 pixel-block-dust",
+  "viewport": { "w": 1440, "h": 900 },
+  "audit_soft": {
+    "query": "?autoplay=0&block=0&dust=0",
+    "cell": 16,
+    "block": false,
+    "dustN": 0
+  },
+  "block2": {
+    "query": "?autoplay=0",
+    "cell": 2,
+    "size": 2,
+    "block": true,
+    "smoothing": false,
+    "shadowBlur": 0,
+    "hardFrac": 0.733,
+    "dustN": 640
+  },
+  "block3": {
+    "query": "?autoplay=0&pixel=3",
+    "cell": 3,
+    "size": 3,
+    "block": true,
+    "hardFrac": 0.516
+  },
+  "spring": { "SPRING": 0.055, "DAMP": 0.9, "VMAX": 10 },
+  "acceptance": {
+    "default_block2": true,
+    "rollback_soft": true,
+    "size3": true,
+    "dust_on": true,
+    "spring_locked": true,
+    "home_chaos": true,
+    "pass": true
+  },
+  "screenshots": {
+    "soft": "/opt/cursor/artifacts/px_01_soft_rollback.png",
+    "block2_cloud": "/opt/cursor/artifacts/px_02_block2_cloud.png",
+    "block2_formed": "/opt/cursor/artifacts/px_03_block2_formed.png",
+    "block3_formed": "/opt/cursor/artifacts/px_04_block3_formed.png",
+    "dust": "/opt/cursor/artifacts/px_05_dust_around_formed.png",
+    "home": "/opt/cursor/artifacts/px_06_home_still_chaos.png"
+  }
+}
