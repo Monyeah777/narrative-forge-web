@@ -742,6 +742,51 @@
       text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
     }
 
+    .exhibit-bar {
+      position: relative;
+      z-index: 6;
+      margin: 0 0 1.4em;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      line-height: 1.55;
+      text-transform: none;
+      color: #6a7180;
+      pointer-events: auto;
+      text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.8);
+    }
+
+    .exhibit-bar.is-off {
+      display: none;
+    }
+
+    .exhibit-pause {
+      appearance: none;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      background: none;
+      color: inherit;
+      font: inherit;
+      letter-spacing: inherit;
+      text-transform: none;
+      cursor: pointer;
+      text-decoration: none;
+      text-shadow: inherit;
+    }
+
+    .exhibit-pause:hover {
+      color: #c8cdd6;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    .exhibit-caption {
+      display: block;
+      margin-top: 0.35em;
+      max-width: 36em;
+      color: #8a909a;
+    }
+
     .colophon {
       position: relative;
       z-index: 5;
@@ -852,6 +897,10 @@
     <div class="grain" aria-hidden="true"></div>
     <p class="hud" aria-hidden="true">NF · VOID / 050505</p>
     <aside class="paper">
+      <p class="exhibit-bar" id="exhibit-bar">
+        <button type="button" class="exhibit-pause" id="btn-exhibit-pause">放映暂停</button>
+        <span class="exhibit-caption" id="exhibit-caption" aria-live="off"></span>
+      </p>
       <header class="mast">
         <h1 class="plate-title">
           <span class="line"><span class="cap cap-n">N</span>ARRATIVE</span>
@@ -948,6 +997,7 @@
       var STOP_V = 0.06;
       var ASSEMBLE_S = 1.5;
       var ASSEMBLE_MIN_S = 1.2;
+      var assembleBudgetS = ASSEMBLE_S;
       var DISPERSE_S = 1.1;
       var ASSEMBLE_MS = ASSEMBLE_S * 1000;
       var DISPERSE_MS = DISPERSE_S * 1000;
@@ -1434,6 +1484,12 @@
         animInfo.reduced = reduced;
         animInfo.checksum = N > 0 ? x[0] + y[0] + x[N >> 1] + y[N >> 1] : 0;
         animInfo.target = window.__nfTarget || null;
+        animInfo.exhibit = {
+          phase: exhibit.phase,
+          key: exhibitCatalogKey(),
+          index: exhibit.catalogIndex,
+          enabled: exhibitEnabled()
+        };
         window.__nfAnim = animInfo;
       }
 
@@ -1889,6 +1945,267 @@
       lastImageTarget = TARGETS.INTRO;
       window.TARGETS = TARGETS;
 
+      var EXHIBIT_WORKS = {
+        INTRO: { title: "Les peupliers (Poplars, Pink Effect)", artist: "Claude Monet", year: 1891, museum: "Dallas Museum of Art" },
+        HALL: { title: "Poplars on the Epte", artist: "Claude Monet", year: 1891, museum: "National Galleries of Scotland" },
+        COMMUNITY: { title: "The Four Trees", artist: "Claude Monet", year: 1891, museum: "The Metropolitan Museum of Art" }
+      };
+      var exhibitManifest = {
+        id: "exhibit-v1",
+        autoplay: { enabled: true },
+        motion: { discipline: "v2" },
+        dwellMs: 10000,
+        transitionMs: 3000,
+        introRevealMs: 2400,
+        idleResumeMs: 30000,
+        hoverResumeMs: 1500,
+        captionSwapMs: 300,
+        seed: 0x4e46,
+        catalog: ["INTRO", "HALL", "COMMUNITY"],
+        interlude: "none",
+        control: { pause: "text" },
+        transition: { group: "develop", arc: "on" },
+        seedMode: "uniform"
+      };
+      try {
+        var _qs = new URLSearchParams(window.location.search);
+        if (_qs.get("autoplay") === "0") exhibitManifest.autoplay.enabled = false;
+        if (_qs.get("dwell")) exhibitManifest.dwellMs = Math.max(1000, parseInt(_qs.get("dwell"), 10) || 10000);
+      } catch (errQs) {}
+      var exhibit = {
+        phase: "off",
+        catalogIndex: 0,
+        dwellT0: 0,
+        lastInputAt: 0,
+        hoverLeftAt: 0,
+        clockOffset: 0,
+        hiddenAt: 0,
+        pageVisible: true,
+        stageVisible: true,
+        dwellTimer: 0,
+        hoverTimer: 0,
+        idleTimer: 0,
+        captionTimer: 0
+      };
+      var btnExhibitPause = document.getElementById("btn-exhibit-pause");
+      var exhibitCaption = document.getElementById("exhibit-caption");
+      var exhibitBar = document.getElementById("exhibit-bar");
+      window.__nfManifest = exhibitManifest;
+      window.__nfExhibit = exhibit;
+
+      function exhibitNow() {
+        return performance.now() - exhibit.clockOffset;
+      }
+
+      function exhibitEnabled() {
+        return !!(exhibitManifest.autoplay && exhibitManifest.autoplay.enabled);
+      }
+
+      function exhibitPlaying() {
+        return exhibit.phase === "intro" || exhibit.phase === "dwell" || exhibit.phase === "handover";
+      }
+
+      function exhibitVisible() {
+        return exhibit.pageVisible && exhibit.stageVisible;
+      }
+
+      function exhibitCaptionText(key) {
+        var w = EXHIBIT_WORKS[key];
+        if (!w) return "";
+        return w.artist + " · " + w.title + " · " + w.year + " · " + w.museum;
+      }
+
+      function exhibitSetLive(on) {
+        if (exhibitCaption) exhibitCaption.setAttribute("aria-live", on ? "polite" : "off");
+      }
+
+      function exhibitPaintChrome() {
+        var key = exhibitManifest.catalog[exhibit.catalogIndex] || "INTRO";
+        if (exhibitCaption) exhibitCaption.textContent = exhibitCaptionText(key);
+        if (btnExhibitPause) {
+          if (exhibit.phase === "paused-control") btnExhibitPause.textContent = "放映继续";
+          else btnExhibitPause.textContent = "放映暂停";
+        }
+        if (exhibitBar) {
+          if (!exhibitEnabled() || (exhibitManifest.control && exhibitManifest.control.pause === "off")) {
+            exhibitBar.classList.add("is-off");
+          } else {
+            exhibitBar.classList.remove("is-off");
+          }
+        }
+        exhibitSetLive(!exhibitPlaying());
+      }
+
+      function exhibitPublish() {
+        exhibit.now = exhibitNow();
+        exhibit.enabled = exhibitEnabled();
+        exhibit.key = exhibitManifest.catalog[exhibit.catalogIndex] || "";
+        window.__nfExhibit = exhibit;
+        exhibitPaintChrome();
+      }
+
+      function exhibitClearTimers() {
+        if (exhibit.dwellTimer) { window.clearTimeout(exhibit.dwellTimer); exhibit.dwellTimer = 0; }
+        if (exhibit.hoverTimer) { window.clearTimeout(exhibit.hoverTimer); exhibit.hoverTimer = 0; }
+        if (exhibit.idleTimer) { window.clearTimeout(exhibit.idleTimer); exhibit.idleTimer = 0; }
+        if (exhibit.captionTimer) { window.clearTimeout(exhibit.captionTimer); exhibit.captionTimer = 0; }
+      }
+
+      function exhibitCatalogKey() {
+        return exhibitManifest.catalog[exhibit.catalogIndex] || "INTRO";
+      }
+
+      function exhibitViewOf(key) {
+        if (key === "HALL") return "hall";
+        if (key === "COMMUNITY") return "community";
+        return "intro";
+      }
+
+      function exhibitShow(index, phase) {
+        var key = exhibitManifest.catalog[index];
+        var target = TARGETS[key];
+        exhibit.catalogIndex = index;
+        exhibit.phase = phase || "handover";
+        exhibitClearTimers();
+        if (!target) return;
+        openArchive(exhibitViewOf(key), "exhibit");
+        if (exhibit.captionTimer) window.clearTimeout(exhibit.captionTimer);
+        exhibit.captionTimer = window.setTimeout(function () {
+          exhibitPaintChrome();
+        }, exhibitManifest.captionSwapMs || 300);
+        exhibitPublish();
+      }
+
+      function exhibitArmDwell() {
+        var remain;
+        exhibitClearTimers();
+        if (!exhibitEnabled() || reduced || exhibit.phase !== "dwell" || !exhibitVisible()) return;
+        remain = Math.max(0, exhibitManifest.dwellMs - (exhibitNow() - exhibit.dwellT0));
+        exhibit.dwellTimer = window.setTimeout(function () {
+          exhibit.dwellTimer = 0;
+          if (exhibit.phase !== "dwell" || !exhibitVisible()) return;
+          exhibit.catalogIndex = (exhibit.catalogIndex + 1) % exhibitManifest.catalog.length;
+          exhibitShow(exhibit.catalogIndex, "handover");
+        }, remain);
+      }
+
+      function exhibitArmIdle() {
+        exhibitClearTimers();
+        if (!exhibitEnabled() || reduced || exhibit.phase !== "manual") return;
+        exhibit.idleTimer = window.setTimeout(function () {
+          exhibit.idleTimer = 0;
+          if (exhibit.phase !== "manual") return;
+          exhibitResumePlay();
+        }, exhibitManifest.idleResumeMs);
+      }
+
+      function exhibitOnFormed() {
+        if (!exhibitEnabled()) return;
+        if (exhibit.phase === "intro" || exhibit.phase === "handover") {
+          exhibit.phase = "dwell";
+          exhibit.dwellT0 = exhibitNow();
+          exhibitArmDwell();
+          exhibitPublish();
+        }
+      }
+
+      function exhibitStartIntro() {
+        if (!exhibitEnabled()) return;
+        exhibit.phase = "intro";
+        exhibit.catalogIndex = 0;
+        exhibit.clockOffset = 0;
+        exhibitShow(0, "intro");
+      }
+
+      function exhibitResumePlay() {
+        if (!exhibitEnabled() || reduced) return;
+        if (currentView === "home" || (currentTarget && currentTarget.type === "text")) {
+          exhibit.phase = "handover";
+          exhibitShow(exhibit.catalogIndex, "handover");
+          return;
+        }
+        exhibit.phase = "dwell";
+        exhibit.dwellT0 = exhibitNow();
+        exhibitArmDwell();
+        exhibitPublish();
+      }
+
+      function userTakeover() {
+        if (!exhibitEnabled()) return;
+        if (exhibit.phase === "paused-control" || exhibit.phase === "off") return;
+        exhibit.phase = "manual";
+        exhibit.lastInputAt = exhibitNow();
+        exhibitClearTimers();
+        exhibitArmIdle();
+        exhibitPublish();
+      }
+
+      function exhibitPauseHover() {
+        if (!exhibitPlaying()) return;
+        exhibit.phase = "paused-hover";
+        exhibitClearTimers();
+        exhibitPublish();
+      }
+
+      function exhibitLeaveHover() {
+        if (exhibit.phase !== "paused-hover") return;
+        if (exhibit.hoverTimer) return;
+        exhibit.hoverLeftAt = exhibitNow();
+        exhibit.hoverTimer = window.setTimeout(function () {
+          exhibit.hoverTimer = 0;
+          if (exhibit.phase !== "paused-hover") return;
+          exhibitResumePlay();
+        }, exhibitManifest.hoverResumeMs);
+      }
+
+      function exhibitPauseFocus() {
+        if (!exhibitEnabled() || exhibit.phase === "paused-control" || exhibit.phase === "off") return;
+        exhibit.phase = "paused-focus";
+        exhibitClearTimers();
+        exhibitPublish();
+      }
+
+      function exhibitToggleControl() {
+        if (!exhibitEnabled()) return;
+        if (exhibit.phase === "paused-control") {
+          exhibitResumePlay();
+          return;
+        }
+        exhibit.phase = "paused-control";
+        exhibitClearTimers();
+        exhibitPublish();
+      }
+
+      function exhibitFreezeClock() {
+        if (exhibit.hiddenAt) return;
+        exhibit.hiddenAt = performance.now();
+        exhibitClearTimers();
+      }
+
+      function exhibitThawClock() {
+        if (!exhibit.hiddenAt) return;
+        exhibit.clockOffset += performance.now() - exhibit.hiddenAt;
+        exhibit.hiddenAt = 0;
+        if (exhibit.phase === "dwell") exhibitArmDwell();
+        else if (exhibit.phase === "manual") exhibitArmIdle();
+        else if (exhibit.phase === "paused-hover") exhibitLeaveHover();
+      }
+
+      function exhibitSyncVisibility() {
+        var vis = exhibitVisible();
+        if (!vis) {
+          exhibitFreezeClock();
+          stopLoop();
+        } else {
+          exhibitThawClock();
+          lastT = performance.now();
+          acc = 0;
+          if (booted) render();
+          if (!reduced && !shouldStopLoop()) wakeLoop();
+        }
+        exhibitPublish();
+      }
+
       function round3(n) {
         return Math.round(n * 1000) / 1000;
       }
@@ -2171,7 +2488,6 @@
         if (!target) target = TARGETS.INTRO;
         currentTarget = target;
         if (target.type === "image") lastImageTarget = target;
-        publishTarget(target, null);
         return loadTargetRecord(target).then(function (rec) {
           var coerced;
           var timings;
@@ -2415,7 +2731,7 @@
         }
         phaseElapsed += DT;
         if (assembling && N > 0) {
-          if (phaseElapsed >= ASSEMBLE_S || (phaseElapsed >= ASSEMBLE_MIN_S && settled / N >= 0.97)) {
+          if (phaseElapsed >= assembleBudgetS || (phaseElapsed >= Math.min(ASSEMBLE_MIN_S, assembleBudgetS) && settled / N >= 0.97)) {
             snapAllToTargets();
             setMode("formed");
           }
@@ -2586,6 +2902,7 @@
         if (next === "formed" && prev !== "formed") glyphTintT0 = performance.now();
         else if (next !== "formed") glyphTintT0 = 0;
         if (next !== "formed" || prev !== "formed") wakeLoop();
+        if (next === "formed") exhibitOnFormed();
       }
 
       function appHref(path) {
@@ -2603,8 +2920,9 @@
         for (i = 0; i < els.length; i++) els[i].style.animation = "";
       }
 
-      function openArchive(view) {
+      function openArchive(view, origin) {
         var target;
+        if (origin !== "exhibit") userTakeover();
         currentView = view;
         dossier.dataset.view = view;
         if (view === "home") {
@@ -2693,11 +3011,17 @@
 
       function triggerEgg() {
         if (!hasGlyph || !booted) return;
+        userTakeover();
         if (mode === "formed") burstFromGlyph();
         assemble(TARGETS.EGG);
       }
 
       function beginAssemble() {
+        if (exhibit.phase === "intro" && exhibitManifest.transition && exhibitManifest.transition.group === "develop") {
+          assembleBudgetS = (exhibitManifest.introRevealMs || 2400) / 1000;
+        } else {
+          assembleBudgetS = ASSEMBLE_S;
+        }
         setFrozen(false);
         pointerEver = false;
         setMode("assemble");
@@ -2758,6 +3082,10 @@
       };
       window.disperse = function () { openArchive("home"); };
 
+      function pointerOnPainting() {
+        return mxT >= fitX && mxT <= fitX + fitW && myT >= fitY && myT <= fitY + fitH;
+      }
+
       function onPointerMove(e) {
         var r = canvas.getBoundingClientRect();
         mxT = e.clientX - r.left;
@@ -2766,11 +3094,14 @@
         if (!pointerOn) snapshotHomes();
         pointerOn = true;
         pointerEver = true;
+        if (exhibitPlaying() && pointerOnPainting()) exhibitPauseHover();
+        else if (exhibit.phase === "paused-hover" && !pointerOnPainting()) exhibitLeaveHover();
         wakeLoop();
       }
 
       function onPointerLeave() {
         pointerOn = false;
+        if (exhibit.phase === "paused-hover") exhibitLeaveHover();
         wakeLoop();
       }
 
@@ -2848,14 +3179,8 @@
       }
 
       function onVisibility() {
-        if (document.hidden) {
-          stopLoop();
-          return;
-        }
-        lastT = performance.now();
-        acc = 0;
-        if (booted) render();
-        if (!reduced && !shouldStopLoop()) wakeLoop();
+        exhibit.pageVisible = !document.hidden;
+        exhibitSyncVisibility();
       }
 
       function onResize() {
@@ -2883,6 +3208,19 @@
         if (!reduced) startLoop();
         if (!reduced && volEl) scrambleLine(volEl, "COSMIC PIXEL ARCHIVE · VOL. 01", 900);
         publishRenderInfo();
+        exhibitPaintChrome();
+        if (exhibitEnabled() && !reduced) exhibitStartIntro();
+        else if (exhibitEnabled() && reduced) {
+          exhibit.catalogIndex = 0;
+          exhibit.phase = "paused-control";
+          placeNow(true);
+          setMode("formed");
+          setCurrentNav(btnIntro);
+          currentView = "intro";
+          dossier.dataset.view = "intro";
+          render();
+          exhibitPublish();
+        }
       }
 
       window.addEventListener("pointermove", onPointerMove, { passive: true });
@@ -2905,8 +3243,34 @@
           triggerEgg();
         });
       }
+      if (btnExhibitPause) {
+        btnExhibitPause.addEventListener("click", function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          exhibitToggleControl();
+        });
+      }
+      document.addEventListener("focusin", function (e) {
+        if (!exhibitEnabled() || !e.target) return;
+        if (e.target === btnExhibitPause) return;
+        if (e.target.closest && e.target.closest(".paper, .arcade")) exhibitPauseFocus();
+      });
+      if (btnSave) {
+        btnSave.addEventListener("click", function () {
+          userTakeover();
+          setFrozen(!frozen);
+        });
+      }
+      if (typeof IntersectionObserver === "function" && stage) {
+        new IntersectionObserver(function (entries) {
+          var e0 = entries[0];
+          exhibit.stageVisible = !!(e0 && e0.isIntersecting);
+          exhibitSyncVisibility();
+        }, { threshold: 0.05 }).observe(stage);
+      }
       if (btnStart) {
         btnStart.addEventListener("click", function () {
+          userTakeover();
           if (currentTarget && currentTarget.type === "text") {
             assemble(lastImageTarget || TARGETS.INTRO);
             return;
@@ -2914,13 +3278,9 @@
           beginAssemble();
         });
       }
-      if (btnSave) {
-        btnSave.addEventListener("click", function () {
-          setFrozen(!frozen);
-        });
-      }
       if (btnSettings) {
         btnSettings.addEventListener("click", function () {
+          userTakeover();
           cycleSettings();
         });
       }

@@ -16,7 +16,8 @@
 - 成画 1.5s（最早 1.2s）、回退 1.1s；相位时间走固定步长，冻结不计入
 - START / 介绍 = assemble（可打断、不重置数组）；首页 = 软解构
 - SAVE 冻结（aria-pressed 常亮）；SETTINGS 循环 A/B/C（LOW DRIFT / STORM / STILL）
-- `prefers-reduced-motion` → 直接静态成画
+- `prefers-reduced-motion` → 直接静态成画；自动放映不轮换
+- **自动放映**（《自动放映 · 修订包》v1.0 修宪 R1–R3，替代「不要加轮播」）：加载开演，catalog 固定顺序；停留 8–12s（默认 10）、过渡 2.5–3.5s（默认 3.0）；hover 暂停、离开 +1.5s 恢复；点击/导航进手动、静置 30s 恢复；键盘焦点即停且不自动恢复；图注级『放映启停』持久暂停；回退 `?autoplay=0` / `autoplay.enabled=false`
 - 本条分支：`cursor/b3-assemble-spring-52ec`（叠在 `cursor/b2-render-atlas-52ec` 上）
 - B2 仍有效：12k ImageBitmap 分桶绘制
 - CRT 微调：画布 100vw×100vh；成画 70vh、中心偏左 15%；报章无底板；`.crt-shell` 是**空的全屏叠层**（不要拿带 `transform` 的外壳去包 canvas，否则 `position:fixed` 不再相对视口）；厚边框+微曲面（无 WebGL / Pixi / fragment shader）
@@ -27,6 +28,7 @@
 - §5：`prototype/bench.html` 试炼场。U10 = longtask + 工作 1% low + 成画停帧；U11 = 32×32 亮度相关 + 亮度直方图；打断 START/首页/SAVE ×20。数字在 `painting/s5-trial.json`
 - 本条分支：`cursor/s5-device-trial-52ec`（叠在 `cursor/b4-perf-gate-52ec` 上）
 - 多画作路由：`TARGETS` 绑定介绍/大厅/社区/NF；本条分支 `cursor/multi-target-routes-52ec`（叠在 `cursor/s5-device-trial-52ec` 上）
+- 自动放映：本条分支 `cursor/autoplay-exhibit-52ec`（叠在 `cursor/multi-target-routes-52ec` 上）。§9.0+§9.3 先落地；交接不变式 / 画区云 / 像素块 / B4.1 下一刀
 
 ---
 
@@ -68,7 +70,7 @@ Next.js 16，API 与训练记忆可能不同。改 Next 代码前读 `node_modul
 - 报头：粗 Courier New，`letter-spacing:0.2em`，`clamp(32px, 4.4vw, 54px)`。
 - GitHub / Gitee：Google Fonts Press Start 2P。无边框无填充。opacity 0.7→1，hover 细白下划线。`rel="noopener noreferrer"`。
 - 导航：雅黑/苹方。`::before` 画 `>`，不要 HTML 里写勾。只有 hover / `aria-current`。离开立刻隐藏。同时只有一个 `aria-current`。序号 `data-idx` 01–04 用 `::after`。
-- **不要**再加盒装 CTA / 测试按钮。访客控件只有：四项导航 + GitHub/Gitee + 文案里那颗彩蛋 NF。
+- **不要**再加盒装 CTA / 测试按钮。访客控件：四项导航 + GitHub/Gitee + 文案里那颗彩蛋 NF + 图注级『放映启停』（修订包 R1，不是盒装 CTA）。
 - 十字准星已删除。画布恢复普通指针。不要加回 `#sight` / `cursor:none`。
 - 左上角 HUD `NF · VOID / 050505`、胶片颗粒 overlay 仍在；径向 veil 已关掉（`display:none`），不要加回深色文字遮罩。颗粒是静态 CSS，不要用 feTurbulence 当实时粒子噪声。
 - 禁：backdrop-filter、双色故障、发光、渐变背景、`filter:blur()`。
@@ -103,7 +105,15 @@ Next.js 16，API 与训练记忆可能不同。改 Next 代码前读 `node_modul
 | 社区 | `assemble(TARGETS.COMMUNITY)` → `points_artwork_c.json`（Met 四树） | 货架说明 +「打开社区页」 |
 | 彩蛋 NF | `assemble(TARGETS.EGG)` → `points_nf.json`，银白/钢蓝，**不改导航** | 若人在首页，仍不显示介绍文案 |
 
-已 formed 再点另一个导航也会换数据源并重新 assemble。image 用该 json 调色板；text 强制 `#C9CFD8` / `#6F8FAF`。没有自动呼吸轮播（代码里本来就没有，不要加）。
+已 formed 再点另一个导航也会换数据源并重新 assemble。image 用该 json 调色板；text 强制 `#C9CFD8` / `#6F8FAF`。
+
+**R1（替代「不要加（自动）轮播」，被《自动放映 · 修订包》v1.0 写入）：** 深空档案馆艺术区启用『自动放映』：加载自动开演，catalog 固定顺序轮换；停留 8–12s、过渡 2.5–3.5s（入 manifest，确定性可复现）。任意交互即接管：hover 暂停（离开 +1.5s 恢复）；点击/导航进入手动，静置 30s 恢复；键盘焦点进入即停且不自动恢复（仅显式操作恢复）；提供图注级文本『放映启停』（持久暂停、不自动恢复）；prefers-reduced-motion 不轮换。不设重放按钮；可见控件以导航为主，放映启停为注记级文本。
+
+**R2（修订「散点到装配·仅一次」）：** 装配纪律：每幅作品每次登场仅装配一次；停留期不重播、不重算；任何操作不触发二次装配（无重放）。轮换『交接』过渡不属于重放。既有显式交互（点击重组/驱离/彩蛋）权限不变，自动放映不得调用。
+
+**R3（修订「成画即停 rAF」→ 三态性能纪律 v2）：** ①过渡态：全速 rAF，目标 60fps，脚本 ≤10ms/帧；②停留态：低耗微动 ≤30Hz，脚本 ≤2ms/帧，零重算、零每帧分配；③不可见态：rAF=0、计时冻结、恢复不追赶；④reduced-motion：静态、无装配动画。回退 `motion.discipline=classic`。
+
+旧句「没有自动呼吸轮播（不要加）」移入变更历史，标注被《自动放映 · 修订包》v1.0 替代。
 
 `currentView`：`home | intro | hall | community`。`setMode` 不再抢导航；导航只由 `openArchive` / 彩蛋处理。
 
@@ -143,7 +153,7 @@ STOP_PX 0.6  STOP_V 0.06  ASSEMBLE 1.5s  DISPERSE 1.1s
 POINTER_LERP 0.2  SIZES [2,3,4]
 ```
 
-成画静止后停 rAF。指针靠近仍驱离（半径 100px，冻结关闭）。混沌态环面包裹。SETTINGS 可切 A/B/C。
+成画停留：自动放映开启且 `motion.discipline=v2` 时按三态纪律（停留用超时器推进、可见才走 rAF）；classic / 手动且无指针时仍可停 rAF。指针靠近仍驱离（半径 100px，冻结关闭）。混沌态环面包裹。SETTINGS 可切 A/B/C。
 
 精灵：调色板软边图集（中心 α≈0.85），ImageBitmap，按亮度 2/3/4px，按色分桶绘制。
 
@@ -204,10 +214,19 @@ POINTER_LERP 0.2  SIZES [2,3,4]
 
 1. 首页星尘漂，无准星，普通指针。
 2. 点介绍 → 左侧收成画作点云（cap 子集），右侧两句渐显。
-3. 点数据大厅 / 社区 → 点云留着，只换文案；不是只改 `aria-current`。
-4. 点首页 → 打散，文案隐藏。
-5. 停在首页，点页脚 NF（内容契约层左边）→ 收成画作点云，导航仍是首页，介绍句不出现。
-6. GitHub/Gitee hover：字变实 + 细下划线；指针划过粒子会被拨开。
+3. 自动放映开启时：加载即介绍成画，约 10s 后交到大厅、再社区，再回介绍。图注随幅更新。『放映暂停』持久停。
+4. 点数据大厅 / 社区 → 换源重组，并接管为手动（静置 30s 才恢复自动）。
+5. 点首页 → 打散，文案隐藏。
+6. 停在首页，点页脚 NF（内容契约层左边）→ 收成 NF 银蓝字形，导航仍是首页，介绍句不出现。自动放映不得自己调彩蛋。
+7. GitHub/Gitee hover：字变实 + 细下划线；指针划过粒子会被拨开。
+
+---
+
+## 变更历史
+
+| 日期 | 说明 |
+|---|---|
+| 2026-09-12 | 「没有自动呼吸轮播（不要加）」被《自动放映 · 修订包》v1.0 R1 替代。『成画即停 rAF』被 R3 三态纪律修订。『装配仅一次』作用域改为每幅每次登场一次（R2）。 |
 
 ---
 
@@ -215,4 +234,4 @@ POINTER_LERP 0.2  SIZES [2,3,4]
 
 1. 打开 http://localhost:8768/ 看现行原型（没有服务就在 `prototype/` 起 python http.server）。
 2. 读 `prototype/index.html` 的 CSS 报章区 + `openArchive` / `triggerEgg`，不要重写引擎。
-3. 只做用户这一次点名的事。规格里未点名的轨道 B、Fusion Pixel，先问。§5 已完成，下一本是 §6 总验收，等用户说「继续」。
+3. 只做用户这一次点名的事。规格里未点名的轨道 B、Fusion Pixel，先问。自动放映修订包 §9.1–§9.2 / §9.4–§9.5 未做，等用户说「继续」。
