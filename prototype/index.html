@@ -1112,8 +1112,21 @@
         fxLite: false,
         workerBlit: false,
         workerHasFrame: false,
-        contain: { x: 0, y: 0, w: 1, h: 1, srcW: 1, srcH: 1, cx: 0.35, hFrac: 0.7 },
+        contain: { x: 0, y: 0, w: 1, h: 1, srcW: 1, srcH: 1, cx: 0.35, hFrac: 0.7, scale: 1 },
         imageSmoothingEnabled: true
+      };
+      var exhibitSnap = { phase: "", key: "", index: 0, enabled: false, handover: false };
+      var pixelSnap = { block: false, size: 2, cell: 0, smoothing: false, shadowBlur: 0, dust: false, dustN: 0 };
+      var b41Info = {
+        rafCount: 0,
+        discipline: "v2",
+        stayQuiet: false,
+        running: false,
+        frozen: false,
+        reduced: false,
+        mode: "chaos",
+        phase: "off",
+        hzHint: 0
       };
       var animInfo = {
         spring: SPRING,
@@ -1149,6 +1162,44 @@
       var handoverCoreA = 0;
       var handoverCoreB = 0;
       var handoverWaveN = 0;
+      var handoverPass = {
+        core_sync: false,
+        overlap: false,
+        no_empty: false,
+        no_snap: false,
+        waves: false,
+        duration: false,
+        drift_cap: false,
+        step_cap: false,
+        all: false
+      };
+      var handoverInfo = {
+        live: false,
+        done: false,
+        group: "develop",
+        arc: "on",
+        T: 0,
+        D_out: 0,
+        D_in: 0,
+        overlap_budget: 0,
+        tB0: 0,
+        flight: 0,
+        waveN: 0,
+        a_core_release_s: 0,
+        b_core_start_s: 0,
+        core_delta_s: 0,
+        overlap_s: 0,
+        min_inside_frac: 0,
+        empty_frames: 0,
+        snapAll_calls: 0,
+        step_hits: 0,
+        max_step_px: 0,
+        max_drift: 0,
+        phaseElapsed: 0,
+        vmax: 0,
+        pass: handoverPass,
+        tail_locks: 0
+      };
       var hovFitA = { x: 0, y: 0, w: 1, h: 1 };
       var recordCache = Object.create(null);
       var hasGlyph = false;
@@ -1157,6 +1208,8 @@
       var acc = 0;
       var lastT = 0;
       var raf = 0;
+      var quietWait = 0;
+      var rafCount = 0;
       var running = false;
       var booted = false;
       var mx = 0;
@@ -1321,17 +1374,76 @@
         return (0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]) / 255;
       }
 
+      function frameScaleOf() {
+        var s = exhibitManifest && exhibitManifest.frameScale;
+        if (exhibitManifest && exhibitManifest.frame && exhibitManifest.frame.scale != null) {
+          s = exhibitManifest.frame.scale;
+        }
+        s = +s;
+        if (!(s > 0)) s = 1;
+        if (s < 0.9) s = 0.9;
+        if (s > 1.1) s = 1.1;
+        return s;
+      }
+
+      function motionDiscipline() {
+        return exhibitManifest && exhibitManifest.motion && exhibitManifest.motion.discipline === "classic"
+          ? "classic"
+          : "v2";
+      }
+
+      function stayQuiet() {
+        return motionDiscipline() === "v2" &&
+          mode === "formed" &&
+          !pointerLive() &&
+          !frozen &&
+          !handoverLive &&
+          !reduced;
+      }
+
+      function clearQuietWait() {
+        if (quietWait) {
+          clearTimeout(quietWait);
+          quietWait = 0;
+        }
+      }
+
+      function scheduleQuietTick() {
+        clearQuietWait();
+        quietWait = setTimeout(function () {
+          quietWait = 0;
+          if (!running) return;
+          raf = requestAnimationFrame(tick);
+        }, 33);
+      }
+
+      function publishB41() {
+        var interval = lastRafT && b41Info._lastT ? lastRafT - b41Info._lastT : 0;
+        b41Info.rafCount = rafCount;
+        b41Info.discipline = motionDiscipline();
+        b41Info.stayQuiet = stayQuiet();
+        b41Info.running = running;
+        b41Info.frozen = frozen;
+        b41Info.reduced = reduced;
+        b41Info.mode = mode;
+        b41Info.phase = exhibit.phase;
+        b41Info.hzHint = interval > 0 ? 1000 / interval : 0;
+        b41Info._lastT = lastRafT;
+        window.__nfB41 = b41Info;
+      }
+
       function layoutContain() {
         var rec = window.__nfPoints;
         var s;
         var inset = 14;
+        var scale = frameScaleOf();
         srcW = rec && rec.w > 0 ? rec.w : 1;
         srcH = rec && rec.h > 0 ? rec.h : 1;
-        fitH = cssH * PAINT_H;
+        fitH = cssH * PAINT_H * scale;
         s = fitH / srcH;
         fitW = srcW * s;
-        if (fitW > cssW * 0.72) {
-          s = (cssW * 0.72) / srcW;
+        if (fitW > cssW * 0.72 * scale) {
+          s = (cssW * 0.72 * scale) / srcW;
           fitW = srcW * s;
           fitH = srcH * s;
         }
@@ -1488,6 +1600,11 @@
         renderInfo.contain.srcH = srcH;
         renderInfo.contain.cx = PAINT_CX;
         renderInfo.contain.hFrac = PAINT_H;
+        renderInfo.contain.scale = frameScaleOf();
+        renderInfo.discipline = motionDiscipline();
+        renderInfo.stayQuiet = stayQuiet();
+        renderInfo.rafCount = rafCount;
+        renderInfo.frameScale = renderInfo.contain.scale;
         renderInfo.imageSmoothingEnabled = ctx.imageSmoothingEnabled;
         window.__nfRender = renderInfo;
         window.__nfGetPerf = perfStats;
@@ -1507,23 +1624,21 @@
         animInfo.reduced = reduced;
         animInfo.checksum = N > 0 ? x[0] + y[0] + x[N >> 1] + y[N >> 1] : 0;
         animInfo.target = window.__nfTarget || null;
-        animInfo.exhibit = {
-          phase: exhibit.phase,
-          key: exhibitCatalogKey(),
-          index: exhibit.catalogIndex,
-          enabled: exhibitEnabled(),
-          handover: handoverLive
-        };
+        exhibitSnap.phase = exhibit.phase;
+        exhibitSnap.key = exhibitCatalogKey();
+        exhibitSnap.index = exhibit.catalogIndex;
+        exhibitSnap.enabled = exhibitEnabled();
+        exhibitSnap.handover = handoverLive;
+        animInfo.exhibit = exhibitSnap;
         window.__nfAnim = animInfo;
-        window.__nfPixel = {
-          block: pixelBlockOn(),
-          size: pixelBlockSize(),
-          cell: atlasCell,
-          smoothing: ctx.imageSmoothingEnabled,
-          shadowBlur: ctx.shadowBlur || 0,
-          dust: dustOn(),
-          dustN: dustN
-        };
+        pixelSnap.block = pixelBlockOn();
+        pixelSnap.size = pixelBlockSize();
+        pixelSnap.cell = atlasCell;
+        pixelSnap.smoothing = ctx.imageSmoothingEnabled;
+        pixelSnap.shadowBlur = ctx.shadowBlur || 0;
+        pixelSnap.dust = dustOn();
+        pixelSnap.dustN = dustN;
+        window.__nfPixel = pixelSnap;
       }
 
       function makeSprite(cssPx, pixelRatio, c0, c1) {
@@ -2236,7 +2351,9 @@
         transition: { group: "develop", arc: "on", handover: "on" },
         seedMode: "cloud",
         pixelBlock: { enabled: true, size: 2 },
-        dust: { enabled: true, n: 640 }
+        dust: { enabled: true, n: 640 },
+        frameScale: 1.0,
+        colorVersion: "v1"
       };
       try {
         var _qs = new URLSearchParams(window.location.search);
@@ -2253,6 +2370,11 @@
           exhibitManifest.pixelBlock.size = parseInt(_qs.get("pixel"), 10);
         }
         if (_qs.get("dust") === "0") exhibitManifest.dust.enabled = false;
+        if (_qs.get("discipline") === "classic" || _qs.get("discipline") === "v2") exhibitManifest.motion.discipline = _qs.get("discipline");
+        if (_qs.get("frame") === "0.9" || _qs.get("frame") === "1" || _qs.get("frame") === "1.0" || _qs.get("frame") === "1.1") {
+          exhibitManifest.frameScale = parseFloat(_qs.get("frame"));
+          exhibitManifest.frame = { scale: exhibitManifest.frameScale };
+        }
       } catch (errQs) {}
       var exhibit = {
         phase: "off",
@@ -2276,6 +2398,7 @@
       window.__nfExhibit = exhibit;
       window.__nfSeedStats = seedStats;
       window.__nfHandover = null;
+      window.__nfB41 = b41Info;
 
       function exhibitNow() {
         return performance.now() - exhibit.clockOffset;
@@ -3067,50 +3190,42 @@
       function publishHandover(done) {
         var tm = handoverTiming || computeHandoverTiming();
         var delta = handoverCoreB - handoverCoreA;
-        window.__nfHandover = {
-          live: handoverLive,
-          done: !!done,
-          group: exhibitManifest.transition ? exhibitManifest.transition.group : "develop",
-          arc: handoverArcOn() ? "on" : "off",
-          T: tm.T,
-          D_out: tm.D_out,
-          D_in: tm.D_in,
-          overlap_budget: tm.overlap,
-          tB0: tm.tB0,
-          flight: tm.flight,
-          waveN: handoverWaveN,
-          a_core_release_s: round3(handoverCoreA),
-          b_core_start_s: round3(handoverCoreB),
-          core_delta_s: round3(delta),
-          overlap_s: round3(handoverOverlapS),
-          min_inside_frac: round3(handoverMinInside),
-          empty_frames: handoverEmptyFrames,
-          snapAll_calls: handoverSnapCalls,
-          step_hits: handoverStepHits,
-          max_step_px: round3(handoverMaxStep),
-          max_drift: round3(handoverMaxDrift),
-          phaseElapsed: round3(phaseElapsed),
-          vmax: handoverVmax(),
-          pass: {
-            core_sync: Math.abs(delta) <= 0.2,
-            overlap: handoverOverlapS >= 0.6 && handoverOverlapS <= 1.2,
-            no_empty: handoverEmptyFrames === 0,
-            no_snap: handoverSnapCalls === 0,
-            waves: handoverWaveN >= 4 && handoverWaveN <= 6,
-            duration: tm.T >= 2.5 && tm.T <= 3.5,
-            drift_cap: handoverMaxDrift <= 0.3 * handoverVmax() + 0.0001,
-            step_cap: handoverMaxStep <= 1.5 * handoverVmax() + 0.0001
-          }
-        };
-        window.__nfHandover.pass.all =
-          window.__nfHandover.pass.core_sync &&
-          window.__nfHandover.pass.overlap &&
-          window.__nfHandover.pass.no_empty &&
-          window.__nfHandover.pass.no_snap &&
-          window.__nfHandover.pass.waves &&
-          window.__nfHandover.pass.duration &&
-          window.__nfHandover.pass.drift_cap &&
-          window.__nfHandover.pass.step_cap;
+        var p = handoverPass;
+        handoverInfo.live = handoverLive;
+        handoverInfo.done = !!done;
+        handoverInfo.group = exhibitManifest.transition ? exhibitManifest.transition.group : "develop";
+        handoverInfo.arc = handoverArcOn() ? "on" : "off";
+        handoverInfo.T = tm.T;
+        handoverInfo.D_out = tm.D_out;
+        handoverInfo.D_in = tm.D_in;
+        handoverInfo.overlap_budget = tm.overlap;
+        handoverInfo.tB0 = tm.tB0;
+        handoverInfo.flight = tm.flight;
+        handoverInfo.waveN = handoverWaveN;
+        handoverInfo.a_core_release_s = round3(handoverCoreA);
+        handoverInfo.b_core_start_s = round3(handoverCoreB);
+        handoverInfo.core_delta_s = round3(delta);
+        handoverInfo.overlap_s = round3(handoverOverlapS);
+        handoverInfo.min_inside_frac = round3(handoverMinInside);
+        handoverInfo.empty_frames = handoverEmptyFrames;
+        handoverInfo.snapAll_calls = handoverSnapCalls;
+        handoverInfo.step_hits = handoverStepHits;
+        handoverInfo.max_step_px = round3(handoverMaxStep);
+        handoverInfo.max_drift = round3(handoverMaxDrift);
+        handoverInfo.phaseElapsed = round3(phaseElapsed);
+        handoverInfo.vmax = handoverVmax();
+        p.core_sync = Math.abs(delta) <= 0.2;
+        p.overlap = handoverOverlapS >= 0.6 && handoverOverlapS <= 1.2;
+        p.no_empty = handoverEmptyFrames === 0;
+        p.no_snap = handoverSnapCalls === 0;
+        p.waves = handoverWaveN >= 4 && handoverWaveN <= 6;
+        p.duration = tm.T >= 2.5 && tm.T <= 3.5;
+        p.drift_cap = handoverMaxDrift <= 0.3 * handoverVmax() + 0.0001;
+        p.step_cap = handoverMaxStep <= 1.5 * handoverVmax() + 0.0001;
+        p.all = p.core_sync && p.overlap && p.no_empty && p.no_snap && p.waves && p.duration && p.drift_cap && p.step_cap;
+        handoverInfo.pass = p;
+        if (!done) handoverInfo.tail_locks = 0;
+        window.__nfHandover = handoverInfo;
       }
 
       function beginHandover() {
@@ -3478,8 +3593,8 @@
       }
 
       function shouldStopLoop() {
-        if (frozen) return true;
-        if (dustOn() && !reduced) return false;
+        if (frozen || reduced) return true;
+        if (motionDiscipline() === "v2" && dustOn()) return false;
         if (mode === "formed" && hasGlyph && activeCount === 0 && !pointerLive()) return true;
         return false;
       }
@@ -3492,6 +3607,7 @@
         var tDraw;
         var phys = 0;
         var draw = 0;
+        rafCount++;
         if (lastRafT > 0) {
           rafMs[workI] = now - lastRafT;
         }
@@ -3502,7 +3618,25 @@
           tDraw = performance.now();
           render(now);
           recordWork(performance.now() - tDraw);
+          publishB41();
           stopLoop();
+          return;
+        }
+        if (stayQuiet()) {
+          lastT = now;
+          acc = 0;
+          tDraw = performance.now();
+          integrateDust();
+          if (lastPaintBmp) paintStage(lastPaintBmp);
+          lastPhysMs = 0;
+          lastDrawMs = performance.now() - tDraw;
+          recordWork(lastDrawMs);
+          publishB41();
+          if (shouldStopLoop()) {
+            stopLoop();
+            return;
+          }
+          scheduleQuietTick();
           return;
         }
         ft = (now - lastT) / 1000;
@@ -3524,6 +3658,7 @@
         draw = performance.now() - tDraw;
         lastDrawMs = draw;
         recordWork(phys + draw);
+        publishB41();
         if (shouldStopLoop()) {
           stopLoop();
           return;
@@ -3538,31 +3673,38 @@
       }
 
       function startLoop() {
-        if (running || reduced || !booted || frozen) return;
+        if (reduced || !booted || frozen) return;
+        if (running && !quietWait) return;
+        clearQuietWait();
         lastT = performance.now();
         acc = 0;
         running = true;
         syncCrtIdleHint();
+        if (raf) cancelAnimationFrame(raf);
         raf = requestAnimationFrame(tick);
       }
 
       function wakeLoop() {
         if (reduced || !booted || frozen) return;
-        if (running) return;
+        if (running && !quietWait) return;
+        clearQuietWait();
         lastT = performance.now();
         acc = 0;
         running = true;
         syncCrtIdleHint();
+        if (raf) cancelAnimationFrame(raf);
         raf = requestAnimationFrame(tick);
       }
 
       function stopLoop() {
         running = false;
         acc = 0;
+        clearQuietWait();
         if (raf) cancelAnimationFrame(raf);
         raf = 0;
         syncCrtIdleHint();
         publishRenderInfo();
+        publishB41();
       }
 
       function setCurrentNav(btn) {

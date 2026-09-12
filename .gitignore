@@ -77,4 +77,6 @@ painting/*
 !painting/seed-cloud.json
 !painting/handover-invariants.json
 !painting/pixel-block-dust.json
+!painting/b4-1-bench.json
+!painting/b4-1-ab.json
 

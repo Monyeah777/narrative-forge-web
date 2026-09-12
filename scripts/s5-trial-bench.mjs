@@ -316,7 +316,7 @@ async function main() {
     const logs = [];
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
     page.on("pageerror", (err) => logs.push("PAGEERROR " + String(err)));
-    await page.goto(`http://127.0.0.1:${PORT}/index.html?dpr=1`, {
+    await page.goto(`http://127.0.0.1:${PORT}/index.html?dpr=1&autoplay=0&discipline=classic`, {
       waitUntil: "domcontentloaded",
       timeout: 30_000,
     });
