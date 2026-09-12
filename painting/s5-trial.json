@@ -1,0 +1,238 @@
+{
+  "task": "S5",
+  "ready": {
+    "n": 12000,
+    "atlasIsImageBitmap": true,
+    "dpr": 1
+  },
+  "chaos": {
+    "n": 12000,
+    "running": true,
+    "mode": "chaos",
+    "dpr": 1,
+    "workerBlit": true,
+    "workerHasFrame": true,
+    "spring": 0.055,
+    "damp": 0.9,
+    "contain": {
+      "x": 229.5454545454546,
+      "y": 120.15000000000003,
+      "w": 436.9090909090908,
+      "h": 560.6999999999999,
+      "srcW": 1200,
+      "srcH": 1540,
+      "cx": 0.35,
+      "hFrac": 0.7
+    },
+    "perf": {
+      "work": {
+        "n": 118,
+        "mean": 1.8144067796105046,
+        "p50": 1.3999999985098839,
+        "p95": 4.5,
+        "fps": 551.1443250970812
+      },
+      "raf": {
+        "n": 117,
+        "mean": 16.951282051282053,
+        "p50": 16.69999999999999,
+        "p95": 16.700000000000273,
+        "fps": 58.99258811072454
+      },
+      "workPct1Low": {
+        "n": 1,
+        "meanMs": 12.100000001490116,
+        "fps": 82.64462808899586
+      },
+      "rafPct1Low": {
+        "n": 1,
+        "meanMs": 33.30000000000001,
+        "fps": 30.03003003003002
+      },
+      "lastPhysMs": 1.300000000745058,
+      "lastDrawMs": 0.10000000149011612,
+      "longtaskCount": 0,
+      "loafCount": 1,
+      "longTasks": [],
+      "loafs": [
+        {
+          "t": 71.60000000149012,
+          "d": 137.39999999850988,
+          "block": 86.042
+        }
+      ]
+    },
+    "ink_frac": 0.6048377028714107,
+    "ink_warmup": 0.6108458177278402
+  },
+  "assemble_ms": 2184,
+  "formed": {
+    "mode": "formed",
+    "running": false,
+    "activeCount": 0,
+    "tickCount": 290,
+    "contain": {
+      "x": 229.5454545454546,
+      "y": 120.15000000000003,
+      "w": 436.9090909090908,
+      "h": 560.6999999999999,
+      "srcW": 1200,
+      "srcH": 1540,
+      "cx": 0.35,
+      "hFrac": 0.7
+    },
+    "nanHeals": 0
+  },
+  "stop_frame": {
+    "ticks_before": 290,
+    "ticks_after": 290,
+    "running": false,
+    "mode": "formed",
+    "held": true
+  },
+  "similarity": {
+    "w": 437,
+    "h": 561,
+    "corr32": 0.86597,
+    "luma_hist_corr": 0.991042,
+    "ssim_blur": 0.821906,
+    "hist_corr": 0.986993
+  },
+  "visibility": {
+    "wasRunning": true,
+    "hiddenRunning": false,
+    "afterHidden": false,
+    "paused": true
+  },
+  "interrupt": {
+    "cycles": 20,
+    "nan0": 0,
+    "nanHeals": 0,
+    "n": 12000,
+    "mode": "disperse",
+    "frozen": false,
+    "alive": true
+  },
+  "afterInterrupt": {
+    "n": 12000,
+    "nanHeals": 0,
+    "mode": "disperse"
+  },
+  "mobile": {
+    "ready": {
+      "n": 12000,
+      "dpr": 2
+    },
+    "chaos": {
+      "n": 12000,
+      "running": true,
+      "mode": "chaos",
+      "dpr": 2,
+      "workerBlit": true,
+      "workerHasFrame": true,
+      "spring": 0.055,
+      "damp": 0.9,
+      "contain": {
+        "x": 14,
+        "y": 241.82,
+        "w": 280.8,
+        "h": 360.36,
+        "srcW": 1200,
+        "srcH": 1540,
+        "cx": 0.35,
+        "hFrac": 0.7
+      },
+      "perf": {
+        "work": {
+          "n": 81,
+          "mean": 2.114814815329917,
+          "p50": 1.4000000022351742,
+          "p95": 5.099999997764826,
+          "fps": 472.8546408655631
+        },
+        "raf": {
+          "n": 80,
+          "mean": 24.792500000000008,
+          "p50": 16.700000000000273,
+          "p95": 33.40000000000009,
+          "fps": 40.334778662902075
+        },
+        "workPct1Low": {
+          "n": 1,
+          "meanMs": 8.100000001490116,
+          "fps": 123.45679010074507
+        },
+        "rafPct1Low": {
+          "n": 1,
+          "meanMs": 66.60000000000002,
+          "fps": 15.01501501501501
+        },
+        "lastPhysMs": 1.5,
+        "lastDrawMs": 0.5,
+        "longtaskCount": 0,
+        "loafCount": 3,
+        "longTasks": [],
+        "loafs": [
+          {
+            "t": 20.899999998509884,
+            "d": 150.39999999850988,
+            "block": 50.749
+          },
+          {
+            "t": 183.19999999925494,
+            "d": 78.69999999925494,
+            "block": 18.899
+          },
+          {
+            "t": 1136.699999999255,
+            "d": 51.5,
+            "block": 0
+          }
+        ]
+      },
+      "ink_frac": 0.9411836189087374,
+      "ink_warmup": 0.9462632154575282
+    },
+    "formed": {
+      "mode": "formed",
+      "running": false,
+      "dpr": 2
+    }
+  },
+  "logs": [],
+  "benchStatus": "PASS (U11 32×32 in node harness)",
+  "screenshots": {
+    "desktop_chaos": "/opt/cursor/artifacts/s5_desktop_chaos.png",
+    "desktop_formed": "/opt/cursor/artifacts/s5_desktop_formed.png",
+    "crop": "/opt/cursor/artifacts/s5_formed_crop.png",
+    "mobile_chaos": "/opt/cursor/artifacts/s5_mobile_chaos.png",
+    "mobile_formed": "/opt/cursor/artifacts/s5_mobile_formed.png",
+    "bench": "/opt/cursor/artifacts/s5_bench_harness.png"
+  },
+  "acceptance": {
+    "n_12000": true,
+    "work_p95_le_16_67": true,
+    "work_1pct_low_le_16_67": true,
+    "chaos_longtask_0": true,
+    "formed_idle": true,
+    "stop_frame": true,
+    "corr32_ge_0_35": true,
+    "luma_hist_ge_0_70": true,
+    "interrupt_20_no_nan": true,
+    "visibility_pauses": true,
+    "mobile_n_12000": true,
+    "mobile_dpr_le_2": true,
+    "mobile_visible": true,
+    "mobile_work_p95_le_16_67": true,
+    "visual_档_locked": true,
+    "bench_pass": true,
+    "pass": true
+  },
+  "notes": {
+    "raf_1pct_low_fps": 30.03003003003002,
+    "raf_1pct_low_ms": 33.30000000000001,
+    "work_1pct_low_fps": 82.64462808899586,
+    "work_1pct_low_ms": 12.100000001490116,
+    "gate": "Desktop 60fps is work p95 and work 1% low ≤ 16.67ms. rAF 1% low follows the display."
+  }
+}

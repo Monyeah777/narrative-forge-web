@@ -70,4 +70,6 @@ painting/*
 !painting/crt-shell-refs.json
 !painting/b4-refs.json
 !painting/b4-perf.json
+!painting/s5-refs.json
+!painting/s5-trial.json
 

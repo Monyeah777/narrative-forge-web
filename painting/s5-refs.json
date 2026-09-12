@@ -1,0 +1,38 @@
+{
+  "task": "S5",
+  "title": "真机试炼：bench.html 协议（U10 / U11 / 打断×20）",
+  "handbook": "§5 · 真机试炼（bench.html 协议）；B4 之后、§6 总验收之前。不做轨道 B。",
+  "searched": [
+    {
+      "q": "PerformanceObserver longtask / Long Animation Frames 50ms",
+      "refs": [
+        "https://developer.mozilla.org/en-US/docs/Web/API/PerformanceLongTaskTiming",
+        "https://developer.mozilla.org/en-US/docs/Web/API/Performance_API/Long_animation_frame_timing"
+      ],
+      "takeaway": "U10: observe longtask after warmup. A long task is ≥50ms on the main thread. LoAF covers whole frames."
+    },
+    {
+      "q": "1% low frame time = mean of slowest 1% rAF intervals",
+      "refs": [
+        "https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame",
+        "https://web.dev/articles/custom-metrics"
+      ],
+      "takeaway": "1% low fps = 1000 / mean(slowest 1% of intervals). Work 1% low uses tick physics+submit durations. Display rAF 1% low is informational when the compositor is locked."
+    },
+    {
+      "q": "32×32 Pearson luma + brightness histogram correlation",
+      "refs": [
+        "https://en.wikipedia.org/wiki/Pearson_correlation_coefficient",
+        "https://ece.uwaterloo.ca/~z70wang/publications/ssim.html"
+      ],
+      "takeaway": "U11 dual gate: downsample both crops to 32×32 luma and Pearson-correlate; also correlate luma histograms. Stipple ≠ photo; blur first. One-shot readback only."
+    }
+  ],
+  "red_lines": [
+    "Do not change locked visual档 (spring, atlas, contain, CRT overlay).",
+    "Do not start Track B / Next transplant / Fusion Pixel.",
+    "Do not start §6 总验收 in this step.",
+    "Default N=12000; only ?fx=lite is the debug cap.",
+    "No per-frame getImageData / ctx.arc / WebGL."
+  ]
+}

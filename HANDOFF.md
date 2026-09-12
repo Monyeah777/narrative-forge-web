@@ -10,7 +10,7 @@
 
 ## 当前进度（云端 Track A）
 
-手册 **B4 已完成**（60fps 工作预算 / long task=0 / 成画相似度）。叠在 CRT 上。不要开轨道 B，等用户说「继续」。
+手册 **§5 已完成**（真机试炼 / bench.html 协议）。B4 已过闸。不要开轨道 B，下一本是 §6 总验收，等用户说「继续」。
 
 - 凌厉弹簧 0.055 / 阻尼 0.90 / vmax 10；临界停止 0.6px / 0.06；驱离 100px 平方反比
 - 成画 1.5s（最早 1.2s）、回退 1.1s；相位时间走固定步长，冻结不计入
@@ -24,6 +24,8 @@
 - 本条分支：`cursor/crt-fullscreen-tube-52ec`（叠在 `cursor/b3-assemble-spring-52ec` 上）
 - B4：主线程只做物理 + 把 x/y/pid 交给 `prototype/render-worker.js`（OffscreenCanvas）；worker 帧未到时**不要** `clearRect`。闸：work p95 ≤ 16.67ms、热身后 longtask=0、模糊 SSIM ≥ 0.35。数字在 `painting/b4-perf.json`
 - 本条分支：`cursor/b4-perf-gate-52ec`（叠在 `cursor/crt-fullscreen-tube-52ec` 上）
+- §5：`prototype/bench.html` 试炼场。U10 = longtask + 工作 1% low + 成画停帧；U11 = 32×32 亮度相关 + 亮度直方图；打断 START/首页/SAVE ×20。数字在 `painting/s5-trial.json`
+- 本条分支：`cursor/s5-device-trial-52ec`（叠在 `cursor/b4-perf-gate-52ec` 上）
 
 ---
 
@@ -33,7 +35,7 @@
 |---|---|
 | 本仓 | `C:\Users\mon_7\Downloads\narrative-forge-web` |
 | GitHub | `Monyeah777/narrative-forge-web` |
-| 当前分支 | 云端叠 PR 在 `cursor/b4-perf-gate-52ec` |
+| 当前分支 | 云端叠 PR 在 `cursor/s5-device-trial-52ec` |
 | 原型路径 | `prototype/index.html`（live fetch：`assets/points.json`；`gen-points.mjs` 仍写同目录字形 `points.json`） |
 | 画作预览 | `painting/01-dallas.jpg`（primary）+ `02`–`06`；`painting/points.json`（B1-2 v2）；高清不进 git |
 | NF 主仓 | `C:\Users\mon_7\Downloads\NarrativeForge-main` |
@@ -209,4 +211,4 @@ POINTER_LERP 0.2  SIZES [2,3,4]
 
 1. 打开 http://localhost:8768/ 看现行原型（没有服务就在 `prototype/` 起 python http.server）。
 2. 读 `prototype/index.html` 的 CSS 报章区 + `openArchive` / `triggerEgg`，不要重写引擎。
-3. 只做用户这一次点名的事。规格里未点名的轨道 B、Fusion Pixel，先问。B4 已完成，下一手册等用户说「继续」。
+3. 只做用户这一次点名的事。规格里未点名的轨道 B、Fusion Pixel，先问。§5 已完成，下一本是 §6 总验收，等用户说「继续」。

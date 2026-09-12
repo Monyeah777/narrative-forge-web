@@ -1302,6 +1302,27 @@
         return { n: k, mean: mean, p50: p50, p95: p95, fps: fps };
       }
 
+      function ringPctLow(buf, n, next, frac) {
+        var i, v, vals, k, take, sum, mean;
+        if (!n) return { n: 0, meanMs: 0, fps: 0 };
+        vals = [];
+        if (n < PERF_RING) {
+          for (i = 0; i < n; i++) if (buf[i] > 0) vals.push(buf[i]);
+        } else {
+          for (i = 0; i < PERF_RING; i++) {
+            v = buf[(next + i) % PERF_RING];
+            if (v > 0) vals.push(v);
+          }
+        }
+        vals.sort(function (a, b) { return a - b; });
+        k = vals.length;
+        take = Math.max(1, Math.floor(k * frac));
+        sum = 0;
+        for (i = k - take; i < k; i++) sum += vals[i];
+        mean = sum / take;
+        return { n: take, meanMs: mean, fps: mean > 0 ? 1000 / mean : 0 };
+      }
+
       var lastPhysMs = 0;
       var lastDrawMs = 0;
 
@@ -1309,6 +1330,8 @@
         return {
           work: ringStats(workMs, workN, workI),
           raf: ringStats(rafMs, workN, workI),
+          workPct1Low: ringPctLow(workMs, workN, workI, 0.01),
+          rafPct1Low: ringPctLow(rafMs, workN, workI, 0.01),
           lastPhysMs: lastPhysMs,
           lastDrawMs: lastDrawMs,
           longtaskCount: longTasks.length,

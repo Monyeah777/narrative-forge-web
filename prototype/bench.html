@@ -5,7 +5,7 @@
   <meta name="color-scheme" content="dark" />
   <meta name="theme-color" content="#050505" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>B4 · 60fps / long task / 相似度</title>
+  <title>§5 · 真机试炼</title>
   <style>
     :root { color-scheme: dark; }
     html, body {
@@ -51,11 +51,12 @@
 </head>
 <body>
   <main>
-    <h1>B4 · 性能自检（不改视觉档）</h1>
+    <h1>§5 · 真机试炼（bench.html 协议）</h1>
     <p>
-      60fps 门闩看 <code>tick</code> 内 physics+render 的 p95 ≤ 16.67ms（headless rAF 常被锁在 ~30Hz，不拿帧计数当闸）。
-      long task 用 <code>PerformanceObserver</code>，阈值 50ms，热身后计。
-      相似度：成画 contain 裁块 vs 达拉斯源图，一次 readback，禁止进 rAF。
+      U10：long task / 帧时间 1% low / 成画停帧。
+      U11：32×32 相关系数 + 亮度直方图（node 一次 readback）。
+      打断演练 ×20：START / 首页 / SAVE。
+      不改视觉档，不开轨道 B。
     </p>
     <p>
       <button type="button" id="run">RUN</button>
@@ -80,6 +81,13 @@
         return frame.contentWindow;
       }
 
+      function leavePointer() {
+        var w = win();
+        var el = w && w.document.getElementById("void");
+        if (el) el.dispatchEvent(new PointerEvent("pointerleave", { bubbles: true }));
+        if (w && w.document) w.document.dispatchEvent(new PointerEvent("pointerleave", { bubbles: true }));
+      }
+
       function waitReady(timeoutMs) {
         var deadline = Date.now() + timeoutMs;
         return new Promise(function (resolve, reject) {
@@ -99,35 +107,32 @@
         });
       }
 
-      function cropFormed() {
-        var w = win();
-        var canvas = w.document.getElementById("void");
-        var c = w.__nfRender.contain;
-        var dpr = w.__nfRender.dpr || 1;
-        var off = document.createElement("canvas");
-        off.width = Math.max(1, Math.round(c.w));
-        off.height = Math.max(1, Math.round(c.h));
-        var g = off.getContext("2d");
-        g.drawImage(
-          canvas,
-          c.x * dpr, c.y * dpr, c.w * dpr, c.h * dpr,
-          0, 0, off.width, off.height
-        );
-        return { w: off.width, h: off.height, dataUrl: off.toDataURL("image/png") };
+      function waitPainted(timeoutMs) {
+        var deadline = Date.now() + timeoutMs;
+        return new Promise(function (resolve) {
+          (function poll() {
+            var info = win().__nfRender;
+            if (info && (info.workerHasFrame || info.workerBlit === false)) {
+              resolve(info);
+              return;
+            }
+            if (Date.now() > deadline) {
+              resolve(info);
+              return;
+            }
+            setTimeout(poll, 40);
+          })();
+        });
       }
 
       async function run() {
         runBtn.disabled = true;
+        statusEl.className = "";
         statusEl.textContent = "warming";
-        var report = { task: "B4", gates: {}, chaos: null, assemble: null, formed: null };
+        var report = { task: "S5", gates: {} };
         try {
           await waitReady(20000);
-          var paintedDeadline = Date.now() + 4000;
-          while (Date.now() < paintedDeadline) {
-            var painted = win().__nfRender;
-            if (painted && (painted.workerHasFrame || painted.workerBlit === false)) break;
-            await sleep(40);
-          }
+          await waitPainted(4000);
           await sleep(200);
           var w = win();
           if (w.__nfResetPerf) w.__nfResetPerf();
@@ -137,14 +142,29 @@
             n: w.__nfRender.n,
             running: w.__nfRender.running,
             mode: w.__nfRender.mode,
-            perf: JSON.parse(JSON.stringify((w.__nfGetPerf && w.__nfGetPerf()) || w.__nfPerf || {}))
+            dpr: w.__nfRender.dpr,
+            spring: w.__nfAnim && w.__nfAnim.spring,
+            damp: w.__nfAnim && w.__nfAnim.damp,
+            perf: JSON.parse(JSON.stringify((w.__nfGetPerf && w.__nfGetPerf()) || {}))
           };
+          statusEl.textContent = "visibility";
+          var chaosRunning = w.__nfRender.running;
+          Object.defineProperty(w.document, "hidden", { configurable: true, get: function () { return true; } });
+          w.document.dispatchEvent(new Event("visibilitychange"));
+          var hiddenRunning = w.__nfRender.running;
+          Object.defineProperty(w.document, "hidden", { configurable: true, get: function () { return false; } });
+          w.document.dispatchEvent(new Event("visibilitychange"));
+          report.visibility = {
+            wasRunning: chaosRunning,
+            hiddenRunning: hiddenRunning,
+            paused: chaosRunning === true && hiddenRunning === false
+          };
+          await sleep(200);
           if (w.__nfResetPerf) w.__nfResetPerf();
           statusEl.textContent = "assemble";
           var t0 = performance.now();
           w.document.getElementById("btn-intro").click();
-          var voidEl = w.document.getElementById("void");
-          if (voidEl) voidEl.dispatchEvent(new PointerEvent("pointerleave", { bubbles: true }));
+          leavePointer();
           var formed = null;
           var deadline = Date.now() + 5000;
           while (Date.now() < deadline) {
@@ -152,54 +172,74 @@
               mode: w.__nfRender.mode,
               running: w.__nfRender.running,
               activeCount: w.__nfRender.activeCount,
-              contain: w.__nfRender.contain,
-              perf: w.__nfGetPerf ? w.__nfGetPerf() : w.__nfPerf
+              tickCount: w.__nfRender.tickCount
             };
             if (formed.mode === "formed" && formed.running === false) break;
             await sleep(40);
           }
           report.assemble_ms = Math.round(performance.now() - t0);
-          report.assemble = {
-            mode: formed && formed.mode,
-            running: formed && formed.running,
-            perf: JSON.parse(JSON.stringify(w.__nfPerf || {}))
+          leavePointer();
+          var settleUntil = Date.now() + 2000;
+          while (Date.now() < settleUntil) {
+            if (w.__nfRender.mode === "formed" && w.__nfRender.running === false) break;
+            await sleep(40);
+          }
+          await sleep(160);
+          settleUntil = Date.now() + 2000;
+          while (Date.now() < settleUntil) {
+            if (w.__nfRender.mode === "formed" && w.__nfRender.running === false) break;
+            await sleep(40);
+          }
+          var ticksHeld = w.__nfRender.tickCount;
+          await sleep(400);
+          report.stop_frame = {
+            ticks_before: ticksHeld,
+            ticks_after: w.__nfRender.tickCount,
+            held: w.__nfRender.tickCount === ticksHeld && w.__nfRender.running === false
           };
-          var voidEl = w.document.getElementById("void");
-          if (voidEl) voidEl.dispatchEvent(new PointerEvent("pointerleave", { bubbles: true }));
-          await sleep(200);
           report.formed = {
             mode: w.__nfRender.mode,
             running: w.__nfRender.running,
             activeCount: w.__nfRender.activeCount,
-            contain: w.__nfRender.contain,
-            crop: cropFormed()
+            tickCount: w.__nfRender.tickCount
           };
-          var workP95 = report.chaos.perf && report.chaos.perf.work ? report.chaos.perf.work.p95 : 99;
-          var lt = report.chaos.perf ? report.chaos.perf.longtaskCount : 99;
+
+          statusEl.textContent = "interrupt ×20";
+          var nan0 = w.__nfAnim ? w.__nfAnim.nanHeals : 0;
+          var i;
+          for (i = 0; i < 20; i++) {
+            w.document.getElementById("btn-start").click();
+            w.document.getElementById("btn-home").click();
+            w.document.getElementById("btn-save").click();
+          }
+          if (w.__nfRender.frozen) w.document.getElementById("btn-save").click();
+          leavePointer();
+          report.interrupt = {
+            cycles: 20,
+            nan0: nan0,
+            nanHeals: w.__nfAnim ? w.__nfAnim.nanHeals : -1,
+            n: w.__nfRender.n,
+            alive: w.__nfRender.n === 12000
+          };
+
+          var workP95 = report.chaos.perf.work ? report.chaos.perf.work.p95 : 99;
+          var workLow = report.chaos.perf.workPct1Low ? report.chaos.perf.workPct1Low.meanMs : 99;
+          var lt = report.chaos.perf.longtaskCount;
           report.gates = {
             n_12000: report.chaos.n === 12000,
             work_p95_le_16_67: workP95 <= 16.67,
+            work_1pct_low_le_16_67: workLow <= 16.67,
             chaos_longtask_0: lt === 0,
-            formed_idle: report.formed.mode === "formed" && report.formed.running === false
+            formed_idle: report.formed && report.formed.mode === "formed" && report.formed.running === false,
+            stop_frame: report.stop_frame.held === true,
+            interrupt_20_no_nan: report.interrupt.nanHeals === report.interrupt.nan0 && report.interrupt.alive,
+            visibility_pauses: report.visibility.paused === true
           };
           window.__nfBench = report;
-          outEl.textContent = JSON.stringify({
-            task: report.task,
-            chaos: report.chaos,
-            assemble_ms: report.assemble_ms,
-            assemble: report.assemble,
-            formed: {
-              mode: report.formed.mode,
-              running: report.formed.running,
-              activeCount: report.formed.activeCount,
-              contain: report.formed.contain,
-              crop: { w: report.formed.crop.w, h: report.formed.crop.h }
-            },
-            gates: report.gates
-          }, null, 2);
+          outEl.textContent = JSON.stringify(report, null, 2);
           var pass = Object.keys(report.gates).every(function (k) { return report.gates[k]; });
           statusEl.className = pass ? "pass" : "fail";
-          statusEl.textContent = pass ? "PASS (ssim in node harness)" : "FAIL";
+          statusEl.textContent = pass ? "PASS (U11 32×32 in node harness)" : "FAIL";
         } catch (err) {
           statusEl.className = "fail";
           statusEl.textContent = String(err && err.message ? err.message : err);
