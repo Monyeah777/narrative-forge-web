@@ -1758,152 +1758,20 @@
         atlasBmp = null;
       }
 
-      function sliceSpriteBitmaps() {
-        var p, cell, row, jobs;
-        if (!atlasBmp || !atlasPalN || !atlasCell) {
-          spriteBmp = null;
-          return Promise.resolve(null);
-        }
-        cell = atlasCell;
-        jobs = [];
-        for (p = 0; p < atlasPalN; p++) {
-          row = pixelBlockOn() ? 0 : (palSize ? palSize[p] : 0);
-          jobs.push(createImageBitmap(atlasBmp, p * cell, row * cell, cell, cell));
-        }
-        return Promise.all(jobs).then(function (bmps) {
-          closeSprites();
-          spriteBmp = bmps;
-          bootRenderWorker();
-          return bmps;
-        });
-      }
-
-      function stopRenderWorker() {
-        workerReady = false;
-        workerPending = false;
-        workerHasFrame = false;
-        if (renderWorker) {
-          renderWorker.terminate();
-          renderWorker = null;
-        }
-        closeLastPaint();
-      }
-
-      function bootRenderWorker() {
-        /* == RENDERER-SWAP == worker blit retired. Replacement: renderer.pixi.js draw. */
-        if (pixiTrack) return;
-        if (typeof Worker === "undefined" || typeof OffscreenCanvas === "undefined" || !spriteBmp) return;
-        try {
-          if (!renderWorker) {
-            renderWorker = new Worker("render-worker.js");
-            renderWorker.onmessage = onRenderWorker;
-            renderWorker.onerror = function () {
-              workerReady = false;
-            };
-          }
-          workerReady = false;
-          Promise.all(spriteBmp.map(function (s) { return createImageBitmap(s); })).then(function (clones) {
-            if (!renderWorker) return;
-            renderWorker.postMessage({
-              t: "init",
-              w: canvas.width,
-              h: canvas.height,
-              cell: atlasCell,
-              dpr: dpr,
-              sprites: clones
-            }, clones);
-          }).catch(function () {
-            workerReady = false;
-          });
-        } catch (err) {
-          workerReady = false;
-        }
-      }
-
-      function onRenderWorker(e) {
-        var bmp;
-        if (!e.data) return;
-        if (e.data.t === "ready") {
-          workerReady = true;
-          return;
-        }
-        if (e.data.t !== "frame") return;
-        workerPending = false;
-        bmp = e.data.bitmap;
-        if (!bmp || !ctx) return;
-        if (lastPaintBmp && lastPaintBmp !== bmp && typeof lastPaintBmp.close === "function") lastPaintBmp.close();
-        lastPaintBmp = bmp;
-        workerHasFrame = true;
-        paintStage(lastPaintBmp);
-        publishRenderInfo();
-      }
-
-      function paintStage(bmp) {
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.imageSmoothingEnabled = false;
-        ctx.shadowBlur = 0;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        if (bmp) ctx.drawImage(bmp, 0, 0);
-        drawDust();
-      }
-
-      function postWorkerFrame() {
-        var xb, yb, pb;
-        if (!workerReady || !renderWorker || !N || !pid) return false;
-        if (workerPending) return true;
-        workerPending = true;
-        xb = new Float32Array(x);
-        yb = new Float32Array(y);
-        pb = new Uint16Array(pid);
-        renderWorker.postMessage({ t: "frame", x: xb.buffer, y: yb.buffer, pid: pb.buffer }, [xb.buffer, yb.buffer, pb.buffer]);
-        return true;
-      }
-
       function buildPaletteAtlas() {
         var rec = window.__nfPoints;
         var palette = rec && rec.palette ? rec.palette : PLACEHOLDER_PALETTE;
         var palN = palette.length;
         var block = pixelBlockOn();
         var cell = block ? pixelBlockSize() : Math.max(16, Math.round(SIZES[2] * ATLAS_PAD * dpr));
-        var sheet = document.createElement("canvas");
-        var g;
-        var row, col, rgb;
-        var rows;
         atlasPalN = palN;
         atlasCell = cell;
         assignPaletteSizes(palette);
         bucketCount = new Uint16Array(palN);
         bucketPrefix = new Uint32Array(palN + 1);
-        rows = block ? 1 : SIZES.length;
-        sheet.width = palN * cell;
-        sheet.height = rows * cell;
-        g = sheet.getContext("2d");
-        g.imageSmoothingEnabled = false;
-        g.shadowBlur = 0;
-        g.clearRect(0, 0, sheet.width, sheet.height);
-        for (row = 0; row < rows; row++) {
-          for (col = 0; col < palN; col++) {
-            rgb = hexRgb(palette[col]);
-            g.save();
-            g.translate(col * cell, row * cell);
-            if (block) paintBlockDot(g, cell, rgb);
-            else paintSoftDot(g, cell, rgb, SIZES[row], dpr);
-            g.restore();
-          }
-        }
-        if (typeof createImageBitmap !== "function") {
-          return Promise.reject(new Error("createImageBitmap unavailable"));
-        }
-        var gen = ++atlasGen;
-        return createImageBitmap(sheet).then(function (bmp) {
-          if (gen !== atlasGen) {
-            if (typeof bmp.close === "function") bmp.close();
-            return atlasBmp;
-          }
-          closeAtlas();
-          atlasBmp = bmp;
-          return sliceSpriteBitmaps().then(function () { return bmp; });
-        });
+        /* == RENDERER-SWAP == Pixi tints from palette hex. Canvas atlas / worker sprites retired. */
+        closeAtlas();
+        return Promise.resolve(null);
       }
 
       function rebuildBuckets() {
@@ -2154,26 +2022,6 @@
             else dustY[i] += py >= 0 ? 3 : -3;
           }
         }
-      }
-
-      function drawDust() {
-        var i;
-        var dx;
-        var dy;
-        if (!dustOn() || !dustN || !ctx) return;
-        ctx.save();
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.imageSmoothingEnabled = false;
-        ctx.shadowBlur = 0;
-        ctx.fillStyle = "#5a626c";
-        for (i = 0; i < dustN; i++) {
-          ctx.globalAlpha = dustA[i];
-          dx = Math.round(dustX[i] * dpr);
-          dy = Math.round(dustY[i] * dpr);
-          ctx.fillRect(dx, dy, 1, 1);
-        }
-        ctx.globalAlpha = 1;
-        ctx.restore();
       }
 
       function scatterHomes() {
@@ -3073,8 +2921,7 @@
       }
 
       function paintVoid() {
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        ctx.clearRect(0, 0, cssW, cssH);
+        /* == RENDERER-SWAP == #void is hidden; Pixi owns the visible canvas. */
       }
 
       function resizeCanvas() {
@@ -3093,17 +2940,10 @@
         cssH = nextH;
         dpr = nextDpr;
         /* == RENDERER-SWAP == */
-        if (pixiTrack && window.NFPixiRenderer && window.NFPixiRenderer.ready) {
+        if (window.NFPixiRenderer && window.NFPixiRenderer.ready) {
           window.NFPixiRenderer.resize(cssW, cssH, dpr);
-        } else if (!pixiTrack) {
-          canvas.width = cssW * dpr;
-          canvas.height = cssH * dpr;
-          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-          if (renderWorker && workerReady) {
-            renderWorker.postMessage({ t: "resize", w: canvas.width, h: canvas.height, dpr: dpr, cell: atlasCell });
-          }
         }
-        if (firstSprites) buildSprites();
+        if (firstSprites && !pixiTrack) buildSprites();
         if ((firstSprites || dprChanged) && window.__nfPoints) {
           buildPaletteAtlas().then(function () {
             if (N) render();
@@ -3657,11 +3497,9 @@
       }
 
       function render(now) {
-        var p, k, i, start, end, dx, dy, half, spr, cell;
-        cell = atlasCell;
         tickCount++;
-        /* == RENDERER-SWAP == */
-        if (pixiTrack && window.NFPixiRenderer && window.NFPixiRenderer.ready) {
+        /* == RENDERER-SWAP == exhibit draw is Pixi only. Canvas2D particle blit retired. */
+        if (window.NFPixiRenderer && window.NFPixiRenderer.ready) {
           window.NFPixiRenderer.draw({
             n: N,
             x: x,
@@ -3670,64 +3508,7 @@
             palette: window.__nfPoints && window.__nfPoints.palette,
             pointsId: window.__nfPoints && window.__nfPoints.id
           });
-          publishRenderInfo();
-          return;
         }
-        if (!atlasBmp || !N || !cell) {
-          ctx.setTransform(1, 0, 0, 1, 0, 0);
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          publishRenderInfo();
-          return;
-        }
-        if (workerReady && lastPaintBmp && mode === "formed" && !pointerLive() && !handoverLive && !frozen) {
-          paintStage(lastPaintBmp);
-          publishRenderInfo();
-          return;
-        }
-        if (workerReady && postWorkerFrame()) {
-          if (lastPaintBmp) paintStage(lastPaintBmp);
-          else publishRenderInfo();
-          return;
-        }
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        half = cell * 0.5;
-        ctx.globalAlpha = 1;
-        ctx.imageSmoothingEnabled = false;
-        ctx.shadowBlur = 0;
-        if (spriteBmp && spriteBmp.length === atlasPalN) {
-          var xMin = -cell;
-          var yMin = -cell;
-          var xMax = canvas.width;
-          var yMax = canvas.height;
-          for (p = 0; p < atlasPalN; p++) {
-            start = bucketPrefix[p];
-            end = bucketPrefix[p + 1];
-            if (start === end) continue;
-            spr = spriteBmp[p];
-            for (k = start; k < end; k++) {
-              i = bucketIndex[k];
-              dx = Math.round(x[i] * dpr - half);
-              dy = Math.round(y[i] * dpr - half);
-              if (dx < xMin || dy < yMin || dx > xMax || dy > yMax) continue;
-              ctx.drawImage(spr, dx, dy);
-            }
-          }
-        } else {
-          for (p = 0; p < atlasPalN; p++) {
-            start = bucketPrefix[p];
-            end = bucketPrefix[p + 1];
-            if (start === end) continue;
-            for (k = start; k < end; k++) {
-              i = bucketIndex[k];
-              dx = Math.round(x[i] * dpr - half);
-              dy = Math.round(y[i] * dpr - half);
-              ctx.drawImage(atlasBmp, p * cell, (pixelBlockOn() ? 0 : (palSize ? palSize[p] : 0)) * cell, cell, cell, dx, dy, cell, cell);
-            }
-          }
-        }
-        if (!pixelBlockOn()) ctx.imageSmoothingEnabled = true;
-        drawDust();
         publishRenderInfo();
       }
 
@@ -3770,7 +3551,6 @@
           acc = 0;
           tDraw = performance.now();
           integrateDust();
-          if (lastPaintBmp) paintStage(lastPaintBmp);
           lastPhysMs = 0;
           lastDrawMs = performance.now() - tDraw;
           recordWork(lastDrawMs);
@@ -4243,7 +4023,7 @@
         hasGlyph = !!(points && points.length);
         layoutContain();
         alloc(engineCount());
-        if (!sprites.length) buildSprites();
+        if (!pixiTrack && !sprites.length) buildSprites();
         scatterHomes();
         formTargets(points);
         placeStart();

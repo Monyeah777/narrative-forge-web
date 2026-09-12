@@ -10,7 +10,7 @@
 
 ## 当前进度（云端 Track A）
 
-手册 **§5 已完成**（真机试炼 / bench.html 协议）。B4 / B4.1 已过闸。自动放映修订包 §9.0–§9.6 已交付。作者点名《PixiJS v8 迁移总手册》最高严谨模式：现网默认 Pixi + ticker。现网三幅画作默认都是 **100k bin**（介绍 Dallas / 大厅 Scotland / 社区 Met）。NF 彩蛋仍 12k JSON。`?bin=0` 回滚介绍+大厅+社区 12k。弹簧 / physics **未改**。150k/250k 仍只在隔离对照页。下一刀是清 ctx 死代码（或用户改口）。
+手册 **§5 已完成**（真机试炼 / bench.html 协议）。B4 / B4.1 已过闸。自动放映修订包 §9.0–§9.6 已交付。作者点名《PixiJS v8 迁移总手册》最高严谨模式：现网默认 Pixi + ticker。现网三幅画作默认都是 **100k bin**（介绍 Dallas / 大厅 Scotland / 社区 Met）。NF 彩蛋仍 12k JSON。`?bin=0` 回滚介绍+大厅+社区 12k。弹簧 / physics **未改**。现网 Canvas2D 粒子 blit / worker 启动已拆除（`render-worker.js` 文件仍留仓）。150k/250k 仍只在隔离对照页。下一刀是作者机 60fps 定档、或 DPR≤3 / bin 文件头（须批准），或用户改口。
 
 - 凌厉弹簧 0.055 / 阻尼 0.90 / vmax 10；临界停止 0.6px / 0.06；驱离 100px 平方反比
 - 成画 1.5s（最早 1.2s）、回退 1.1s；相位时间走固定步长，冻结不计入
@@ -45,7 +45,8 @@
 - INTRO 100k：分支 `cursor/pixi-h1-100k-52ec`（叠在 `cursor/pixi-h1-teardown-52ec` 上）。介绍默认读 `prototype/pixi-cloud/dallas-100k.bin`（v3 DataView）。`?bin=0` 回 12k JSON。大厅/社区/NF 未改。证据 `painting/pixi-h1-9-100k.json`。
 - 点数档对照：分支 `cursor/pixi-h1-density-52ec`（叠在 `cursor/pixi-h1-100k-52ec` 上）。隔离页 `prototype/pixi-density/index.html?n=100000|150000|250000`。100k 复用现成 bin，不重采样。150k/250k 新采样，不进现网。证据 `painting/pixi-h1-10-density.json`。
 - HALL 100k：分支 `cursor/pixi-h1-hall-52ec`（叠在 `cursor/pixi-h1-density-52ec` 上）。大厅默认读 `prototype/pixi-hall/scotland-100k.bin`。证据 `painting/pixi-h1-11-hall.json`。
-- COMMUNITY 100k：本条分支 `cursor/pixi-h1-community-52ec`（叠在 `cursor/pixi-h1-hall-52ec` 上）。社区默认读 `prototype/pixi-community/met-100k.bin`。`?bin=0` 回介绍+大厅+社区 12k JSON。Dallas / Scotland 100k 未重采样。NF 未改。证据 `painting/pixi-h1-12-community.json`。下一刀是清 ctx 死代码（须点名）。
+- COMMUNITY 100k：分支 `cursor/pixi-h1-community-52ec`（叠在 `cursor/pixi-h1-hall-52ec` 上）。社区默认读 `prototype/pixi-community/met-100k.bin`。证据 `painting/pixi-h1-12-community.json`。
+- 清 ctx 死代码：本条分支 `cursor/pixi-h1-ctx-dead-52ec`（叠在 `cursor/pixi-h1-community-52ec` 上）。现网 `render()` 只走 Pixi。已删 `paintStage` / `drawDust` / `new Worker(render-worker.js)`。`physics()` / `applySpring` 仍在。`render-worker.js` 文件仍留仓。证据 `painting/pixi-h1-13-ctx.json`。
 
 ---
 
@@ -251,4 +252,4 @@ POINTER_LERP 0.2  SIZES [2,3,4]
 
 1. 打开 http://localhost:8768/ 看现行原型（没有服务就在 `prototype/` 起 python http.server）。
 2. 读 `prototype/index.html` 的 CSS 报章区 + `openArchive` / `triggerEgg`，不要重写引擎。
-3. 只做用户这一次点名的事。现网默认 Pixi，介绍/大厅/社区默认 100k bin。150k/250k 只在隔离对照页。不要改弹簧。清 ctx 死代码不要删 `physics()` / `applySpring`。
+3. 只做用户这一次点名的事。现网默认 Pixi，介绍/大厅/社区默认 100k bin。不要改弹簧。不要删 `physics()` / `applySpring`。
