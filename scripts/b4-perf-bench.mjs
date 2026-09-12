@@ -250,10 +250,14 @@ async function main() {
     }
 
     const benchPage = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-    await benchPage.goto(`http://127.0.0.1:${PORT}/bench.html`, {
+    await benchPage.goto(`http://127.0.0.1:${PORT}/bench.html?auto=1`, {
       waitUntil: "domcontentloaded",
       timeout: 30_000,
     });
+    await benchPage.waitForFunction(() => {
+      const s = document.getElementById("status");
+      return s && /PASS|FAIL/.test(s.textContent || "");
+    }, { timeout: 25_000 });
     const benchShot = await snap(benchPage, "b4_bench_harness.png");
     await benchPage.close();
 
