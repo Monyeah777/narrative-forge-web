@@ -10,7 +10,7 @@
 
 ## 当前进度（云端 Track A）
 
-手册 **B3 已完成**，停在等「继续」。不要开 B4（bench.html / 60fps / long task）。
+手册 **B3 已完成**。刚做完单点微调：**全屏曲面 CRT**（撤销左右硬切分）。不要开 B4。
 
 - 凌厉弹簧 0.055 / 阻尼 0.90 / vmax 10；临界停止 0.6px / 0.06；驱离 100px 平方反比
 - 成画 1.5s（最早 1.2s）、回退 1.1s；相位时间走固定步长，冻结不计入
@@ -18,7 +18,9 @@
 - SAVE 冻结（aria-pressed 常亮）；SETTINGS 循环 A/B/C（LOW DRIFT / STORM / STILL）
 - `prefers-reduced-motion` → 直接静态成画
 - 本条分支：`cursor/b3-assemble-spring-52ec`（叠在 `cursor/b2-render-atlas-52ec` 上）
-- B2 仍有效：12k ImageBitmap 分桶绘制 + contain
+- B2 仍有效：12k ImageBitmap 分桶绘制
+- CRT 微调：画布 100vw×100vh；成画 70vh、中心偏左 15%；报章无底板；`.crt-shell` 厚边框+微曲面（无 WebGL）
+- 本条分支：`cursor/crt-fullscreen-tube-52ec`（叠在 `cursor/b3-assemble-spring-52ec` 上）
 
 ---
 
@@ -28,7 +30,7 @@
 |---|---|
 | 本仓 | `C:\Users\mon_7\Downloads\narrative-forge-web` |
 | GitHub | `Monyeah777/narrative-forge-web` |
-| 当前分支 | 云端叠 PR 在 `cursor/b3-assemble-spring-52ec` |
+| 当前分支 | 云端叠 PR 在 `cursor/crt-fullscreen-tube-52ec` |
 | 原型路径 | `prototype/index.html`（live fetch：`assets/points.json`；`gen-points.mjs` 仍写同目录字形 `points.json`） |
 | 画作预览 | `painting/01-dallas.jpg`（primary）+ `02`–`06`；`painting/points.json`（B1-2 v2）；高清不进 git |
 | NF 主仓 | `C:\Users\mon_7\Downloads\NarrativeForge-main` |

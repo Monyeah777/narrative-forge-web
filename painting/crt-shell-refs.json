@@ -1,0 +1,28 @@
+{
+  "task": "CRT-fullscreen-tube",
+  "title": "全屏曲面 CRT：撤销左右硬切分",
+  "searched": [
+    {
+      "q": "css crt bezel border-radius ellipse inset box-shadow perspective rotateX",
+      "refs": [
+        "https://blog.webguy.pw/blog/simulating-a-crt-monitor-in-css/",
+        "https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/perspective",
+        "https://developer.mozilla.org/en-US/docs/Web/CSS/clip-path"
+      ],
+      "takeaway": "Bezel = thick border + elliptical radius + inset vignette. Mild rotateX under perspective reads as curved glass. clip-path inset(round) needs @supports fallback to radius-only."
+    },
+    {
+      "q": "object-fit contain offset left canvas target mapping",
+      "refs": [
+        "https://github.com/nrkn/object-fit-math",
+        "https://stackoverflow.com/questions/78387434/how-to-convert-mouse-position-to-canvas-coordinate-using-object-fit-contain"
+      ],
+      "takeaway": "Do not clip the painting. Scale the whole image (here ~70vh) then translate so its center sits left of the viewport center. Chaos homes stay in full CSS pixels."
+    }
+  ],
+  "red_lines": [
+    "No WebGL / PixiJS / fragment shaders (Track A is Canvas 2D only).",
+    "No right-side fill or dark gradient mask on .paper.",
+    "Do not start B4."
+  ]
+}
