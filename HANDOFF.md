@@ -10,7 +10,7 @@
 
 ## 当前进度（云端 Track A）
 
-手册 **§5 已完成**（真机试炼 / bench.html 协议）。B4 / B4.1 已过闸。自动放映修订包 §9.0–§9.6 已交付。作者点名《PixiJS v8 迁移总手册》最高严谨模式：现网默认 Pixi + ticker。现网三幅画作默认都是 **100k bin**（介绍 Dallas / 大厅 Scotland / 社区 Met）。NF 彩蛋仍 12k JSON。`?bin=0` 回滚介绍+大厅+社区 12k。弹簧 / physics **未改**。现网 Canvas2D 粒子 blit / worker 启动已拆除（`render-worker.js` 文件仍留仓）。150k/250k 仍只在隔离对照页。2026-09-12 已批准：原生 DPR≤3、`points.bin` 文件头 9B（`NFPT` + u8=3 + u32le count）、点数终值按作者 PC+手机双端 60fps 定档。现网仍 100k，不以云 VM 软件 GL 改档。径向重映射 **S0+S1+S2a 已落盘**。S2a 隔离 50k 拒绝采样已过 §8#1（中心/边缘 ≈2.4–2.6×），§8#2 未过（无细化）。现网仍 100k。下一刀须作者说「继续」才开 **S2b**（默认 dart-thinning）。50k 改现网仍须作者点名。其它待点名：§0.9 白名单 / 无 WebGL 文案 / PC 实验性 API / 作者机双端 60fps 数字后改现网点数量。
+手册 **§5 已完成**（真机试炼 / bench.html 协议）。B4 / B4.1 已过闸。自动放映修订包 §9.0–§9.6 已交付。作者点名《PixiJS v8 迁移总手册》最高严谨模式：现网默认 Pixi + ticker。现网三幅画作默认都是 **100k bin**（介绍 Dallas / 大厅 Scotland / 社区 Met）。NF 彩蛋仍 12k JSON。`?bin=0` 回滚介绍+大厅+社区 12k。弹簧 / physics **未改**。现网 Canvas2D 粒子 blit / worker 启动已拆除（`render-worker.js` 文件仍留仓）。150k/250k 仍只在隔离对照页。2026-09-12 已批准：原生 DPR≤3、`points.bin` 文件头 9B（`NFPT` + u8=3 + u32le count）、点数终值按作者 PC+手机双端 60fps 定档。现网仍 100k，不以云 VM 软件 GL 改档。径向重映射 **S0+S1+S2a+S2b 已落盘**。S2b 默认 dart-thinning：三幅隔离约 50.4–50.6k（±5% 内），中心/边缘 2.42–2.63×，NN p99/median 1.46–1.55。②/③ 不升级。现网仍 100k。下一刀须作者说「继续」才开 **S2c**（正式质检）。50k 改现网仍须作者点名。其它待点名：§0.9 白名单 / 无 WebGL 文案 / PC 实验性 API / 作者机双端 60fps 数字后改现网点数量。
 
 - 凌厉弹簧 0.055 / 阻尼 0.90 / vmax 10；临界停止 0.6px / 0.06；驱离 100px 平方反比
 - 成画 1.5s（最早 1.2s）、回退 1.1s；相位时间走固定步长，冻结不计入
@@ -50,7 +50,8 @@
 - DPR≤3 + H2 文件头：分支 `cursor/pixi-h1-dpr-header-52ec`（叠在 `cursor/pixi-h1-ctx-dead-52ec` 上）。`quantizeDpr` 原生整数 ≤3；`?dpr=` 仍是实验闸。所有 tracked `points.bin` 前缀 9B 头，payload 字节未改（旧 sha 记在 `payloadSha256`）。C2 golden 未动。现网点数仍 100k。证据 `painting/pixi-h1-14-approve.json`。
 - 径向重映射 S0：分支 `cursor/radial-s0-diag-52ec`（叠在 `cursor/pixi-h1-dpr-header-52ec` 上）。只诊断，不重采样。现网三幅中心/边缘密度 ≈1.00×（设计 3.76×）。NN p99 已 ≤1.8×median。手册 50k 与现网 100k、手册 §4 与弹簧 0.055 均未改。证据 `painting/radial-s0.json`。
 - 径向重映射 S1：分支 `cursor/radial-s1-research-84d9`（叠在 `cursor/radial-s0-diag-52ec` 上）。§7 六搜、八条引用。档① 默认可离线做；档② Yuksel/cySampleElim 已核、升级才开；档③ 论文已核，**公开 GitHub 本闸未找到**，保持休眠。备忘 `docs/research/径向重映射-备忘.md`。
-- 径向重映射 S2a：本条分支 `cursor/radial-s2a-candidates-84d9`（叠在 `cursor/radial-s1-research-84d9` 上）。`W(r)` 拒绝采样 250k → 洗牌 50k，隔离 u16，无 NFPT。三幅 50k 中心/边缘 2.40 / 2.45 / 2.57（S0 为 ≈1.00×）。双跑哈希一致。现网 bin sha 未变。未细化。证据 `painting/radial-s2a.json`。
+- 径向重映射 S2a：分支 `cursor/radial-s2a-candidates-84d9`（叠在 `cursor/radial-s1-research-84d9` 上）。`W(r)` 拒绝采样 250k → 洗牌 50k，隔离 u16，无 NFPT。三幅 50k 中心/边缘 2.40 / 2.45 / 2.57。证据 `painting/radial-s2a.json`。
+- 径向重映射 S2b：本条分支 `cursor/radial-s2b-thinning-84d9`（叠在 `cursor/radial-s2a-candidates-84d9` 上）。默认 dart-thinning，像素距离，`s0` 二分锁定。Dallas/Scotland/Met n=50601/50441/50471，中心/边缘 2.42/2.61/2.63，NN 1.46/1.55/1.55。不升级 ②/③。现网 sha 未变。证据 `painting/radial-s2b.json`。
 
 ---
 
@@ -256,4 +257,4 @@ POINTER_LERP 0.2  SIZES [2,3,4]
 
 1. 打开 http://localhost:8768/ 看现行原型（没有服务就在 `prototype/` 起 python http.server）。
 2. 读 `prototype/index.html` 的 CSS 报章区 + `openArchive` / `triggerEgg`，不要重写引擎。
-3. 只做用户这一次点名的事。现网默认 Pixi，介绍/大厅/社区默认 100k bin。`points.bin` 现有 9B `NFPT` 头。不要改弹簧。不要删 `physics()` / `applySpring`。径向重映射 S2a 已落盘。未听到 `继续` 不得开 S2b，也不得把 50k 写进现网。
+3. 只做用户这一次点名的事。现网默认 Pixi，介绍/大厅/社区默认 100k bin。`points.bin` 现有 9B `NFPT` 头。不要改弹簧。不要删 `physics()` / `applySpring`。径向重映射 S2b 已落盘。未听到 `继续` 不得开 S2c，也不得把 50k 写进现网。
