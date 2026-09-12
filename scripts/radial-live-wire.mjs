@@ -256,7 +256,9 @@ const report = {
   booked: {
     E: "S4 petition stays booked; not enabled",
     render: "live stays Pixi ParticleContainer; no ImageData swap",
-    egg: "NF glyph stays JSON / not radially sampled",
+    egg: "NF glyph stays JSON / not radially remapped; live radial physics now covers egg/chaos/disperse",
+    handbookShape: "live createWorld switches.handbookShape=true; isolation default false",
+    imagedata: "A–D stay isolation; live Pixi maps A=sleep B=n/a C=LUT D=sleep-center; E booked",
   },
   pass: failed.length === 0,
   failed,

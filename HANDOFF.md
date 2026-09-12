@@ -10,7 +10,7 @@
 
 ## 当前进度（云端 Track A）
 
-手册 **§5 已完成**（真机试炼 / bench.html 协议）。B4 / B4.1 已过闸。自动放映修订包 §9.0–§9.6 已交付。作者点名《PixiJS v8 迁移总手册》最高严谨模式：现网默认 Pixi + ticker。作者再点名「在网站的基础上执行」手册后，介绍/大厅/社区默认 S2b dart-thinning **50k NFPT** + §4 径向物理；100k bin 仍留仓。NF 彩蛋仍 12k JSON。`?radial=0` 回 100k + `applySpring` 0.055；`?bin=0` 回 12k JSON。`SPRING_SHARP = 0.055` / C2 黄金未改。现网 Canvas2D 粒子 blit / worker 启动已拆除（`render-worker.js` 文件仍留仓）。150k/250k 仍只在隔离对照页。2026-09-12 已批准：原生 DPR≤3、`points.bin` 文件头 9B（`NFPT` + u8=3 + u32le count）。径向重映射 **S0–S5 隔离闸已齐**；现网接线在 `cursor/radial-live-wire-84d9`（叠在 `cursor/radial-s5-accept-84d9` 上）。Pixi 仍画；**不**加载 `nf-radial-render.js`；E 申议未启用。证据 `painting/radial-live.json`。其它待点名：§0.9 白名单 / 无 WebGL 文案 / PC 实验性 API / 作者机双端 60fps 数字后改档 / 启用 E。
+手册 **§5 已完成**（真机试炼 / bench.html 协议）。B4 / B4.1 已过闸。自动放映修订包 §9.0–§9.6 已交付。作者点名《PixiJS v8 迁移总手册》最高严谨模式：现网默认 Pixi + ticker。作者再点名「在网站的基础上执行」手册后，介绍/大厅/社区默认 S2b dart-thinning **50k NFPT** + §4 径向物理；100k bin 仍留仓。NF 彩蛋仍 12k JSON（现网径向物理已覆盖彩蛋/混沌/回巢，**不**径向重采样字形）。`?radial=0` 回 100k + `applySpring` 0.055；`?bin=0` 回 12k JSON。`SPRING_SHARP = 0.055` / C2 黄金未改。现网 Canvas2D 粒子 blit / worker 启动已拆除（`render-worker.js` 文件仍留仓）。150k/250k 仍只在隔离对照页。2026-09-12 已批准：原生 DPR≤3、`points.bin` 文件头 9B（`NFPT` + u8=3 + u32le count）。径向重映射 **S0–S5 隔离闸已齐**；现网接线在 `cursor/radial-live-wire-84d9`。S6 最高严谨检索优化在 `cursor/radial-strict-opt-84d9`：宽带 3.76 是端点不是带平均（理论上限 ≈2.50，S2b 已贴上限）；现网 `handbookShape`；Pixi 映射 A–D；不加载 `nf-radial-render.js`；E 申议未启用。证据 `painting/radial-live.json`、`painting/radial-s6.json`。其它待点名：§0.9 白名单 / 无 WebGL 文案 / PC 实验性 API / 作者机双端 60fps 数字后改档 / 启用 E。
 
 - 凌厉弹簧 0.055 / 阻尼 0.90 / vmax 10；临界停止 0.6px / 0.06；驱离 100px 平方反比
 - 成画 1.5s（最早 1.2s）、回退 1.1s；相位时间走固定步长，冻结不计入
@@ -56,7 +56,8 @@
 - 径向重映射 S3：分支 `cursor/radial-s3-physics-84d9`（叠在 `cursor/radial-s2c-qc-84d9` 上）。隔离 `nf-radial-physics.js`，全开关，60/120Hz。#3/#4/#5/#6/#8 过。#5 用离散临界 `c*(k)`；手册 `c(r)` 对照仍振荡。现网弹簧 / ticker / 100k 未动。证据 `painting/radial-s3.json`。
 - 径向重映射 S4：分支 `cursor/radial-s4-render-84d9`（叠在 `cursor/radial-s3-physics-84d9` 上）。隔离 `nf-radial-render.js`，菜单 A→D 每步 bench。A–D 后脚本 p95 6.48ms，超 +1.0ms / 2ms，**申议 E 未启用**。未替换现网 Pixi。证据 `painting/radial-s4.json`。
 - 径向重映射 S5：分支 `cursor/radial-s5-accept-84d9`（叠在 `cursor/radial-s4-render-84d9` 上）。隔离总验收：§8 全表、15s 录像、放大、帧时、回退清单。证据 `painting/radial-s5.json`。
-- 现网径向接线：本条分支 `cursor/radial-live-wire-84d9`（叠在 `cursor/radial-s5-accept-84d9` 上）。默认 50k + §4 物理 + Pixi。回退 `?radial=0`。不加载隔离 ImageData 渲染。证据 `painting/radial-live.json`。
+- 现网径向接线：分支 `cursor/radial-live-wire-84d9`（叠在 `cursor/radial-s5-accept-84d9` 上）。默认 50k + §4 物理 + Pixi。回退 `?radial=0`。不加载隔离 ImageData 渲染。证据 `painting/radial-live.json`。
+- 径向 S6 检索优化：本条分支 `cursor/radial-strict-opt-84d9`（叠在 `cursor/radial-live-wire-84d9` 上）。§7 全词包第二遍。宽带密度贴 W 积分上限，不重采样。现网 `handbookShape` + 混沌/彩蛋走 §4。证据 `painting/radial-s6.json` / `painting/radial-s6-strict.json`。
 
 ---
 
