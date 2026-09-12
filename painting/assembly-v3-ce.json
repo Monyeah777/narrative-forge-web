@@ -1,0 +1,56 @@
+{
+  "task": "assembly-v3-CE-phys",
+  "volume": "docs/NF_粒子装配模块_整合总卷_v3.0.md",
+  "sources": {
+    "reeves": "ACM TOG 2(2) 1983 §2.4: kill on lifetime=0, intensity below threshold, or leave region of interest. Frame loop: generate → attributes → extinguish → dynamics → render.",
+    "phase_velocity": "OpenStax University Physics 1 §16.1: v=λ/T=λf. Crest of u=A sin(2πt/T−2πr/λ+φ0) travels at v_φ=λ/T. Britannica cited by volume; bot-walled this run.",
+    "streakline": "Cambridge MDP node8 + MIT Unified Fluids Lect.8: streakline = particles that have passed a fixed point (continuous dye/smoke). NASA Glenn: streamline is instantaneous tangent; they coincide only in steady flow.",
+    "bridson": "Bridson, Hourihan, Nordenstam, SIGGRAPH 2007 §2.1: 2D v=(∂ψ/∂y,−∂ψ/∂x); ∇·∇×≡0, no gutters. Potential modulated, not raw Perlin velocity."
+  },
+  "isolation_defaults_off": true,
+  "s3_dual": "cdff787751379eca069c205dbeb730f7b34a13e85c9902dee0959acee143aa19",
+  "s3_dual_locked": true,
+  "envelope": {
+    "aIn": 0.5,
+    "aHold": 1,
+    "aOut": 0.25,
+    "aDead": 0
+  },
+  "Q": {
+    "center_vx": 1.3800000000000001,
+    "edge_vx": -0.0683072916666681,
+    "q082": 0,
+    "q098": 1,
+    "q09": 0.5000000000000004
+  },
+  "M0": {
+    "center": 0,
+    "edge": 0.9654447074178734,
+    "expect_edge": 0.9654447074178791,
+    "v_phase": 7,
+    "crest_phase_err": 0
+  },
+  "M3": {
+    "center_esc": 0,
+    "edge_esc": 3.8369826536749327,
+    "physics_clean": true
+  },
+  "budget": {
+    "increment_8k_ms": 0.6235261666666667,
+    "scaled_50k_ms": 3.897038541666667,
+    "cap": 1
+  },
+  "petition_E": true,
+  "rollback": "?morph=0",
+  "pass": true,
+  "failed": [],
+  "notes": [
+    {
+      "msOff": 1.7760688333333334,
+      "msOn": 2.399595,
+      "delta": 0.6235261666666667,
+      "scaled50k": 3.897038541666667
+    },
+    "DWELL increment over +1.0ms at 50k scale — petition, not silent. Morph stays on; E/count cut still off."
+  ]
+}

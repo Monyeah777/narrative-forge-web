@@ -22,6 +22,14 @@
  * Live may also set `handbookShape`: keep c*(k) at the stiff center (no
  * oscillation) and scale it by handbook c(r)/c(0) so the edge is overdamped
  * the way §4 wrote. Isolation default is off so S3 hashes stay put.
+ *
+ * v3.0 modules 6–9 (isolation default off; live `?morph=0` rollback):
+ *   lifecycle  Reeves 1983 gen/dynamics/death; τ∈[40,120], fade-in 0.6s / last 20%
+ *   recycle    intensity≤0.01 or leave r>1.25·R95 → reuse slot (N const); F5 birth
+ *   boundaryQ  Q=smoothstep(0.82,0.98); kill outgoing radial·Q + β_max=8px/s inward
+ *   ripple     M0 u=A·Wb·sin(2πt/T−2πr/λ+φ0); v_φ=λ/T (OpenStax 16.1); V3=V1+V2
+ *   streak     M3 streakline = dye from a fixed point (Cambridge MDP / MIT 16);
+ *              radial U0=5px/s + Bridson 2007 2D v=(∂ψ/∂y,−∂ψ/∂x); two crossed ψ
  */
 (function (root) {
   "use strict";
@@ -30,6 +38,7 @@
   var DT_CLAMP = 0.05;
   var LUT_N = 64;
   var LUT_HZ = 30;
+  var FIL_LUT_HZ = 1;
   var SLEEP_V = 0.05;
   var SLEEP_X = 0.5;
   var FS = 0.006;
@@ -48,6 +57,47 @@
   var PATH_OX = 37.2;
   var PATH_OY = 19.1;
   var PATH_OZ = 5.3;
+  var LIFE_IN = 0.6;
+  var LIFE_TAU0 = 40;
+  var LIFE_TAU1 = 80;
+  var LIFE_OUT = 0.2;
+  var RECYCLE_A = 0.01;
+  var RECYCLE_R = 1.25;
+  var Q_LO = 0.82;
+  var Q_HI = 0.98;
+  var BETA_MAX = 8;
+  var RIPPLE_L = 56;
+  var RIPPLE_T = 8;
+  var RIPPLE_A = 0.005;
+  var WB_LO = 0.1;
+  var WB_HI = 0.35;
+  var V2_AMP = 0.03;
+  var STREAK_U0 = 5;
+  var STREAK_WE_LO = 0.72;
+  var STREAK_WE_HI = 0.92;
+  var STREAK_R_CUT = 1.05;
+  var STREAK_FIL = 0.4;
+  var FIL_S0 = 140;
+  var FIL_S1 = 90;
+  var COS60 = 0.5;
+  var SIN60 = 0.8660254037844386;
+  var RAMP_A = 2;
+  var RAMP_B = 8;
+  var BIRTH_IN = 0.08;
+  var TWO_PI = Math.PI * 2;
+  var SIN_N = 2048;
+  var SIN_LUT = new Float64Array(SIN_N);
+  (function fillSin() {
+    var i;
+    for (i = 0; i < SIN_N; i++) SIN_LUT[i] = Math.sin(TWO_PI * i / SIN_N);
+  })();
+
+  function sinTurn(phase) {
+    var t = phase / TWO_PI;
+    t -= Math.floor(t);
+    if (t < 0) t += 1;
+    return SIN_LUT[(t * SIN_N) | 0];
+  }
 
   var SWITCH_DEFAULTS = {
     field: true,
@@ -59,7 +109,12 @@
     sleep: true,
     gating: true,
     interpolate: true,
-    reducedMotion: false
+    reducedMotion: false,
+    lifecycle: false,
+    recycle: false,
+    boundaryQ: false,
+    ripple: false,
+    streak: false
   };
 
   var PHASE = {
@@ -125,6 +180,43 @@
 
   function aOfR(r) {
     return A_MAX * smoothstep(A_LO, A_HI, r);
+  }
+
+  function lifeEnvelope(age, tau) {
+    if (age <= 0) return 0;
+    if (age < LIFE_IN) return age / LIFE_IN;
+    if (!(tau > LIFE_IN)) return 1;
+    if (age >= tau) return 0;
+    var outStart = tau * (1 - LIFE_OUT);
+    if (age > outStart) return (tau - age) / (tau * LIFE_OUT);
+    return 1;
+  }
+
+  function dwellRamp(t) {
+    if (t <= 0) return 0;
+    if (t < RAMP_A) return 0.4 * (t / RAMP_A);
+    if (t < RAMP_B) return 0.4 + 0.6 * (t - RAMP_A) / (RAMP_B - RAMP_A);
+    return 1;
+  }
+
+  function qOfR(r) {
+    return smoothstep(Q_LO, Q_HI, r);
+  }
+
+  function weOfR(rVal) {
+    if (rVal < STREAK_WE_LO) return 0;
+    if (rVal > STREAK_R_CUT) return 0;
+    return smoothstep(STREAK_WE_LO, STREAK_WE_HI, rVal) * (1 - smoothstep(1, STREAK_R_CUT, rVal));
+  }
+
+  function ripplePhase(rPx, t, phi0) {
+    return TWO_PI * t / RIPPLE_T - TWO_PI * rPx / RIPPLE_L + phi0;
+  }
+
+  /** Radial displacement (px). A=0.5% of local radius; Wb protects the tree. */
+  function rippleDisp(rPx, rNorm, t, phi0, ramp) {
+    var wb = smoothstep(WB_LO, WB_HI, rNorm);
+    return RIPPLE_A * rPx * wb * sinTurn(ripplePhase(rPx, t, phi0)) * ramp;
   }
 
   function mergeSwitches(src) {
@@ -305,15 +397,42 @@
     var tx = new Float64Array(n);
     var ty = new Float64Array(n);
     var rr = new Float64Array(n);
+    var rPix = new Float64Array(n);
+    var urx = new Float64Array(n);
+    var ury = new Float64Array(n);
+    var wb = new Float64Array(n);
     var asleep = new Uint8Array(n);
     var prevX = new Float64Array(n);
     var prevY = new Float64Array(n);
+    var lifeAge = new Float64Array(n);
+    var lifeTau = new Float64Array(n);
+    var lifeA = new Float64Array(n);
+    var escX = new Float64Array(n);
+    var escY = new Float64Array(n);
     var simplex = makeSimplex(seed);
     var lutDx = new Float64Array(LUT_N * LUT_N);
     var lutDy = new Float64Array(LUT_N * LUT_N);
+    var lutFilX = new Float64Array(LUT_N * LUT_N);
+    var lutFilY = new Float64Array(LUT_N * LUT_N);
+    var lutPsi = new Float64Array(LUT_N * LUT_N);
+    var tintA = new Float64Array(n);
     var lutSlice = -1;
+    var lutFilSlice = -1;
     var acc = 0;
     var time = 0;
+    var dwellT0 = 0;
+    var rampCache = 0;
+    var tintClock = 0;
+    var cxW = cx * width;
+    var cyH = cy * height;
+    var lifeRng = mulberry32(seed ^ 0x4c494645);
+    var phi0 = TWO_PI * mulberry32(seed ^ 0x4d302020)();
+    for (i = 0; i < n; i++) {
+      lifeTau[i] = LIFE_TAU0 + lifeRng() * LIFE_TAU1;
+      lifeAge[i] = LIFE_IN + lifeRng() * Math.max(0.01, lifeTau[i] * (1 - LIFE_OUT) - LIFE_IN);
+      lifeA[i] = 1;
+      tintA[i] = 1;
+    }
 
     copyInto(tx, opts.tx, n);
     copyInto(ty, opts.ty, n);
@@ -339,6 +458,9 @@
       var ny;
       var d;
       var v;
+      var dx;
+      var dy;
+      var rp;
       var useNorm = !!(normX && normY);
       for (k = 0; k < n; k++) {
         if (useNorm) {
@@ -354,6 +476,18 @@
         if (v < 0) v = 0;
         if (v > 1) v = 1;
         rr[k] = v;
+        dx = tx[k] - cxW;
+        dy = ty[k] - cyH;
+        rp = Math.hypot(dx, dy);
+        rPix[k] = rp;
+        if (rp > ANISO_EPS) {
+          urx[k] = dx / rp;
+          ury[k] = dy / rp;
+        } else {
+          urx[k] = 0;
+          ury[k] = 0;
+        }
+        wb[k] = smoothstep(WB_LO, WB_HI, v);
       }
     }
 
@@ -377,7 +511,22 @@
       return phase === PHASE.INTRO || phase === PHASE.HANDOVER || phase === PHASE.REPEL;
     }
 
-    function rebuildLut(tLut) {
+    /**
+     * Two crossed slow potentials (80–160px, T>10s) then one curl.
+     * Bridson 2007 §2.1: 2D v=(∂ψ/∂y, −∂ψ/∂x) so ∇·v=0 (no gutters).
+     */
+    function psiAt(px, py, tLut) {
+      var rx = px * COS60 + py * SIN60;
+      var ry = -px * SIN60 + py * COS60;
+      return (
+        simplex.noise3(px / FIL_S0, py / FIL_S0, tLut / 16) +
+        0.45 * simplex.noise3(px / FIL_S1 + 9.2, py / FIL_S1, tLut / 20) +
+        simplex.noise3(rx / FIL_S0 + 17.4, ry / FIL_S0, tLut / 17) +
+        0.45 * simplex.noise3(rx / FIL_S1 + 3.7, ry / FIL_S1, tLut / 21)
+      );
+    }
+
+    function rebuildDriftLut(tLut) {
       var gi;
       var gj;
       var px;
@@ -394,11 +543,58 @@
       }
     }
 
+    function rebuildFilLut(tLut) {
+      var gi;
+      var gj;
+      var px;
+      var py;
+      var o;
+      var il;
+      var ir;
+      var jb;
+      var jt;
+      var dx;
+      var dy;
+      var cellX = width / LUT_N;
+      var cellY = height / LUT_N;
+      for (gj = 0; gj < LUT_N; gj++) {
+        py = ((gj + 0.5) / LUT_N) * height;
+        for (gi = 0; gi < LUT_N; gi++) {
+          px = ((gi + 0.5) / LUT_N) * width;
+          lutPsi[gj * LUT_N + gi] = psiAt(px, py, tLut);
+        }
+      }
+      for (gj = 0; gj < LUT_N; gj++) {
+        for (gi = 0; gi < LUT_N; gi++) {
+          o = gj * LUT_N + gi;
+          il = gi > 0 ? gi - 1 : gi;
+          ir = gi < LUT_N - 1 ? gi + 1 : gi;
+          jb = gj > 0 ? gj - 1 : gj;
+          jt = gj < LUT_N - 1 ? gj + 1 : gj;
+          dx = (ir - il) * cellX;
+          dy = (jt - jb) * cellY;
+          if (dx < 1e-9) dx = cellX;
+          if (dy < 1e-9) dy = cellY;
+          lutFilX[o] = (lutPsi[jt * LUT_N + gi] - lutPsi[jb * LUT_N + gi]) / dy;
+          lutFilY[o] = -(lutPsi[gj * LUT_N + ir] - lutPsi[gj * LUT_N + il]) / dx;
+        }
+      }
+    }
+
     function maybeRebuildLut() {
       var slice = Math.floor(time * LUT_HZ + 1e-12);
-      if (slice === lutSlice) return;
-      lutSlice = slice;
-      rebuildLut(slice / LUT_HZ);
+      var filSlice;
+      if (slice !== lutSlice) {
+        lutSlice = slice;
+        rebuildDriftLut(slice / LUT_HZ);
+      }
+      if (sw.streak) {
+        filSlice = Math.floor(time * FIL_LUT_HZ + 1e-12);
+        if (filSlice !== lutFilSlice) {
+          lutFilSlice = filSlice;
+          rebuildFilLut(filSlice / FIL_LUT_HZ);
+        }
+      }
     }
 
     function lutSample(lut, px, py) {
@@ -454,6 +650,41 @@
       return [amp * ns[0], amp * ns[1]];
     }
 
+    function rOfPixel(px, py) {
+      var d = Math.hypot(px / width - cx, py / height - cy);
+      var v = d / r95;
+      if (v < 0) v = 0;
+      return v;
+    }
+
+    function morphRamp() {
+      if (phase !== PHASE.DWELL) return 0;
+      return dwellRamp(time - dwellT0);
+    }
+
+    function respawn(idx) {
+      var cxp = cx * width;
+      var cyp = cy * height;
+      var rx = tx[idx] - cxp;
+      var ry = ty[idx] - cyp;
+      var rl = Math.hypot(rx, ry);
+      if (rl > ANISO_EPS) {
+        x[idx] = cxp + (1 - BIRTH_IN) * rx;
+        y[idx] = cyp + (1 - BIRTH_IN) * ry;
+      } else {
+        x[idx] = tx[idx];
+        y[idx] = ty[idx];
+      }
+      vx[idx] = 0;
+      vy[idx] = 0;
+      escX[idx] = 0;
+      escY[idx] = 0;
+      asleep[idx] = 0;
+      lifeTau[idx] = LIFE_TAU0 + lifeRng() * LIFE_TAU1;
+      lifeAge[idx] = 0;
+      lifeA[idx] = 0;
+    }
+
     function stepParticle(idx) {
       var S;
       var k;
@@ -475,8 +706,11 @@
       if (sw.sleep && asleep[idx]) {
         dx = tx[idx] - x[idx];
         dy = ty[idx] - y[idx];
-        if (dx * dx + dy * dy < SLEEP_X * SLEEP_X) return;
-        asleep[idx] = 0;
+        if (dx * dx + dy * dy < SLEEP_X * SLEEP_X) {
+          if (!(sw.boundaryQ && rr[idx] >= Q_LO)) return;
+        } else {
+          asleep[idx] = 0;
+        }
       }
 
       S = smoothstep(S_LO, S_HI, rr[idx]);
@@ -521,6 +755,21 @@
         vy[idx] *= c;
       }
 
+      if (sw.boundaryQ && rr[idx] >= Q_LO) {
+        var qNow = qOfR(rr[idx]);
+        if (qNow > 0) {
+          rx = urx[idx];
+          ry = ury[idx];
+          vrad = vx[idx] * rx + vy[idx] * ry;
+          if (vrad > 0) {
+            vx[idx] -= vrad * qNow * rx;
+            vy[idx] -= vrad * qNow * ry;
+          }
+          vx[idx] -= (BETA_MAX * H) * qNow * rx;
+          vy[idx] -= (BETA_MAX * H) * qNow * ry;
+        }
+      }
+
       x[idx] += vx[idx];
       y[idx] += vy[idx];
 
@@ -536,12 +785,98 @@
       }
     }
 
+    function stepLife(idx) {
+      var a;
+      var rVis;
+      var rx;
+      var ry;
+      var rl;
+      var ramp;
+      var we;
+      var filx;
+      var fily;
+      var fil;
+      var speed;
+      if (sw.lifecycle) {
+        lifeAge[idx] += H;
+        if (lifeAge[idx] <= LIFE_IN || lifeAge[idx] >= lifeTau[idx] * (1 - LIFE_OUT)) {
+          a = lifeEnvelope(lifeAge[idx], lifeTau[idx]);
+          lifeA[idx] = a;
+        } else {
+          a = 1;
+          lifeA[idx] = 1;
+        }
+      } else {
+        a = 1;
+        lifeA[idx] = 1;
+      }
+      if (sw.streak && phase === PHASE.DWELL && rr[idx] >= STREAK_WE_LO) {
+        ramp = rampCache > 0 ? rampCache : morphRamp();
+        rx = x[idx] - cxW;
+        ry = y[idx] - cyH;
+        rl = Math.hypot(rx, ry);
+        rVis = rOfPixel(x[idx] + escX[idx], y[idx] + escY[idx]);
+        we = weOfR(rVis);
+        if (we > 0 && ramp > 0 && rl > ANISO_EPS) {
+          filx = lutSample(lutFilX, x[idx], y[idx]);
+          fily = lutSample(lutFilY, x[idx], y[idx]);
+          fil = filx * filx + fily * fily;
+          if (fil > 1) {
+            fil = 1 / Math.sqrt(fil);
+            filx *= fil;
+            fily *= fil;
+          }
+          rx /= rl;
+          ry /= rl;
+          speed = STREAK_U0 * H * we * ramp;
+          escX[idx] += speed * (rx + STREAK_FIL * filx);
+          escY[idx] += speed * (ry + STREAK_FIL * fily);
+        }
+      }
+      if (sw.recycle && phase === PHASE.DWELL) {
+        if (a <= RECYCLE_A) {
+          respawn(idx);
+        } else if (escX[idx] * escX[idx] + escY[idx] * escY[idx] > 0 || rr[idx] > 0.95) {
+          rVis = rOfPixel(x[idx] + escX[idx], y[idx] + escY[idx]);
+          if (rVis >= RECYCLE_R) respawn(idx);
+        }
+      }
+    }
+
+    function refreshTint() {
+      var idx;
+      var a;
+      if (!(sw.lifecycle || sw.ripple)) return;
+      tintClock += 1;
+      if (tintClock > 1 && tintClock % 6 !== 0) return;
+      for (idx = 0; idx < n; idx++) {
+        a = sw.lifecycle ? lifeA[idx] : 1;
+        if (sw.ripple && rampCache > 0 && wb[idx] > 0) {
+          a = clamp01(
+            a * (1 + V2_AMP * wb[idx] * sinTurn(ripplePhase(rPix[idx], time, phi0)) * rampCache)
+          );
+        }
+        tintA[idx] = a;
+      }
+    }
+
     function stepFixed() {
       var idx;
       prevX.set(x);
       prevY.set(y);
-      for (idx = 0; idx < n; idx++) stepParticle(idx);
+      rampCache = morphRamp();
+      if (sw.streak) maybeRebuildLut();
+      if (sw.lifecycle || sw.recycle || sw.streak) {
+        for (idx = 0; idx < n; idx++) {
+          stepParticle(idx);
+          stepLife(idx);
+        }
+      } else {
+        for (idx = 0; idx < n; idx++) stepParticle(idx);
+      }
       time += H;
+      rampCache = morphRamp();
+      refreshTint();
     }
 
     function drain(frameTime) {
@@ -582,8 +917,15 @@
         py = y[idx];
       }
       dlt = driftAt(px, py, rr[idx]);
-      out[0] = px + dlt[0];
-      out[1] = py + dlt[1];
+      px += dlt[0] + escX[idx];
+      py += dlt[1] + escY[idx];
+      if (sw.ripple && rampCache > 0 && wb[idx] > 0) {
+        var u = rippleDisp(rPix[idx], rr[idx], time, phi0, rampCache);
+        px += u * urx[idx];
+        py += u * ury[idx];
+      }
+      out[0] = px;
+      out[1] = py;
       return out;
     }
 
@@ -595,9 +937,13 @@
     }
 
     function setPhase(next) {
+      var prev = phase;
       phase = next;
       if (phaseWakes()) {
         asleep.fill(0);
+      }
+      if (phase === PHASE.DWELL && prev !== PHASE.DWELL) {
+        dwellT0 = time;
       }
     }
 
@@ -648,6 +994,13 @@
       asleep: asleep,
       prevX: prevX,
       prevY: prevY,
+      lifeA: lifeA,
+      tintA: tintA,
+      lifeAge: lifeAge,
+      lifeTau: lifeTau,
+      escX: escX,
+      escY: escY,
+      phi0: phi0,
       get phase() {
         return phase;
       },
@@ -657,6 +1010,10 @@
       get acc() {
         return acc;
       },
+      get dwellT0() {
+        return dwellT0;
+      },
+      morphRamp: morphRamp,
       setPhase: setPhase,
       setNorm: setNorm,
       wakeAll: wakeAll,
@@ -677,6 +1034,7 @@
     DT_CLAMP: DT_CLAMP,
     LUT_N: LUT_N,
     LUT_HZ: LUT_HZ,
+    FIL_LUT_HZ: FIL_LUT_HZ,
     SLEEP_V: SLEEP_V,
     SLEEP_X: SLEEP_X,
     FS: FS,
@@ -685,6 +1043,20 @@
     PATH_OX: PATH_OX,
     PATH_OY: PATH_OY,
     PATH_OZ: PATH_OZ,
+    LIFE_IN: LIFE_IN,
+    LIFE_TAU0: LIFE_TAU0,
+    LIFE_TAU1: LIFE_TAU1,
+    LIFE_OUT: LIFE_OUT,
+    RECYCLE_A: RECYCLE_A,
+    RECYCLE_R: RECYCLE_R,
+    Q_LO: Q_LO,
+    Q_HI: Q_HI,
+    BETA_MAX: BETA_MAX,
+    RIPPLE_L: RIPPLE_L,
+    RIPPLE_T: RIPPLE_T,
+    RIPPLE_A: RIPPLE_A,
+    STREAK_U0: STREAK_U0,
+    STREAK_FIL: STREAK_FIL,
     SWITCH_DEFAULTS: SWITCH_DEFAULTS,
     PHASE: PHASE,
     clamp01: clamp01,
@@ -696,6 +1068,12 @@
     SHAPE_BLEND: SHAPE_BLEND,
     discKc: discKc,
     aOfR: aOfR,
+    lifeEnvelope: lifeEnvelope,
+    dwellRamp: dwellRamp,
+    qOfR: qOfR,
+    weOfR: weOfR,
+    ripplePhase: ripplePhase,
+    rippleDisp: rippleDisp,
     mergeSwitches: mergeSwitches,
     makeSimplex: makeSimplex,
     createWorld: createWorld

@@ -2236,7 +2236,8 @@
         pixelBlock: { enabled: true, size: 2 },
         dust: { enabled: true, n: 640 },
         frameScale: 1.0,
-        colorVersion: "v1"
+        colorVersion: "v1",
+        assemblyMorph: true
       };
       try {
         var _qs = new URLSearchParams(window.location.search);
@@ -2258,6 +2259,7 @@
           exhibitManifest.frameScale = parseFloat(_qs.get("frame"));
           exhibitManifest.frame = { scale: exhibitManifest.frameScale };
         }
+        if (_qs.get("morph") === "0") exhibitManifest.assemblyMorph = false;
       } catch (errQs) {}
       var exhibit = {
         phase: "off",
@@ -2734,6 +2736,16 @@
         }
       }
 
+      function usesAssemblyMorph() {
+        if (!usesRadial()) return false;
+        if (exhibitManifest && exhibitManifest.assemblyMorph === false) return false;
+        try {
+          return new URLSearchParams(window.location.search).get("morph") !== "0";
+        } catch (errMorph) {
+          return true;
+        }
+      }
+
       function radialPaintingKey() {
         if (!currentTarget || currentTarget.type === "text") return "";
         if (currentTarget === TARGETS.INTRO || currentTarget.path === "points_poplars.json") return "dallas";
@@ -2795,6 +2807,12 @@
           springSharp: SPRING_SHARP,
           handbookShape: !!(sw && sw.handbookShape),
           criticalDamp: !!(sw && sw.criticalDamp),
+          lifecycle: !!(sw && sw.lifecycle),
+          recycle: !!(sw && sw.recycle),
+          boundaryQ: !!(sw && sw.boundaryQ),
+          ripple: !!(sw && sw.ripple),
+          streak: !!(sw && sw.streak),
+          morphRamp: radialWorld && radialWorld.morphRamp ? radialWorld.morphRamp() : 0,
           renderModule: false,
           render: {
             backend: "pixi",
@@ -2850,7 +2868,16 @@
           R95: radialR95(key),
           seed: 0x53335033,
           phase: api.PHASE.INTRO,
-          switches: { handbookShape: true },
+          switches: usesAssemblyMorph()
+            ? {
+                handbookShape: true,
+                lifecycle: true,
+                recycle: true,
+                boundaryQ: true,
+                ripple: true,
+                streak: true
+              }
+            : { handbookShape: true },
           tx: tx,
           ty: ty,
           x: x,
@@ -3773,6 +3800,7 @@
             n: N,
             x: x,
             y: y,
+            a: radialWorld && radialWorld.tintA,
             pid: pid,
             palette: window.__nfPoints && window.__nfPoints.palette,
             pointsId: window.__nfPoints && window.__nfPoints.id

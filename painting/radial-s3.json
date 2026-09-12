@@ -27,12 +27,18 @@
     "field": true,
     "anisotropy": true,
     "criticalDamp": true,
+    "handbookShape": false,
     "drift": true,
     "noiseLut": true,
     "sleep": true,
     "gating": true,
     "interpolate": true,
-    "reducedMotion": false
+    "reducedMotion": false,
+    "lifecycle": false,
+    "recycle": false,
+    "boundaryQ": false,
+    "ripple": false,
+    "streak": false
   },
   "field_table": [
     {
