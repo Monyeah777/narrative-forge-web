@@ -1,0 +1,133 @@
+{
+  "task": "H1-⑦ default Pixi cut-over",
+  "handbook": "docs/NF_PixiJS迁移总手册_整合版_v1_2026-09-11.md",
+  "timestamp": "2026-09-12T08:50:29.864Z",
+  "vendorSha": "9948591083793305468d73915a3ea85032dcf8e32eee7a1328585050d7a14d53",
+  "liveGrep": {
+    "has_raf": true,
+    "has_physics": true,
+    "has_apply_spring": true,
+    "spring": true,
+    "renderer_swap": true,
+    "default_pixi": true,
+    "rollback": true,
+    "no_static_vendor": true,
+    "pass": true
+  },
+  "rendererGrep": {
+    "hits": {
+      "at_pixi": false,
+      "sprite": false,
+      "beginFill": false,
+      "app_view": false,
+      "ctor_options": false,
+      "second_raf": false,
+      "set_interval": false
+    },
+    "required": {
+      "addParticle": true,
+      "particle": true,
+      "boundsArea": true,
+      "ticker_high": true,
+      "app_init": true,
+      "app_canvas": true
+    },
+    "pass": true
+  },
+  "default": {
+    "live": {
+      "ready": true,
+      "version": "8.20.1",
+      "rendererName": "webgl",
+      "count": 12000,
+      "tickerStarted": false,
+      "fps": 60.24096385542119,
+      "priority": "HIGH",
+      "contextLost": false,
+      "usedCanvas": true,
+      "softDot": 128,
+      "track": true,
+      "ok": true,
+      "usedSecondRaf": false,
+      "n": 12000,
+      "mode": "formed",
+      "ticks": 87,
+      "spring": 0.055,
+      "livePhysics": true
+    },
+    "mode": "formed",
+    "runtime": {
+      "pixi": "object",
+      "version": "8.20.1",
+      "scripts": [
+        "http://127.0.0.1:8784/vendor/pixi.min.js",
+        "http://127.0.0.1:8784/renderer.pixi.js",
+        ""
+      ],
+      "track": {
+        "ready": true,
+        "version": "8.20.1",
+        "rendererName": "webgl",
+        "count": 12000,
+        "tickerStarted": false,
+        "fps": 60.24096385542119,
+        "priority": "HIGH",
+        "contextLost": false,
+        "usedCanvas": true,
+        "softDot": 128,
+        "track": true,
+        "ok": true,
+        "usedSecondRaf": false,
+        "n": 12000,
+        "mode": "formed",
+        "ticks": 87,
+        "spring": 0.055,
+        "livePhysics": true
+      }
+    },
+    "pageErrors": []
+  },
+  "rollback": {
+    "n": 12000,
+    "mode": "formed",
+    "workerHasFrame": true,
+    "runtime": {
+      "pixi": "undefined",
+      "scripts": [
+        ""
+      ],
+      "track": {
+        "track": false,
+        "ready": false,
+        "n": 12000,
+        "mode": "formed"
+      }
+    },
+    "pageErrors": []
+  },
+  "screenshots": {
+    "default_pixi": "/opt/cursor/artifacts/pixi_h1_7_default_pixi_12k.png",
+    "rollback_canvas": "/opt/cursor/artifacts/pixi_h1_7_rollback_canvas_12k.png"
+  },
+  "acceptance": {
+    "vendor_lock": true,
+    "live_grep": true,
+    "renderer_grep": true,
+    "default_pixi_loaded": true,
+    "default_version": true,
+    "default_webgl": true,
+    "default_high": true,
+    "default_count": true,
+    "default_formed": true,
+    "default_no_second_raf": true,
+    "default_no_pageerror": true,
+    "rollback_no_pixi": true,
+    "rollback_no_vendor_script": true,
+    "rollback_n": true,
+    "rollback_formed": true,
+    "rollback_worker": true,
+    "rollback_no_pageerror": true,
+    "physics_kept": true,
+    "pass": true
+  }
+}
