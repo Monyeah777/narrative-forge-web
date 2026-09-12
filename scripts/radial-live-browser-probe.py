@@ -225,7 +225,8 @@ def probe(url: str, wait_s: float = 6.0) -> dict:
                         })()""",
                         14,
                     )
-                    if egg and (egg.get("scene") == "glyph" or (egg.get("radial") or {}).get("scene") == "glyph"):
+                    egg_scene = egg.get("scene") or ((egg.get("radial") or {}).get("scene") if egg else None)
+                    if egg and egg_scene == "glyph" and egg.get("handbookShape"):
                         info["afterEgg"] = egg
                         break
                     time.sleep(0.25)

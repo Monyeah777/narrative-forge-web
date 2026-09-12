@@ -3049,6 +3049,7 @@
         if (!target) target = TARGETS.INTRO;
         currentTarget = target;
         if (target.type === "image") lastImageTarget = target;
+        destroyRadialWorld();
         return loadTargetRecord(target).then(function (rec) {
           var coerced;
           var timings;
