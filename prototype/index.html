@@ -2236,7 +2236,8 @@
         pixelBlock: { enabled: true, size: 2 },
         dust: { enabled: true, n: 640 },
         frameScale: 1.0,
-        colorVersion: "v1"
+        colorVersion: "v1",
+        assemblyMorph: true
       };
       try {
         var _qs = new URLSearchParams(window.location.search);
@@ -2258,6 +2259,7 @@
           exhibitManifest.frameScale = parseFloat(_qs.get("frame"));
           exhibitManifest.frame = { scale: exhibitManifest.frameScale };
         }
+        if (_qs.get("morph") === "0") exhibitManifest.assemblyMorph = false;
       } catch (errQs) {}
       var exhibit = {
         phase: "off",
@@ -2734,6 +2736,16 @@
         }
       }
 
+      function usesAssemblyMorph() {
+        if (!usesRadial()) return false;
+        if (exhibitManifest && exhibitManifest.assemblyMorph === false) return false;
+        try {
+          return new URLSearchParams(window.location.search).get("morph") !== "0";
+        } catch (errMorph) {
+          return true;
+        }
+      }
+
       function radialPaintingKey() {
         if (!currentTarget || currentTarget.type === "text") return "";
         if (currentTarget === TARGETS.INTRO || currentTarget.path === "points_poplars.json") return "dallas";
@@ -2783,6 +2795,32 @@
       function publishRadial() {
         var scene = radialSceneKey();
         var sw = radialWorld ? radialWorld.switches : null;
+        var escP95 = 0;
+        var tintMin = 1;
+        var tintMean = 1;
+        var i;
+        var mag;
+        var esc;
+        var tints;
+        if (radialWorld && radialWorld.escX && radialWorld.n) {
+          esc = [];
+          for (i = 0; i < radialWorld.n; i += 32) {
+            mag = Math.hypot(radialWorld.escX[i], radialWorld.escY[i]);
+            esc.push(mag);
+          }
+          esc.sort(function (a, b) { return a - b; });
+          escP95 = esc.length ? esc[Math.floor(0.95 * (esc.length - 1))] : 0;
+        }
+        if (radialWorld && radialWorld.tintA && radialWorld.n) {
+          tints = 0;
+          tintMin = 1;
+          for (i = 0; i < radialWorld.n; i += 32) {
+            mag = radialWorld.tintA[i];
+            tints += mag;
+            if (mag < tintMin) tintMin = mag;
+          }
+          tintMean = tints / Math.max(1, Math.ceil(radialWorld.n / 32));
+        }
         window.__nfRadial = {
           on: !!radialWorld,
           wanted: usesRadial(),
@@ -2795,6 +2833,15 @@
           springSharp: SPRING_SHARP,
           handbookShape: !!(sw && sw.handbookShape),
           criticalDamp: !!(sw && sw.criticalDamp),
+          lifecycle: !!(sw && sw.lifecycle),
+          recycle: !!(sw && sw.recycle),
+          boundaryQ: !!(sw && sw.boundaryQ),
+          ripple: !!(sw && sw.ripple),
+          streak: !!(sw && sw.streak),
+          morphRamp: radialWorld && radialWorld.morphRamp ? radialWorld.morphRamp() : 0,
+          escP95: escP95,
+          tintMin: tintMin,
+          tintMean: tintMean,
           renderModule: false,
           render: {
             backend: "pixi",
@@ -2850,7 +2897,16 @@
           R95: radialR95(key),
           seed: 0x53335033,
           phase: api.PHASE.INTRO,
-          switches: { handbookShape: true },
+          switches: usesAssemblyMorph()
+            ? {
+                handbookShape: true,
+                lifecycle: true,
+                recycle: true,
+                boundaryQ: true,
+                ripple: true,
+                streak: true
+              }
+            : { handbookShape: true },
           tx: tx,
           ty: ty,
           x: x,
@@ -3773,6 +3829,7 @@
             n: N,
             x: x,
             y: y,
+            a: radialWorld && radialWorld.tintA,
             pid: pid,
             palette: window.__nfPoints && window.__nfPoints.palette,
             pointsId: window.__nfPoints && window.__nfPoints.id

@@ -141,6 +141,11 @@ for (const [rel, expect] of Object.entries(LIVE_SHA)) {
 
 if (typeof physics.cShaped !== "function") failed.push("cShaped missing");
 if (physics.SWITCH_DEFAULTS.handbookShape !== false) failed.push("isolation handbookShape default");
+if (physics.SWITCH_DEFAULTS.lifecycle !== false) failed.push("isolation lifecycle default");
+if (physics.SWITCH_DEFAULTS.recycle !== false) failed.push("isolation recycle default");
+if (physics.SWITCH_DEFAULTS.boundaryQ !== false) failed.push("isolation boundaryQ default");
+if (physics.SWITCH_DEFAULTS.ripple !== false) failed.push("isolation ripple default");
+if (physics.SWITCH_DEFAULTS.streak !== false) failed.push("isolation streak default");
 
 const c0 = physics.cShaped(0.1, 0);
 const c1 = physics.cShaped(0.02, 1);

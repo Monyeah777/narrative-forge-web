@@ -16,6 +16,7 @@
   var lastPalette = null;
   var tickHooked = false;
   var userTick = null;
+  var alphaFrame = 0;
   var viewW = 1;
   var viewH = 1;
   var softSize = 128;
@@ -164,6 +165,14 @@
     for (i = 0; i < n; i++) {
       particles[i].x = state.x[i];
       particles[i].y = state.y[i];
+    }
+    /* Volume §9-8: static color + ≤10Hz update() for alpha / tint. */
+    if (state.a && container && typeof container.update === "function") {
+      alphaFrame += 1;
+      if (alphaFrame % 6 === 0) {
+        for (i = 0; i < n; i++) particles[i].alpha = state.a[i];
+        container.update();
+      }
     }
   }
 

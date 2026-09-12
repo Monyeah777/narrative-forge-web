@@ -58,7 +58,8 @@
 - 径向重映射 S5：分支 `cursor/radial-s5-accept-84d9`（叠在 `cursor/radial-s4-render-84d9` 上）。隔离总验收：§8 全表、15s 录像、放大、帧时、回退清单。证据 `painting/radial-s5.json`。
 - 现网径向接线：分支 `cursor/radial-live-wire-84d9`（叠在 `cursor/radial-s5-accept-84d9` 上）。默认 50k + §4 物理 + Pixi。回退 `?radial=0`。不加载隔离 ImageData 渲染。证据 `painting/radial-live.json`。
 - 径向 S6 检索优化：分支 `cursor/radial-strict-opt-84d9`（叠在 `cursor/radial-live-wire-84d9` 上）。§7 全词包第二遍。宽带密度贴 W 积分上限，不重采样。现网 `handbookShape` + 混沌/彩蛋走 §4。证据 `painting/radial-s6.json` / `painting/radial-s6-strict.json`。
-- 粒子装配总卷 v3.0 阶段 A：本条分支 `cursor/assembly-v3-a-diag-84d9`（叠在 `cursor/radial-strict-opt-84d9` 上）。只诊断，等「继续」才进 B。证据 `painting/assembly-v3-a.json`。卷面 `docs/NF_粒子装配模块_整合总卷_v3.0.md` 效力高于历史单件。
+- 粒子装配总卷 v3.0 阶段 A：分支 `cursor/assembly-v3-a-diag-84d9`（叠在 `cursor/radial-strict-opt-84d9` 上）。只诊断。证据 `painting/assembly-v3-a.json`。卷面 `docs/NF_粒子装配模块_整合总卷_v3.0.md` 效力高于历史单件。
+- 粒子装配 C/E 物理：本条分支 `cursor/assembly-v3-ce-phys-84d9`（叠在 `cursor/assembly-v3-a-diag-84d9` 上）。生命周期 / 回收 / Q(r) / M0 涟漪 / M3 脉线。隔离默认关。现网 `?morph=0` 回退。S3 dual 未漂。DWELL 增量超 +1.0ms，申议 E/砍 N，二者都没开。证据 `painting/assembly-v3-ce.json`。
 
 ---
 
