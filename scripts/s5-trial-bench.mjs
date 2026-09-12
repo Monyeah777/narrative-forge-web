@@ -201,9 +201,8 @@ async function assembleFormed(page) {
   }
   await leavePointer(page);
   await waitPainted(page, 2000);
-  const settleDeadline = Date.now() + 2000;
-  while (Date.now() < settleDeadline) {
-    formed = await page.evaluate(() => ({
+  async function readFormed() {
+    return page.evaluate(() => ({
       mode: window.__nfRender.mode,
       running: window.__nfRender.running,
       activeCount: window.__nfRender.activeCount,
@@ -211,9 +210,20 @@ async function assembleFormed(page) {
       contain: window.__nfRender.contain,
       nanHeals: window.__nfAnim ? window.__nfAnim.nanHeals : -1,
     }));
-    if (formed.mode === "formed" && formed.running === false) break;
-    await new Promise((r) => setTimeout(r, 40));
   }
+  async function waitFormedIdle(ms) {
+    const deadline = Date.now() + ms;
+    let next = formed;
+    while (Date.now() < deadline) {
+      next = await readFormed();
+      if (next.mode === "formed" && next.running === false) return next;
+      await new Promise((r) => setTimeout(r, 40));
+    }
+    return next;
+  }
+  formed = await waitFormedIdle(2000);
+  await new Promise((r) => setTimeout(r, 160));
+  formed = await waitFormedIdle(2000);
   const ticks = formed ? formed.tickCount : 0;
   await new Promise((r) => setTimeout(r, 400));
   const after = await page.evaluate(() => ({
@@ -377,6 +387,7 @@ async function main() {
       const s = document.getElementById("status");
       return s && /PASS|FAIL/.test(s.textContent || "");
     }, { timeout: 40_000 });
+    const benchStatus = await benchPage.evaluate(() => document.getElementById("status").textContent || "");
     const benchShot = await snap(benchPage, "s5_bench_harness.png");
     await benchPage.close();
 
@@ -400,6 +411,7 @@ async function main() {
         formed: mobileFormed,
       },
       logs,
+      benchStatus,
       screenshots: {
         desktop_chaos: homeShot,
         desktop_formed: introShot,
@@ -429,6 +441,7 @@ async function main() {
           chaos.contain &&
           chaos.contain.cx === 0.35 &&
           chaos.contain.hFrac === 0.7,
+        bench_pass: /PASS/.test(benchStatus),
       },
       notes: {
         raf_1pct_low_fps: rafLow.fps,

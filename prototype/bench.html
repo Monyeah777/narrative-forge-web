@@ -184,6 +184,12 @@
             if (w.__nfRender.mode === "formed" && w.__nfRender.running === false) break;
             await sleep(40);
           }
+          await sleep(160);
+          settleUntil = Date.now() + 2000;
+          while (Date.now() < settleUntil) {
+            if (w.__nfRender.mode === "formed" && w.__nfRender.running === false) break;
+            await sleep(40);
+          }
           var ticksHeld = w.__nfRender.tickCount;
           await sleep(400);
           report.stop_frame = {
