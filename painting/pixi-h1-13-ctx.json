@@ -1,0 +1,180 @@
+{
+  "task": "H1-⑬ retire live Canvas2D blit / worker start",
+  "handbook": "docs/NF_PixiJS迁移总手册_整合版_v1_2026-09-11.md",
+  "timestamp": "2026-09-12T09:35:22.234Z",
+  "vendorSha": "9948591083793305468d73915a3ea85032dcf8e32eee7a1328585050d7a14d53",
+  "golden": {
+    "command": "dc1f16092d775ee1462c94eb964bb95523470bd7fd7770b1efab02c6940f320a  /workspace/prototype/pixi-physics/golden-1000.f64",
+    "frozenSha": "dc1f16092d775ee1462c94eb964bb95523470bd7fd7770b1efab02c6940f320a",
+    "runSha": "dc1f16092d775ee1462c94eb964bb95523470bd7fd7770b1efab02c6940f320a",
+    "pass": true
+  },
+  "bins": {
+    "dallas": "1499db850a9da7856763f974ec79ff1d14be42503a66ab7fb8193954711f1880",
+    "scotland": "4d161d39bbf9b500e423926017287db32b2133a1f40c06b4b6fd390c7a7f0571",
+    "met": "2e99463230c73af13e3a3b902ebe9f72034d681515a424a66afa914b52388c52"
+  },
+  "liveGrep": {
+    "has_physics": true,
+    "has_apply_spring": true,
+    "spring": true,
+    "no_raf_tick": true,
+    "no_worker_ctor": true,
+    "no_ctx_drawimage": true,
+    "no_paint_stage": true,
+    "no_draw_dust": true,
+    "uses_dallas": true,
+    "uses_scotland": true,
+    "uses_met": true,
+    "pixi_draw": true,
+    "pass": true
+  },
+  "workerFileKept": true,
+  "live": {
+    "intro": {
+      "live": {
+        "ready": true,
+        "version": "8.20.1",
+        "rendererName": "webgl",
+        "count": 100000,
+        "tickerStarted": false,
+        "fps": 10,
+        "priority": "HIGH",
+        "contextLost": false,
+        "usedCanvas": true,
+        "softDot": 128,
+        "track": true,
+        "ok": true,
+        "usedSecondRaf": false,
+        "workerBlit": false,
+        "n": 100000,
+        "mode": "formed",
+        "ticks": 48,
+        "spring": 0.055,
+        "livePhysics": true
+      },
+      "points": {
+        "id": "poplars-dallas",
+        "count": 100000,
+        "source": "bin"
+      },
+      "target": {
+        "key": "INTRO",
+        "type": "image",
+        "path": "points_poplars.json",
+        "palette": "source",
+        "text": "",
+        "id": "poplars-dallas"
+      },
+      "mode": "formed",
+      "n": 100000,
+      "workerBlit": false
+    },
+    "hall": {
+      "live": {
+        "ready": true,
+        "version": "8.20.1",
+        "rendererName": "webgl",
+        "count": 100000,
+        "tickerStarted": false,
+        "fps": 10,
+        "priority": "HIGH",
+        "contextLost": false,
+        "usedCanvas": true,
+        "softDot": 128,
+        "track": true,
+        "ok": true,
+        "usedSecondRaf": false,
+        "workerBlit": false,
+        "n": 100000,
+        "mode": "formed",
+        "ticks": 94,
+        "spring": 0.055,
+        "livePhysics": true
+      },
+      "points": {
+        "id": "poplars-scotland",
+        "count": 100000,
+        "source": "bin"
+      },
+      "target": {
+        "key": "HALL",
+        "type": "image",
+        "path": "points_artwork_b.json",
+        "palette": "source",
+        "text": "",
+        "id": "poplars-scotland"
+      },
+      "mode": "formed",
+      "n": 100000,
+      "workerBlit": false
+    },
+    "community": {
+      "live": {
+        "ready": true,
+        "version": "8.20.1",
+        "rendererName": "webgl",
+        "count": 100000,
+        "tickerStarted": false,
+        "fps": 10.010010010009864,
+        "priority": "HIGH",
+        "contextLost": false,
+        "usedCanvas": true,
+        "softDot": 128,
+        "track": true,
+        "ok": true,
+        "usedSecondRaf": false,
+        "workerBlit": false,
+        "n": 100000,
+        "mode": "formed",
+        "ticks": 140,
+        "spring": 0.055,
+        "livePhysics": true
+      },
+      "points": {
+        "id": "four-trees-met",
+        "count": 100000,
+        "source": "bin"
+      },
+      "target": {
+        "key": "COMMUNITY",
+        "type": "image",
+        "path": "points_artwork_c.json",
+        "palette": "source",
+        "text": "",
+        "id": "four-trees-met"
+      },
+      "mode": "formed",
+      "n": 100000,
+      "workerBlit": false
+    },
+    "pageErrors": []
+  },
+  "screenshots": {
+    "intro": "/opt/cursor/artifacts/pixi_h1_13_live_intro_100k.png",
+    "hall": "/opt/cursor/artifacts/pixi_h1_13_live_hall_100k.png",
+    "community": "/opt/cursor/artifacts/pixi_h1_13_live_community_100k.png"
+  },
+  "note": {
+    "kept": "physics() / applySpring / SPRING 0.055 / render-worker.js file",
+    "removed": "live ctx.drawImage particle blit, paintStage, drawDust, new Worker(render-worker.js)"
+  },
+  "acceptance": {
+    "vendor_lock": true,
+    "golden_sha": true,
+    "dallas_frozen": true,
+    "scotland_frozen": true,
+    "met_frozen": true,
+    "live_grep": true,
+    "worker_file_kept": true,
+    "intro_formed": true,
+    "hall_formed": true,
+    "community_formed": true,
+    "no_worker_blit": true,
+    "pixi_ready": true,
+    "no_pageerror": true,
+    "physics_kept": true,
+    "spring_lock": true,
+    "pass": true
+  }
+}
