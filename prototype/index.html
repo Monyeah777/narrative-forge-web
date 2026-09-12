@@ -2742,11 +2742,31 @@
         return "";
       }
 
+      function radialSceneKey() {
+        if (currentTarget && currentTarget.type === "text") return "glyph";
+        return radialPaintingKey() || "homes";
+      }
+
+      function computeR95FromNorm() {
+        var i;
+        var rs;
+        var idx;
+        if (!N) return 0.6;
+        rs = new Float64Array(N);
+        for (i = 0; i < N; i++) {
+          rs[i] = Math.hypot(ntx[i] - 0.5, nty[i] - 0.5);
+        }
+        rs.sort();
+        idx = Math.floor(0.95 * (N - 1));
+        if (idx < 0) idx = 0;
+        return rs[idx] > 1e-6 ? rs[idx] : 0.6;
+      }
+
       function radialR95(key) {
         if (key === "dallas") return 0.599042;
         if (key === "scotland") return 0.599053;
         if (key === "met") return 0.592304;
-        return 0.6;
+        return computeR95FromNorm();
       }
 
       function radialBinPaths(kind) {
@@ -2761,6 +2781,8 @@
       }
 
       function publishRadial() {
+        var scene = radialSceneKey();
+        var sw = radialWorld ? radialWorld.switches : null;
         window.__nfRadial = {
           on: !!radialWorld,
           wanted: usesRadial(),
@@ -2768,9 +2790,21 @@
           liveN: N,
           phase: radialWorld ? radialWorld.phase : "",
           painting: radialPaintKey,
-          r95: radialPaintKey ? radialR95(radialPaintKey) : 0,
+          scene: scene,
+          r95: scene ? radialR95(scene) : 0,
           springSharp: SPRING_SHARP,
-          renderModule: false
+          handbookShape: !!(sw && sw.handbookShape),
+          criticalDamp: !!(sw && sw.criticalDamp),
+          renderModule: false,
+          render: {
+            backend: "pixi",
+            isolationImageData: false,
+            A_centerBake: "sleep",
+            B_dirtyRect: "na-webgl",
+            C_noiseLut: !!(sw && sw.noiseLut),
+            D_edgeTimeslice: "sleep-center",
+            E_petition: "booked-not-enabled"
+          }
         };
       }
 
@@ -2783,14 +2817,14 @@
       }
 
       function radialWanted() {
-        return !!(usesRadial() && window.NFRadialPhysics && radialPaintingKey() && N > 0 && !reduced);
+        return !!(usesRadial() && window.NFRadialPhysics && N > 0 && !reduced);
       }
 
       function rebuildRadialWorld() {
-        var key = radialPaintingKey();
+        var key = radialSceneKey();
         var api = window.NFRadialPhysics;
-        var nx;
-        var ny;
+        var nxArr;
+        var nyArr;
         var i;
         var cx;
         var cy;
@@ -2799,11 +2833,11 @@
           return;
         }
         layoutContain();
-        nx = new Float64Array(N);
-        ny = new Float64Array(N);
+        nxArr = new Float64Array(N);
+        nyArr = new Float64Array(N);
         for (i = 0; i < N; i++) {
-          nx[i] = ntx[i];
-          ny[i] = nty[i];
+          nxArr[i] = ntx[i];
+          nyArr[i] = nty[i];
         }
         cx = cssW > 0 ? (fitX + fitW * 0.5) / cssW : 0.5;
         cy = cssH > 0 ? (fitY + fitH * 0.5) / cssH : 0.5;
@@ -2816,14 +2850,15 @@
           R95: radialR95(key),
           seed: 0x53335033,
           phase: api.PHASE.INTRO,
+          switches: { handbookShape: true },
           tx: tx,
           ty: ty,
           x: x,
           y: y,
           vx: vx,
           vy: vy,
-          normX: nx,
-          normY: ny
+          normX: nxArr,
+          normY: nyArr
         });
         radialCssW = cssW;
         radialCssH = cssH;
@@ -2841,7 +2876,7 @@
           radialWorld.n !== N ||
           radialCssW !== cssW ||
           radialCssH !== cssH ||
-          radialPaintKey !== radialPaintingKey()
+          radialPaintKey !== radialSceneKey()
         ) {
           rebuildRadialWorld();
         }
@@ -3600,17 +3635,25 @@
         vy[i] += (dy / dist) * f;
       }
 
-      function applyRadialPhysics(live, assembling, formed) {
+      function applyRadialPhysics(live, assembling, formed, dispersing, toHomes) {
         var i;
         var phase;
         var settled = 0;
         var unlocked;
+        var useHomes = !!(toHomes || dispersing);
         if (!ensureRadialWorld()) return false;
-        phase = live ? "REPEL" : (assembling ? "INTRO" : "DWELL");
+        if (live) phase = "REPEL";
+        else if (assembling || dispersing) phase = "INTRO";
+        else phase = "DWELL";
         radialWorld.setPhase(phase);
         for (i = 0; i < N; i++) {
-          radialWorld.tx[i] = tx[i];
-          radialWorld.ty[i] = ty[i];
+          if (useHomes) {
+            radialWorld.tx[i] = hx[i];
+            radialWorld.ty[i] = hy[i];
+          } else {
+            radialWorld.tx[i] = tx[i];
+            radialWorld.ty[i] = ty[i];
+          }
           x[i] = radialWorld.x[i];
           y[i] = radialWorld.y[i];
           vx[i] = radialWorld.vx[i];
@@ -3656,6 +3699,9 @@
             snapAllToTargets();
             setMode("formed");
           }
+        } else if (dispersing && phaseElapsed >= DISPERSE_S) {
+          pointerEver = false;
+          setMode("chaos");
         }
         publishRadial();
         return true;
@@ -3672,6 +3718,7 @@
         if (frozen) return;
         if (mode === "handover") {
           physicsHandover();
+          if (radialWanted()) syncRadialFromLive(true);
           return;
         }
         live = pointerLive();
@@ -3681,7 +3728,7 @@
         mx += (mxT - mx) * POINTER_LERP;
         my += (myT - my) * POINTER_LERP;
         refreshCurlGrid(lastT * 0.001);
-        if ((assembling || formed) && applyRadialPhysics(live, assembling, formed)) {
+        if (applyRadialPhysics(live, assembling, formed, dispersing, dispersing || mode === "chaos" || (!live && pointerEver && !assembling && !formed))) {
           return;
         }
         activeCount = 0;
@@ -3736,7 +3783,7 @@
       function shouldStopLoop() {
         if (frozen || reduced) return true;
         if (pixiTrack) {
-          if (radialWorld && (mode === "formed" || mode === "assemble")) return false;
+          if (radialWorld && (mode === "formed" || mode === "assemble" || mode === "chaos" || mode === "disperse")) return false;
           if (mode === "formed" && activeCount === 0 && !pointerLive() && !handoverLive) return true;
           return false;
         }

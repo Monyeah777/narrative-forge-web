@@ -1,0 +1,225 @@
+{
+  "task": "S6 \u5bc6\u5ea6\u53e3\u5f84 / \u68c0\u7d22\u4f18\u5316",
+  "handbook": "docs/NF_\u5f84\u5411\u91cd\u6620\u5c04_\u603b\u7ed3\u7248\u6700\u7ec8\u65b9\u6848_v2.0.md",
+  "timestamp_note": "no resample; locked S2b u16; 100k bins untouched",
+  "design_W0_over_W1": 3.7641,
+  "vose_alias": {
+    "l1": 0.006292,
+    "pass": true,
+    "hist": [
+      0.24476,
+      0.18352,
+      0.14353,
+      0.11696,
+      0.09524,
+      0.08088,
+      0.07054,
+      0.06456
+    ],
+    "target": [
+      0.24326,
+      0.18482,
+      0.14392,
+      0.11531,
+      0.09529,
+      0.08128,
+      0.07148,
+      0.06463
+    ]
+  },
+  "upgrade": {
+    "trigger": false,
+    "upgrade_2_wse": false,
+    "post_5_lec": false,
+    "reason": "Wide-band achieved/theoretical >= 0.90 on locked S2b. Design 3.76 is W(0)/W(1). Thin shells approach that endpoint. WSE/LEC cannot raise a W-proportional set above the W-integral ceiling without changing W(r). \u2461/\u2464 stay off."
+  },
+  "table": [
+    {
+      "name": "dallas",
+      "n": 50601,
+      "R95": 0.599042,
+      "u16_sha256": "f6df3397eb97fef511377cdf903a89544860086a78d07c1eb0191f6ff4f3add6",
+      "wide_band": {
+        "points_c": 8872,
+        "points_e": 6861,
+        "eligible_c": 187492,
+        "eligible_e": 351480,
+        "density_c": 0.04731935,
+        "density_e": 0.01952031,
+        "achieved": 2.4241,
+        "theoretical": 2.4968,
+        "mean_W_c": 0.693116,
+        "mean_W_e": 0.277599,
+        "efficiency": 0.9709,
+        "bands": [
+          "0.0-0.3",
+          "0.85-1.0"
+        ]
+      },
+      "thin_shell_05": {
+        "points_c": 363,
+        "points_e": 2778,
+        "eligible_c": 5216,
+        "eligible_e": 155189,
+        "density_c": 0.06959356,
+        "density_e": 0.01790075,
+        "achieved": 3.8877,
+        "theoretical": 3.5004,
+        "mean_W_c": 0.936313,
+        "mean_W_e": 0.267487,
+        "efficiency": 1.1106,
+        "bands": [
+          "0.0-0.05",
+          "0.95-1.0"
+        ]
+      },
+      "thin_shell_08": {
+        "points_c": 882,
+        "points_e": 3720,
+        "eligible_c": 13328,
+        "eligible_e": 202576,
+        "density_c": 0.06617647,
+        "density_e": 0.01836348,
+        "achieved": 3.6037,
+        "theoretical": 3.3394,
+        "mean_W_c": 0.900943,
+        "mean_W_e": 0.269796,
+        "efficiency": 1.0791,
+        "bands": [
+          "0.0-0.08",
+          "0.92-1.0"
+        ]
+      },
+      "design_W0_over_W1": 3.7641,
+      "pass_8_1": true,
+      "pass_efficiency": true
+    },
+    {
+      "name": "scotland",
+      "n": 50441,
+      "R95": 0.599053,
+      "u16_sha256": "700e9d525a731766fd17f4c4872754138c81a09ca40db1928dfc5865b97d914f",
+      "wide_band": {
+        "points_c": 9271,
+        "points_e": 6653,
+        "eligible_c": 146072,
+        "eligible_e": 273871,
+        "density_c": 0.0634687,
+        "density_e": 0.02429246,
+        "achieved": 2.6127,
+        "theoretical": 2.4969,
+        "mean_W_c": 0.69314,
+        "mean_W_e": 0.277601,
+        "efficiency": 1.0464,
+        "bands": [
+          "0.0-0.3",
+          "0.85-1.0"
+        ]
+      },
+      "thin_shell_05": {
+        "points_c": 303,
+        "points_e": 2763,
+        "eligible_c": 4060,
+        "eligible_e": 120924,
+        "density_c": 0.07463054,
+        "density_e": 0.02284906,
+        "achieved": 3.2662,
+        "theoretical": 3.5005,
+        "mean_W_c": 0.936347,
+        "mean_W_e": 0.267489,
+        "efficiency": 0.9331,
+        "bands": [
+          "0.0-0.05",
+          "0.95-1.0"
+        ]
+      },
+      "thin_shell_08": {
+        "points_c": 765,
+        "points_e": 3668,
+        "eligible_c": 10380,
+        "eligible_e": 157760,
+        "density_c": 0.07369942,
+        "density_e": 0.02325051,
+        "achieved": 3.1698,
+        "theoretical": 3.3395,
+        "mean_W_c": 0.900968,
+        "mean_W_e": 0.269791,
+        "efficiency": 0.9492,
+        "bands": [
+          "0.0-0.08",
+          "0.92-1.0"
+        ]
+      },
+      "design_W0_over_W1": 3.7641,
+      "pass_8_1": true,
+      "pass_efficiency": true
+    },
+    {
+      "name": "met",
+      "n": 50471,
+      "R95": 0.592304,
+      "u16_sha256": "a4f4a7a1579858445140595b08883829237f466df1eb781efaed02c12b1efc46",
+      "wide_band": {
+        "points_c": 9245,
+        "points_e": 6523,
+        "eligible_c": 141638,
+        "eligible_e": 263340,
+        "density_c": 0.06527203,
+        "density_e": 0.02477026,
+        "achieved": 2.6351,
+        "theoretical": 2.4972,
+        "mean_W_c": 0.693117,
+        "mean_W_e": 0.277562,
+        "efficiency": 1.0552,
+        "bands": [
+          "0.0-0.3",
+          "0.85-1.0"
+        ]
+      },
+      "thin_shell_05": {
+        "points_c": 290,
+        "points_e": 2749,
+        "eligible_c": 3932,
+        "eligible_e": 116691,
+        "density_c": 0.07375381,
+        "density_e": 0.02355794,
+        "achieved": 3.1307,
+        "theoretical": 3.5007,
+        "mean_W_c": 0.936378,
+        "mean_W_e": 0.267481,
+        "efficiency": 0.8943,
+        "bands": [
+          "0.0-0.05",
+          "0.95-1.0"
+        ]
+      },
+      "thin_shell_08": {
+        "points_c": 739,
+        "points_e": 3632,
+        "eligible_c": 10074,
+        "eligible_e": 152134,
+        "density_c": 0.07335716,
+        "density_e": 0.02387369,
+        "achieved": 3.0727,
+        "theoretical": 3.3394,
+        "mean_W_c": 0.900918,
+        "mean_W_e": 0.269781,
+        "efficiency": 0.9201,
+        "bands": [
+          "0.0-0.08",
+          "0.92-1.0"
+        ]
+      },
+      "design_W0_over_W1": 3.7641,
+      "pass_8_1": true,
+      "pass_efficiency": true
+    }
+  ],
+  "live_sha256": {
+    "prototype/pixi-cloud/dallas-100k.bin": "6406d7012e7f637ad2e31661a85f619ebd14b85bb48a6341a1ec9c3a2dbcea82",
+    "prototype/pixi-hall/scotland-100k.bin": "bbeab899140521bad56e82766f92a3d63305b8bc8f802de22db804fad3bfcf5f",
+    "prototype/pixi-community/met-100k.bin": "3144fdb9144d95cb0afe30f28629ec1e065bfa5022400a80e1c8e93129779a45"
+  },
+  "pass": true,
+  "failed": []
+}

@@ -73,34 +73,9 @@
   "booked": {
     "E": "S4 petition stays booked; not enabled",
     "render": "live stays Pixi ParticleContainer; no ImageData swap",
-    "egg": "NF glyph stays JSON / not radially sampled"
-  },
-  "browser": {
-    "default": {
-      "url": "http://127.0.0.1:8768/?autoplay=0&dpr=1",
-      "count": 50601,
-      "bin": "pixi-cloud/dallas-radial-50k.bin",
-      "radial_on": true,
-      "phase_on_intro": "INTRO",
-      "pixi_ready": true,
-      "spring": 0.055
-    },
-    "rollback": {
-      "url": "http://127.0.0.1:8768/?radial=0&autoplay=0&dpr=1",
-      "count": 100000,
-      "bin": "pixi-cloud/dallas-100k.bin",
-      "radial_on": false,
-      "pixi_ready": true,
-      "spring": 0.055
-    },
-    "clicked": [
-      "intro Dallas 50k",
-      "hall Scotland 50k",
-      "community Met 50k",
-      "home disperse",
-      "egg NF glyph",
-      "rollback Dallas 100k"
-    ]
+    "egg": "NF glyph stays JSON / not radially remapped; live radial physics now covers egg/chaos/disperse",
+    "handbookShape": "live createWorld switches.handbookShape=true; isolation default false",
+    "imagedata": "A–D stay isolation; live Pixi maps A=sleep B=n/a C=LUT D=sleep-center; E booked"
   },
   "pass": true,
   "failed": []

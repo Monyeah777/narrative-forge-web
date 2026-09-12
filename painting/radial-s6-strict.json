@@ -1,0 +1,123 @@
+{
+  "task": "S6 最高严谨检索优化",
+  "handbook": "docs/NF_径向重映射_总结版最终方案_v2.0.md",
+  "timestamp_note": "second full §7 search; density ceiling; handbookShape; radial on chaos/egg; Pixi A–D map; no resample; no ImageData swap; E off",
+  "isolation_s3_hash": {
+    "a": "cdff787751379eca069c205dbeb730f7b34a13e85c9902dee0959acee143aa19",
+    "b": "cdff787751379eca069c205dbeb730f7b34a13e85c9902dee0959acee143aa19",
+    "match": true
+  },
+  "live_100k_unchanged": true,
+  "spring_unchanged": true,
+  "physics": {
+    "handbook_center": {
+      "r": 0,
+      "k": 0.1,
+      "c_handbook": 0.92,
+      "c_crit": 0.5772153925510174,
+      "c_shaped": 0.5772153925510174,
+      "crossings": 10,
+      "seconds_sleep": 1.6833333333333322,
+      "slept": true,
+      "disc_handbook": -0.33841600000000094,
+      "disc_shaped": -4.440892098500626e-16,
+      "disc_crit": -4.440892098500626e-16
+    },
+    "crit_center": {
+      "r": 0,
+      "k": 0.1,
+      "c_handbook": 0.92,
+      "c_crit": 0.5772153925510174,
+      "c_shaped": 0.5772153925510174,
+      "crossings": 0,
+      "seconds_sleep": 0.41666666666666663,
+      "slept": true,
+      "disc_handbook": -0.33841600000000094,
+      "disc_shaped": -4.440892098500626e-16,
+      "disc_crit": -4.440892098500626e-16
+    },
+    "shaped_center": {
+      "r": 0,
+      "k": 0.1,
+      "c_handbook": 0.92,
+      "c_crit": 0.5772153925510174,
+      "c_shaped": 0.5772153925510174,
+      "crossings": 0,
+      "seconds_sleep": 0.41666666666666663,
+      "slept": true,
+      "disc_handbook": -0.33841600000000094,
+      "disc_shaped": -4.440892098500626e-16,
+      "disc_crit": -4.440892098500626e-16
+    },
+    "shaped_edge": {
+      "r": 1,
+      "k": 0.020000000000000004,
+      "c_handbook": 0.78,
+      "c_crit": 0.7675523610218461,
+      "c_shaped": 0.6682711317157595,
+      "crossings": 0,
+      "seconds_sleep": 1.4666666666666663,
+      "slept": true,
+      "disc_handbook": -0.0068926400000002275,
+      "disc_shaped": 0.06562837908732,
+      "disc_crit": -8.881784197001252e-16
+    },
+    "c_shaped_center": 0.5772153925510174,
+    "c_shaped_edge": 0.6682711317157595
+  },
+  "index": {
+    "SPRING_SHARP": true,
+    "handbookShape": true,
+    "sceneKey": true,
+    "glyphScene": true,
+    "chaosHomes": true,
+    "handoverSync": true,
+    "noImageDataLive": true,
+    "pixiDraw": true,
+    "rollback": true,
+    "A_sleep": true,
+    "E_booked": true
+  },
+  "density": {
+    "design": 3.7641,
+    "upgrade": {
+      "trigger": false,
+      "upgrade_2_wse": false,
+      "post_5_lec": false,
+      "reason": "Wide-band achieved/theoretical >= 0.90 on locked S2b. Design 3.76 is W(0)/W(1). Thin shells approach that endpoint. WSE/LEC cannot raise a W-proportional set above the W-integral ceiling without changing W(r). ②/⑤ stay off."
+    },
+    "table": [
+      {
+        "name": "dallas",
+        "wide": 2.4241,
+        "wide_theo": 2.4968,
+        "efficiency": 0.9709,
+        "shell": 3.8877,
+        "shell_theo": 3.5004
+      },
+      {
+        "name": "scotland",
+        "wide": 2.6127,
+        "wide_theo": 2.4969,
+        "efficiency": 1.0464,
+        "shell": 3.2662,
+        "shell_theo": 3.5005
+      },
+      {
+        "name": "met",
+        "wide": 2.6351,
+        "wide_theo": 2.4972,
+        "efficiency": 1.0552,
+        "shell": 3.1307,
+        "shell_theo": 3.5007
+      }
+    ]
+  },
+  "live_sha256": {
+    "prototype/pixi-cloud/dallas-100k.bin": "6406d7012e7f637ad2e31661a85f619ebd14b85bb48a6341a1ec9c3a2dbcea82",
+    "prototype/pixi-hall/scotland-100k.bin": "bbeab899140521bad56e82766f92a3d63305b8bc8f802de22db804fad3bfcf5f",
+    "prototype/pixi-community/met-100k.bin": "3144fdb9144d95cb0afe30f28629ec1e065bfa5022400a80e1c8e93129779a45"
+  },
+  "pass": true,
+  "failed": []
+}

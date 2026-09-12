@@ -113,4 +113,6 @@ painting/*
 !painting/radial-s5-zoom-edge.png
 !painting/radial-s5-frametime.svg
 !painting/radial-live.json
+!painting/radial-s6.json
+!painting/radial-s6-strict.json
 

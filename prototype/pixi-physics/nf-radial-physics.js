@@ -18,6 +18,10 @@
  * #5 settle: the handbook pair (k=0.10, c=0.92) is discrete-underdamped.
  * Default `criticalDamp` uses the unique c*(k)=1/(1+√k)² of THIS integrator
  * (discriminant of λ²−(1+c−ck)λ+c set to 0). Handbook c(r) stays as a switch.
+ *
+ * Live may also set `handbookShape`: keep c*(k) at the stiff center (no
+ * oscillation) and scale it by handbook c(r)/c(0) so the edge is overdamped
+ * the way §4 wrote. Isolation default is off so S3 hashes stay put.
  */
 (function (root) {
   "use strict";
@@ -49,6 +53,7 @@
     field: true,
     anisotropy: true,
     criticalDamp: true,
+    handbookShape: false,
     drift: true,
     noiseLut: true,
     sleep: true,
@@ -94,6 +99,23 @@
     if (!(k > 0)) return 1;
     var s = Math.sqrt(k);
     return 1 / ((1 + s) * (1 + s));
+  }
+
+  /**
+   * Handbook c(r) as a shape on top of discrete-critical.
+   * Center (S=0): c = c*(k) — unique non-oscillating pair.
+   * Edge: extra overdamp toward c_handbook(S)/c_handbook(0).
+   * Full shape (blend=1) sleeps the edge at 1.62s and misses §8#5 (≤1.5s).
+   * SHAPE_BLEND=0.85 is the largest mix that still meets that budget (~1.47s).
+   * Chou 2015 / Hallauer: do not paste the underdamped (k,c) pair verbatim.
+   */
+  var SHAPE_BLEND = 0.85;
+  function cShaped(k, S) {
+    var crit = cCrit(k);
+    var shape = cOfS(S) / C0;
+    if (shape < 0) shape = 0;
+    if (shape > 1) shape = 1;
+    return crit * (1 - SHAPE_BLEND + SHAPE_BLEND * shape);
   }
 
   function discKc(k, c) {
@@ -465,7 +487,7 @@
         k = K0;
         c = C0;
       }
-      if (sw.criticalDamp) c = cCrit(k);
+      if (sw.criticalDamp) c = sw.handbookShape ? cShaped(k, S) : cCrit(k);
 
       vx[idx] += (tx[idx] - x[idx]) * k;
       vy[idx] += (ty[idx] - y[idx]) * k;
@@ -484,7 +506,7 @@
           cr = c + delta;
           ct = c - delta;
           if (sw.criticalDamp) {
-            var cc = cCrit(k);
+            var cc = sw.handbookShape ? cShaped(k, S) : cCrit(k);
             if (cr > cc) cr = cc;
             if (ct > cc) ct = cc;
           }
@@ -670,6 +692,8 @@
     kOfS: kOfS,
     cOfS: cOfS,
     cCrit: cCrit,
+    cShaped: cShaped,
+    SHAPE_BLEND: SHAPE_BLEND,
     discKc: discKc,
     aOfR: aOfR,
     mergeSwitches: mergeSwitches,
