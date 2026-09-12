@@ -1,0 +1,67 @@
+{
+  "task": "H1-② Hello empty scene",
+  "handbook": "docs/NF_PixiJS迁移总手册_整合版_v1_2026-09-11.md",
+  "timestamp": "2026-09-12T08:15:30.083Z",
+  "dwell_ms": 5000,
+  "ticksAtReady": 1,
+  "hash": {
+    "command": {
+      "sha256sum": "9948591083793305468d73915a3ea85032dcf8e32eee7a1328585050d7a14d53  /workspace/prototype/vendor/pixi.min.js",
+      "wc": "818871 /workspace/prototype/vendor/pixi.min.js",
+      "gzip9": "230584",
+      "version": "PixiJS - v8.20.1"
+    },
+    "sha256": "9948591083793305468d73915a3ea85032dcf8e32eee7a1328585050d7a14d53",
+    "bytes": 818871,
+    "gzip9": 230584,
+    "version": "PixiJS - v8.20.1",
+    "pass": true
+  },
+  "grep": {
+    "hits": {
+      "at_pixi": false,
+      "beginFill": false,
+      "app_view": false,
+      "base_texture": false,
+      "ctor_options": false,
+      "second_raf": false,
+      "set_interval": false,
+      "particle": false,
+      "sprite": false
+    },
+    "pass": true
+  },
+  "hello": {
+    "ok": true,
+    "version": "8.20.1",
+    "canvas": {
+      "w": 640,
+      "h": 400
+    },
+    "rendererName": "webgl",
+    "usedCanvas": true,
+    "tickerStarted": true,
+    "stageChildren": 0,
+    "ticks": 302,
+    "deltaTime": 1.0020000000000435,
+    "fps": 59.88023952095548,
+    "errors": []
+  },
+  "pageErrors": [],
+  "screenshot": "/opt/cursor/artifacts/pixi_h1_2_hello_empty.png",
+  "live_exhibit_untouched": true,
+  "acceptance": {
+    "e0_sha": true,
+    "grep_clean": true,
+    "hello_ok": true,
+    "hello_version": true,
+    "no_pageerror": true,
+    "ticker_started": true,
+    "ticks_advanced": true,
+    "scene_empty": true,
+    "used_canvas": true,
+    "webgl_backend": true,
+    "exhibit_untouched": true,
+    "pass": true
+  }
+}

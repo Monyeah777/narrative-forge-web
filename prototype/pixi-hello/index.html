@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#050505" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NF · Pixi H1-2 Hello empty scene</title>
+  <style>
+    html, body {
+      margin: 0;
+      background: #050505;
+      color: #e8eef6;
+      font: 13px/1.5 ui-monospace, "Courier New", monospace;
+    }
+    main { padding: 16px 18px 20px; }
+    #host canvas { display: block; border: 1px solid #2a2a2a; }
+    #log { margin-top: 12px; white-space: pre-wrap; word-break: break-word; }
+    .fail { color: #A33B2A; }
+    .pass { color: #8faf6f; }
+  </style>
+</head>
+<body>
+  <main>
+    <p>H1-2 Hello empty scene · PixiJS v8.20.1 · ticker is the only clock; live Canvas2D exhibit untouched</p>
+    <div id="host"></div>
+    <pre id="log">booting</pre>
+  </main>
+  <script src="../vendor/pixi.min.js"></script>
+  <script>
+    (function () {
+      "use strict";
+      var logEl = document.getElementById("log");
+      var host = document.getElementById("host");
+      var errors = [];
+      window.addEventListener("error", function (e) {
+        errors.push(String(e.message || e.error || e));
+      });
+      window.addEventListener("unhandledrejection", function (e) {
+        errors.push(String(e.reason || e));
+      });
+
+      function fail(msg) {
+        logEl.className = "fail";
+        logEl.textContent = msg;
+        window.__nfPixiHello = { ok: false, error: msg, errors: errors.slice() };
+      }
+
+      function publish(info) {
+        window.__nfPixiHello = info;
+        logEl.className = info.ok ? "pass" : "fail";
+        logEl.textContent = JSON.stringify(info, null, 2);
+      }
+
+      (async function () {
+        if (!window.PIXI || typeof PIXI.Application !== "function") {
+          fail("PIXI.Application missing after vendor script");
+          return;
+        }
+        /* Q1 / official v8.20.1: options go to init(), not constructor.
+           Q12: TickerPlugin drives the loop; do not add a second rAF. */
+        var app = new PIXI.Application();
+        await app.init({
+          width: 640,
+          height: 400,
+          backgroundColor: 0x050505,
+          preference: "webgl",
+          antialias: false,
+          autoStart: true,
+          resolution: 1,
+          autoDensity: true
+        });
+        if (!app.canvas) {
+          fail("canvas missing after Application.init");
+          return;
+        }
+        if (!app.stage || typeof app.stage.addChild !== "function") {
+          fail("app.stage missing after Application.init");
+          return;
+        }
+        if (!app.ticker || typeof app.ticker.add !== "function") {
+          fail("app.ticker missing after Application.init");
+          return;
+        }
+        host.appendChild(app.canvas);
+
+        var hello = {
+          ok: errors.length === 0,
+          version: PIXI.VERSION || "",
+          canvas: { w: app.canvas.width, h: app.canvas.height },
+          rendererName: app.renderer && app.renderer.name ? String(app.renderer.name) : "",
+          usedCanvas: !!app.canvas,
+          tickerStarted: !!(app.ticker && app.ticker.started),
+          stageChildren: app.stage.children ? app.stage.children.length : -1,
+          ticks: 0,
+          deltaTime: 0,
+          fps: 0,
+          errors: errors.slice()
+        };
+
+        /* Official Application.ticker.add((ticker) => { ... }). Empty stage: no Sprite / Particle / Graphics. */
+        app.ticker.add(function (ticker) {
+          hello.ticks += 1;
+          hello.deltaTime = ticker.deltaTime;
+          hello.fps = app.ticker.FPS;
+          hello.tickerStarted = !!(app.ticker && app.ticker.started);
+          hello.stageChildren = app.stage.children ? app.stage.children.length : -1;
+          hello.ok = errors.length === 0 && hello.stageChildren === 0;
+          hello.errors = errors.slice();
+          if (hello.ticks === 1 || hello.ticks % 60 === 0) publish(hello);
+          else window.__nfPixiHello = hello;
+        });
+
+        publish(hello);
+      })().catch(function (err) {
+        fail(String(err && err.stack ? err.stack : err));
+      });
+    })();
+  </script>
+</body>
+</html>
