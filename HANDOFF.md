@@ -54,7 +54,7 @@
 - 径向重映射 S2b：分支 `cursor/radial-s2b-thinning-84d9`（叠在 `cursor/radial-s2a-candidates-84d9` 上）。默认 dart-thinning。Dallas/Scotland/Met n=50601/50441/50471。证据 `painting/radial-s2b.json`。
 - 径向重映射 S2c：分支 `cursor/radial-s2c-qc-84d9`（叠在 `cursor/radial-s2b-thinning-84d9` 上）。复读 S2b u16。§8#1/#2/#8 过；可选频谱中带方窗无栅格峰。不触发 ②/⑤。现网 sha 未变。证据 `painting/radial-s2c.json`。
 - 径向重映射 S3：分支 `cursor/radial-s3-physics-84d9`（叠在 `cursor/radial-s2c-qc-84d9` 上）。隔离 `nf-radial-physics.js`，全开关，60/120Hz。#3/#4/#5/#6/#8 过。#5 用离散临界 `c*(k)`；手册 `c(r)` 对照仍振荡。现网弹簧 / ticker / 100k 未动。证据 `painting/radial-s3.json`。
-- 径向重映射 S4：本条分支 `cursor/radial-s4-render-84d9`（叠在 `cursor/radial-s3-physics-84d9` 上）。隔离 `nf-radial-render.js`，菜单 A→D 每步 bench。软件帧缓冲模拟 ImageData。未替换现网 Pixi。菜单 E 未启用。现网弹簧 / ticker / 100k 未动。证据 `painting/radial-s4.json`。
+- 径向重映射 S4：本条分支 `cursor/radial-s4-render-84d9`（叠在 `cursor/radial-s3-physics-84d9` 上）。隔离 `nf-radial-render.js`，菜单 A→D 每步 bench。A–D 后脚本 p95 6.48ms，超 +1.0ms / 2ms，**申议 E 未启用**。未替换现网 Pixi。现网弹簧 / ticker / 100k 未动。证据 `painting/radial-s4.json`。
 
 ---
 

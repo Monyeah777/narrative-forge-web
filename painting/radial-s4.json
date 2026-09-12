@@ -1,0 +1,412 @@
+{
+  "task": "S4 渲染",
+  "handbook": "docs/NF_径向重映射_总结版最终方案_v2.0.md",
+  "timestamp_note": "isolation ImageData A→D bench; no live Pixi rewrite; no live write; live 0.055 untouched; E not enabled",
+  "seed": 1395871795,
+  "module": "prototype/pixi-physics/nf-radial-render.js",
+  "physics": "prototype/pixi-physics/nf-radial-physics.js",
+  "runner": "scripts/radial-s4-render.mjs",
+  "live_count_unchanged": 100000,
+  "palette_unchanged": true,
+  "spring_unchanged": true,
+  "wired_into_live_ticker": false,
+  "live_pixi_replaced": false,
+  "menu_E_enabled": false,
+  "pixel_block": {
+    "cell": 2,
+    "matte": true,
+    "integer_round": true,
+    "smoothing": false,
+    "glow": false,
+    "ink": "#C9CFD8",
+    "bg": "#050505",
+    "note": "isolation monochrome; live 256 palette unused"
+  },
+  "field": {
+    "width": 1200,
+    "height": 1540,
+    "cx": 0.5,
+    "cy": 0.5,
+    "R95": 0.599042
+  },
+  "n": 50601,
+  "u16": "painting/radial-s2b-dallas-50k.u16",
+  "u16_sha256": "f6df3397eb97fef511377cdf903a89544860086a78d07c1eb0191f6ff4f3add6",
+  "clock": {
+    "dwell_hz": 30,
+    "dt_s": 0.03333333333333333,
+    "warm_frames": 8,
+    "bench_frames": 40,
+    "hash_frames": 16,
+    "note": "B4.1 dwell ≤30Hz; handbook §5 + 修订包 stay-quiet"
+  },
+  "search": {
+    "putImageData": "https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/putImageData",
+    "offscreen": "https://developer.mozilla.org/en-US/docs/Web/API/OffscreenCanvasRenderingContext2D",
+    "gecko_dirty_full_convert": "https://bugzilla.mozilla.org/show_bug.cgi?id=1081887",
+    "offscreen_webdev": "https://web.dev/articles/offscreen-canvas",
+    "dirty_source_relative": true
+  },
+  "switches_default": {
+    "bakeCenter": true,
+    "dirtyRect": true,
+    "noiseLut": true,
+    "edgeStagger": true
+  },
+  "steps": [
+    {
+      "id": "none",
+      "switches": {
+        "bakeCenter": false,
+        "dirtyRect": false,
+        "noiseLut": false,
+        "edgeStagger": false
+      },
+      "counts": {
+        "static": 0,
+        "move": 43740,
+        "edge": 6861
+      },
+      "prepare_ms": 23.896769999999997,
+      "phys_ms": {
+        "n": 40,
+        "mean": 0.4969187250000061,
+        "p50": 0.4910489999999754,
+        "p95": 0.5269593499999985,
+        "max": 0.5288950000000057
+      },
+      "blit_ms": {
+        "n": 40,
+        "mean": 8.421690099999996,
+        "p50": 8.420189499999992,
+        "p95": 8.460875199999975,
+        "max": 8.527340999999979
+      },
+      "script_ms": {
+        "n": 40,
+        "mean": 8.918608825000002,
+        "p50": 8.915062000000006,
+        "p95": 8.966459400000012,
+        "max": 9.042107999999985
+      },
+      "upload_px": {
+        "p50": 1848000,
+        "p95": 1848000,
+        "last": 1848000,
+        "full": 1848000,
+        "stamp_px": 202404,
+        "bbox_is_full": true
+      },
+      "last": {
+        "drew": 50601,
+        "erased": 0,
+        "sampled": 50601,
+        "held": 0,
+        "dirtyX": 0,
+        "dirtyY": 0,
+        "dirtyW": 1200,
+        "dirtyH": 1540,
+        "upload_px": 1848000,
+        "full_px": 1848000
+      },
+      "ink": 201774
+    },
+    {
+      "id": "A",
+      "switches": {
+        "bakeCenter": true,
+        "dirtyRect": false,
+        "noiseLut": false,
+        "edgeStagger": false
+      },
+      "counts": {
+        "static": 23565,
+        "move": 20175,
+        "edge": 6861
+      },
+      "prepare_ms": 23.679887000000008,
+      "phys_ms": {
+        "n": 40,
+        "mean": 1.1111461499999933,
+        "p50": 1.1123675000000048,
+        "p95": 1.1262029999999754,
+        "max": 1.1448539999998957
+      },
+      "blit_ms": {
+        "n": 40,
+        "mean": 7.520909275000003,
+        "p50": 7.517909999999972,
+        "p95": 7.605244350000039,
+        "max": 7.718412000000058
+      },
+      "script_ms": {
+        "n": 40,
+        "mean": 8.632055424999995,
+        "p50": 8.618495999999936,
+        "p95": 8.720516549999985,
+        "max": 8.845888000000059
+      },
+      "upload_px": {
+        "p50": 1848000,
+        "p95": 1848000,
+        "last": 1848000,
+        "full": 1848000,
+        "stamp_px": 216288,
+        "bbox_is_full": true
+      },
+      "last": {
+        "drew": 27036,
+        "erased": 27036,
+        "sampled": 27036,
+        "held": 0,
+        "dirtyX": 0,
+        "dirtyY": 0,
+        "dirtyW": 1200,
+        "dirtyH": 1540,
+        "upload_px": 1848000,
+        "full_px": 1848000
+      },
+      "ink": 201774
+    },
+    {
+      "id": "A+B",
+      "switches": {
+        "bakeCenter": true,
+        "dirtyRect": true,
+        "noiseLut": false,
+        "edgeStagger": false
+      },
+      "counts": {
+        "static": 23565,
+        "move": 20175,
+        "edge": 6861
+      },
+      "prepare_ms": 19.23377599999992,
+      "phys_ms": {
+        "n": 40,
+        "mean": 1.1086909249999848,
+        "p50": 1.1042409999998881,
+        "p95": 1.1222512499998403,
+        "max": 1.1277090000000953
+      },
+      "blit_ms": {
+        "n": 40,
+        "mean": 7.965249075000003,
+        "p50": 7.959203500000058,
+        "p95": 8.04076364999994,
+        "max": 8.054319000000078
+      },
+      "script_ms": {
+        "n": 40,
+        "mean": 9.073939999999988,
+        "p50": 9.071300499999893,
+        "p95": 9.155433000000063,
+        "max": 9.15683899999999
+      },
+      "upload_px": {
+        "p50": 1848000,
+        "p95": 1848000,
+        "last": 1848000,
+        "full": 1848000,
+        "stamp_px": 216288,
+        "bbox_is_full": true
+      },
+      "last": {
+        "drew": 27036,
+        "erased": 27036,
+        "sampled": 27036,
+        "held": 0,
+        "dirtyX": 0,
+        "dirtyY": 0,
+        "dirtyW": 1200,
+        "dirtyH": 1540,
+        "upload_px": 1848000,
+        "full_px": 1848000
+      },
+      "ink": 201774
+    },
+    {
+      "id": "A+B+C",
+      "switches": {
+        "bakeCenter": true,
+        "dirtyRect": true,
+        "noiseLut": true,
+        "edgeStagger": false
+      },
+      "counts": {
+        "static": 23565,
+        "move": 20175,
+        "edge": 6861
+      },
+      "prepare_ms": 24.557144000000108,
+      "phys_ms": {
+        "n": 40,
+        "mean": 1.1145735249999746,
+        "p50": 1.1126390000000583,
+        "p95": 1.1308324999998944,
+        "max": 1.2497889999999643
+      },
+      "blit_ms": {
+        "n": 40,
+        "mean": 5.085623700000008,
+        "p50": 5.08143849999999,
+        "p95": 5.173886100000118,
+        "max": 5.323472000000038
+      },
+      "script_ms": {
+        "n": 40,
+        "mean": 6.200197224999982,
+        "p50": 6.192353499999967,
+        "p95": 6.352381450000019,
+        "max": 6.424577999999883
+      },
+      "upload_px": {
+        "p50": 1848000,
+        "p95": 1848000,
+        "last": 1848000,
+        "full": 1848000,
+        "stamp_px": 216288,
+        "bbox_is_full": true
+      },
+      "last": {
+        "drew": 27036,
+        "erased": 27036,
+        "sampled": 27036,
+        "held": 0,
+        "dirtyX": 0,
+        "dirtyY": 0,
+        "dirtyW": 1200,
+        "dirtyH": 1540,
+        "upload_px": 1848000,
+        "full_px": 1848000
+      },
+      "ink": 201760
+    },
+    {
+      "id": "A+B+C+D",
+      "switches": {
+        "bakeCenter": true,
+        "dirtyRect": true,
+        "noiseLut": true,
+        "edgeStagger": true
+      },
+      "counts": {
+        "static": 23565,
+        "move": 20175,
+        "edge": 6861
+      },
+      "prepare_ms": 21.801322000000027,
+      "phys_ms": {
+        "n": 40,
+        "mean": 1.1066229749999934,
+        "p50": 1.1023270000000593,
+        "p95": 1.121856599999978,
+        "max": 1.1295020000000022
+      },
+      "blit_ms": {
+        "n": 40,
+        "mean": 5.318492524999999,
+        "p50": 5.317635500000051,
+        "p95": 5.361538299999916,
+        "max": 5.430992999999944
+      },
+      "script_ms": {
+        "n": 40,
+        "mean": 6.425115499999992,
+        "p50": 6.422717000000034,
+        "p95": 6.47758154999998,
+        "max": 6.531325999999808
+      },
+      "upload_px": {
+        "p50": 1848000,
+        "p95": 1848000,
+        "last": 1848000,
+        "full": 1848000,
+        "stamp_px": 216288,
+        "bbox_is_full": true
+      },
+      "last": {
+        "drew": 27036,
+        "erased": 27036,
+        "sampled": 23714,
+        "held": 3322,
+        "dirtyX": 0,
+        "dirtyY": 0,
+        "dirtyW": 1200,
+        "dirtyH": 1540,
+        "upload_px": 1848000,
+        "full_px": 1848000
+      },
+      "ink": 201760
+    }
+  ],
+  "dual_run": {
+    "menu": "A+B+C+D",
+    "frames": 16,
+    "a": "a80180becb54c4baaf517a35180e4cf248e239dc4b0ad3c1c23b4cf9513e08ae",
+    "b": "a80180becb54c4baaf517a35180e4cf248e239dc4b0ad3c1c23b4cf9513e08ae",
+    "match": true,
+    "ink": 201806,
+    "counts": {
+      "static": 23565,
+      "move": 20175,
+      "edge": 6861
+    }
+  },
+  "dual_run_none": {
+    "menu": "none",
+    "a": "d038e6ed56edc6b47c6f8a53453352a69346d793860862f9b87a09a3faa58c14",
+    "b": "d038e6ed56edc6b47c6f8a53453352a69346d793860862f9b87a09a3faa58c14",
+    "match": true
+  },
+  "section8": {
+    "7_perf_increment_ms": 6.2776,
+    "7_under_plus_1ms": false,
+    "7_under_rev_2ms": false,
+    "7_protocol": true,
+    "8_hash": true,
+    "1_2_sampling": "S2c locked; S4 does not resample",
+    "3_6_physics": "S3 locked; S4 does not retune k(r)/c*",
+    "9_live": "S5; live ticker not wired"
+  },
+  "budget": {
+    "b41_dwell_p95_ms": 0.2,
+    "increment_ms": 1,
+    "rev_dwell_ms": 2,
+    "abcd_script_p95_ms": 6.47758154999998,
+    "abcd_blit_p95_ms": 5.361538299999916,
+    "increment_vs_b41_ms": 6.277581549999979,
+    "vm_note": "this cloud VM is software framebuffer / not the author-device bar (same as S0)"
+  },
+  "petition_E": {
+    "needed": true,
+    "enabled": false,
+    "options": [
+      "cut isolation count",
+      "WebGL / keep live Pixi"
+    ],
+    "reason": "A–D still over §5 +1.0ms increment and/or 修订包 2ms dwell on this VM; needs author 拍板. Did not cut N. Did not enable E. Did not rewrite live Pixi."
+  },
+  "c2_golden": {
+    "sha256": "dc1f16092d775ee1462c94eb964bb95523470bd7fd7770b1efab02c6940f320a",
+    "match": true,
+    "source": "nf-spring.runGolden"
+  },
+  "live_sha256": {
+    "prototype/pixi-cloud/dallas-100k.bin": "6406d7012e7f637ad2e31661a85f619ebd14b85bb48a6341a1ec9c3a2dbcea82",
+    "prototype/pixi-hall/scotland-100k.bin": "bbeab899140521bad56e82766f92a3d63305b8bc8f802de22db804fad3bfcf5f",
+    "prototype/pixi-community/met-100k.bin": "3144fdb9144d95cb0afe30f28629ec1e065bfa5022400a80e1c8e93129779a45",
+    "painting/points.json": "d35cae4c65a1c17ebbb609176b908750ff7aef5479aa7c563e7a1faf4e68d134",
+    "prototype/assets/points.json": "d35cae4c65a1c17ebbb609176b908750ff7aef5479aa7c563e7a1faf4e68d134"
+  },
+  "nf_spring_js_sha256": "0c3cc1f0f8c4dfd1955f63905e69e3b9d83c30e28ab81aee61377564ec1cdb5e",
+  "live_index_spring_sharp_present": true,
+  "live_pixi_particle_container_present": true,
+  "booked": {
+    "live_vs_handbook_spring": "live applySpring stays 0.055/0.90/vmax10; S4 does not touch it",
+    "count": "handbook 50k isolation vs live 100k; no live overwrite",
+    "gecko_dirty": "Firefox 1081887: dirty args historically still converted the full ImageData; B reports both upload_px and full_px",
+    "dirty_union": "single bbox of ~27k scattered 2×2 stamps covers the 1200×1540 field; upload_px stays full. Not a bug. Tiles/multi-rect are outside A–D.",
+    "E": "menu E is petition-only; this gate never enables it"
+  }
+}

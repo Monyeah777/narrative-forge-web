@@ -252,6 +252,11 @@ function benchMenu(dallas, menu) {
       p95: percentile(uploadSorted, 0.95),
       last: renderer.lastStats.upload_px,
       full: renderer.lastStats.full_px,
+      stamp_px:
+        (renderer.lastStats.erased + renderer.lastStats.drew) *
+        render.CELL *
+        render.CELL,
+      bbox_is_full: renderer.lastStats.upload_px === renderer.lastStats.full_px,
     },
     last: { ...renderer.lastStats },
     ink: renderer.inkCount(),
@@ -405,6 +410,8 @@ function main() {
       count: "handbook 50k isolation vs live 100k; no live overwrite",
       gecko_dirty:
         "Firefox 1081887: dirty args historically still converted the full ImageData; B reports both upload_px and full_px",
+      dirty_union:
+        "single bbox of ~27k scattered 2×2 stamps covers the 1200×1540 field; upload_px stays full. Not a bug. Tiles/multi-rect are outside A–D.",
       E: "menu E is petition-only; this gate never enables it",
     },
   };
