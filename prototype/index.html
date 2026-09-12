@@ -1036,13 +1036,13 @@
       var dossier = document.getElementById("dossier");
       var volEl = document.getElementById("vol");
       var ctx = canvas.getContext("2d");
-      /* == RENDERER-SWAP == dual-track: ?pixi=1 uses renderer.pixi.js; default stays Canvas2D. */
-      var pixiTrack = false;
+      /* == RENDERER-SWAP == default Pixi; ?pixi=0 keeps Canvas2D rAF (C9). Do not delete physics. */
+      var pixiTrack = true;
       var pixiReady = false;
       try {
-        pixiTrack = new URLSearchParams(window.location.search).get("pixi") === "1";
+        pixiTrack = new URLSearchParams(window.location.search).get("pixi") !== "0";
       } catch (errPixiQs) {
-        pixiTrack = false;
+        pixiTrack = true;
       }
       var btnHome = document.getElementById("btn-home");
       var btnIntro = document.getElementById("btn-intro");
