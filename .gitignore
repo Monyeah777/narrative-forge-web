@@ -80,4 +80,5 @@ painting/*
 !painting/b4-1-bench.json
 !painting/b4-1-ab.json
 !painting/exhibit-deliver.json
+!painting/pixi-h1-1-vendor.json
 

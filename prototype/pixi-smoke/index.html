@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#050505" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NF · Pixi H1-① vendor smoke</title>
+  <style>
+    html, body {
+      margin: 0;
+      background: #050505;
+      color: #e8eef6;
+      font: 13px/1.5 ui-monospace, "Courier New", monospace;
+    }
+    main { padding: 16px 18px 20px; }
+    #host canvas { display: block; border: 1px solid #2a2a2a; }
+    #log { margin-top: 12px; white-space: pre-wrap; word-break: break-word; }
+    .fail { color: #A33B2A; }
+    .pass { color: #8faf6f; }
+  </style>
+</head>
+<body>
+  <main>
+    <p>H1-1 vendor land · PixiJS v8.20.1 · isolated page; live Canvas2D exhibit untouched</p>
+    <div id="host"></div>
+    <pre id="log">booting</pre>
+  </main>
+  <script src="../vendor/pixi.min.js"></script>
+  <script>
+    (function () {
+      "use strict";
+      var logEl = document.getElementById("log");
+      var host = document.getElementById("host");
+      var errors = [];
+      window.addEventListener("error", function (e) {
+        errors.push(String(e.message || e.error || e));
+      });
+      window.addEventListener("unhandledrejection", function (e) {
+        errors.push(String(e.reason || e));
+      });
+
+      function fail(msg) {
+        logEl.className = "fail";
+        logEl.textContent = msg;
+        window.__nfPixiSmoke = { ok: false, error: msg, errors: errors.slice() };
+      }
+
+      (async function () {
+        if (!window.PIXI || typeof PIXI.Application !== "function") {
+          fail("PIXI.Application missing after vendor script");
+          return;
+        }
+        /* Q1 / official v8.20.1 Application.init: options go to init(), not constructor. */
+        var app = new PIXI.Application();
+        await app.init({
+          width: 640,
+          height: 400,
+          backgroundColor: 0x050505,
+          preference: "webgl",
+          antialias: false,
+          autoStart: false,
+          resolution: 1,
+          autoDensity: true
+        });
+        if (!app.canvas) {
+          fail("canvas missing after Application.init");
+          return;
+        }
+        host.appendChild(app.canvas);
+        app.render();
+        var rendererName = app.renderer && app.renderer.name ? String(app.renderer.name) : "";
+        var rendererType = app.renderer && app.renderer.type != null ? String(app.renderer.type) : "";
+        var info = {
+          ok: errors.length === 0,
+          version: PIXI.VERSION || "",
+          canvas: { w: app.canvas.width, h: app.canvas.height },
+          rendererType: rendererType,
+          rendererName: rendererName,
+          usedCanvas: !!app.canvas,
+          tickerStarted: !!(app.ticker && app.ticker.started),
+          errors: errors.slice()
+        };
+        window.__nfPixiSmoke = info;
+        logEl.className = info.ok ? "pass" : "fail";
+        logEl.textContent = JSON.stringify(info, null, 2);
+      })().catch(function (err) {
+        fail(String(err && err.stack ? err.stack : err));
+      });
+    })();
+  </script>
+</body>
+</html>
