@@ -74,4 +74,5 @@ painting/*
 !painting/b4-perf.json
 !painting/s5-refs.json
 !painting/s5-trial.json
+!painting/seed-cloud.json
 
