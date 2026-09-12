@@ -10,7 +10,7 @@
 
 ## 当前进度（云端 Track A）
 
-手册 **§5 已完成**（真机试炼 / bench.html 协议）。B4 / B4.1 已过闸。自动放映修订包 §9.0–§9.6 已交付。作者点名《PixiJS v8 迁移总手册》最高严谨模式：H1-①②③④ 已过闸。当前只做 **H1-⑤ 物理联调**（隔离 ticker + C2 黄金样本）。现网成画仍是 Canvas2D 12k JSON，禁止把 Pixi 接进 `prototype/index.html`，禁止删现网 rAF / physics。下一刀是现网切轨（或用户改口）。
+手册 **§5 已完成**（真机试炼 / bench.html 协议）。B4 / B4.1 已过闸。自动放映修订包 §9.0–§9.6 已交付。作者点名《PixiJS v8 迁移总手册》最高严谨模式：H1-①–⑤ 隔离链路已过闸。当前只做 **现网双轨切轨**（`?pixi=1` → `renderer.pixi.js` + ticker；默认 Canvas2D 12k / rAF / physics **不删**）。禁止把默认现网改成 Pixi，禁止删旧循环。下一刀是默认切轨拆除旧轨（或用户改口）。
 
 - 凌厉弹簧 0.055 / 阻尼 0.90 / vmax 10；临界停止 0.6px / 0.06；驱离 100px 平方反比
 - 成画 1.5s（最早 1.2s）、回退 1.1s；相位时间走固定步长，冻结不计入
@@ -38,7 +38,8 @@
 - Pixi H1-②：分支 `cursor/pixi-h1-hello-52ec`。隔离空场景 `prototype/pixi-hello/index.html`。证据 `painting/pixi-h1-2-hello.json`。
 - Pixi H1-③：分支 `cursor/pixi-h1-bridge-52ec`。契约 v3 黄金样本 `fixed5_3.bin`。证据 `painting/pixi-h1-3-bridge.json`。
 - Pixi H1-④：分支 `cursor/pixi-h1-cloud-52ec`。隔离 100k `ParticleContainer`：`prototype/pixi-cloud/`。证据 `painting/pixi-h1-4-cloud.json`。
-- Pixi H1-⑤：本条分支 `cursor/pixi-h1-physics-52ec`（叠在 `cursor/pixi-h1-cloud-52ec` 上）。隔离 assemble 弹簧挂 `app.ticker` `UPDATE_PRIORITY.HIGH`；C2 黄金 `prototype/pixi-physics/golden-1000.f64`。证据 `painting/pixi-h1-5-physics.json`。现网 12k JSON / 物理 / rAF 未改。下一刀是现网切轨（或用户改口）。
+- Pixi H1-⑤：分支 `cursor/pixi-h1-physics-52ec`。隔离 assemble 弹簧挂 `app.ticker` `UPDATE_PRIORITY.HIGH`；C2 黄金 `prototype/pixi-physics/golden-1000.f64`。证据 `painting/pixi-h1-5-physics.json`。
+- 现网双轨切轨：本条分支 `cursor/pixi-h1-live-52ec`（叠在 `cursor/pixi-h1-physics-52ec` 上）。`prototype/renderer.pixi.js`（init/resize/draw/stop）。`?pixi=1` 才加载 vendor + 用 ticker 喂现网 `physics()`。默认现网仍是 Canvas2D 12k JSON + rAF + worker。证据 `painting/pixi-h1-6-live.json`。下一刀是默认切轨 / 拆除旧轨（须点名）。
 
 ---
 
@@ -244,4 +245,4 @@ POINTER_LERP 0.2  SIZES [2,3,4]
 
 1. 打开 http://localhost:8768/ 看现行原型（没有服务就在 `prototype/` 起 python http.server）。
 2. 读 `prototype/index.html` 的 CSS 报章区 + `openArchive` / `triggerEgg`，不要重写引擎。
-3. 只做用户这一次点名的事。Pixi 迁移按 H1 五步，一步一目标。H1-①–⑤ 隔离链路已做；不要把 Pixi 接进现网 `index.html`，不要删现网 rAF / physics，除非用户点名现网切轨。
+3. 只做用户这一次点名的事。Pixi 迁移按 H1 五步，一步一目标。H1-①–⑤ 隔离 + 现网 `?pixi=1` 双轨已做；不要把默认现网改成 Pixi，不要删 rAF / physics，除非用户点名默认切轨。

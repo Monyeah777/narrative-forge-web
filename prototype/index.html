@@ -1036,6 +1036,14 @@
       var dossier = document.getElementById("dossier");
       var volEl = document.getElementById("vol");
       var ctx = canvas.getContext("2d");
+      /* == RENDERER-SWAP == dual-track: ?pixi=1 uses renderer.pixi.js; default stays Canvas2D. */
+      var pixiTrack = false;
+      var pixiReady = false;
+      try {
+        pixiTrack = new URLSearchParams(window.location.search).get("pixi") === "1";
+      } catch (errPixiQs) {
+        pixiTrack = false;
+      }
       var btnHome = document.getElementById("btn-home");
       var btnIntro = document.getElementById("btn-intro");
       var btnHall = document.getElementById("btn-hall");
@@ -1393,6 +1401,7 @@
       }
 
       function stayQuiet() {
+        if (pixiTrack) return false;
         return motionDiscipline() === "v2" &&
           mode === "formed" &&
           !pointerLive() &&
@@ -1606,7 +1615,24 @@
         renderInfo.rafCount = rafCount;
         renderInfo.frameScale = renderInfo.contain.scale;
         renderInfo.imageSmoothingEnabled = ctx.imageSmoothingEnabled;
+        renderInfo.pixiTrack = pixiTrack;
+        renderInfo.pixiReady = pixiReady;
         window.__nfRender = renderInfo;
+        if (pixiTrack && window.NFPixiRenderer) {
+          window.__nfPixiLive = Object.assign(window.NFPixiRenderer.info(), {
+            track: true,
+            ready: pixiReady,
+            ok: pixiReady && !window.NFPixiRenderer.info().contextLost,
+            usedSecondRaf: false,
+            n: N,
+            mode: mode,
+            ticks: tickCount,
+            spring: SPRING,
+            livePhysics: true
+          });
+        } else {
+          window.__nfPixiLive = { track: pixiTrack, ready: false, n: N, mode: mode };
+        }
         window.__nfGetPerf = perfStats;
         animInfo.spring = SPRING;
         animInfo.damp = DAMP;
@@ -1770,6 +1796,7 @@
       }
 
       function bootRenderWorker() {
+        if (pixiTrack) return;
         if (typeof Worker === "undefined" || typeof OffscreenCanvas === "undefined" || !spriteBmp) return;
         try {
           if (!renderWorker) {
@@ -2962,6 +2989,10 @@
 
       function resizeCanvas() {
         var rect = canvas.getBoundingClientRect();
+        /* == RENDERER-SWAP == hidden #void reports 0×0; CSS canvas is 100vw×100vh. */
+        if (pixiTrack && (rect.width < 2 || rect.height < 2)) {
+          rect = { width: window.innerWidth, height: window.innerHeight };
+        }
         var nextW = Math.max(1, Math.round(rect.width));
         var nextH = Math.max(1, Math.round(rect.height));
         var nextDpr = quantizeDpr();
@@ -2971,11 +3002,16 @@
         cssW = nextW;
         cssH = nextH;
         dpr = nextDpr;
-        canvas.width = cssW * dpr;
-        canvas.height = cssH * dpr;
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        if (renderWorker && workerReady) {
-          renderWorker.postMessage({ t: "resize", w: canvas.width, h: canvas.height, dpr: dpr, cell: atlasCell });
+        /* == RENDERER-SWAP == */
+        if (pixiTrack && window.NFPixiRenderer && window.NFPixiRenderer.ready) {
+          window.NFPixiRenderer.resize(cssW, cssH, dpr);
+        } else if (!pixiTrack) {
+          canvas.width = cssW * dpr;
+          canvas.height = cssH * dpr;
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          if (renderWorker && workerReady) {
+            renderWorker.postMessage({ t: "resize", w: canvas.width, h: canvas.height, dpr: dpr, cell: atlasCell });
+          }
         }
         if (firstSprites) buildSprites();
         if ((firstSprites || dprChanged) && window.__nfPoints) {
@@ -3534,6 +3570,19 @@
         var p, k, i, start, end, dx, dy, half, spr, cell;
         cell = atlasCell;
         tickCount++;
+        /* == RENDERER-SWAP == */
+        if (pixiTrack && window.NFPixiRenderer && window.NFPixiRenderer.ready) {
+          window.NFPixiRenderer.draw({
+            n: N,
+            x: x,
+            y: y,
+            pid: pid,
+            palette: window.__nfPoints && window.__nfPoints.palette,
+            pointsId: window.__nfPoints && window.__nfPoints.id
+          });
+          publishRenderInfo();
+          return;
+        }
         if (!atlasBmp || !N || !cell) {
           ctx.setTransform(1, 0, 0, 1, 0, 0);
           ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -3594,12 +3643,16 @@
 
       function shouldStopLoop() {
         if (frozen || reduced) return true;
+        if (pixiTrack) {
+          if (mode === "formed" && activeCount === 0 && !pointerLive() && !handoverLive) return true;
+          return false;
+        }
         if (motionDiscipline() === "v2" && dustOn()) return false;
         if (mode === "formed" && hasGlyph && activeCount === 0 && !pointerLive()) return true;
         return false;
       }
 
-      function tick(now) {
+      function tick(now, elapsedS) {
         if (!running) return;
         var ft;
         var steps;
@@ -3645,7 +3698,7 @@
           scheduleQuietTick();
           return;
         }
-        ft = (now - lastT) / 1000;
+        ft = elapsedS != null ? elapsedS : (now - lastT) / 1000;
         lastT = now;
         if (ft > FRAME_CLAMP) ft = FRAME_CLAMP;
         acc += ft;
@@ -3669,7 +3722,8 @@
           stopLoop();
           return;
         }
-        raf = requestAnimationFrame(tick);
+        /* == RENDERER-SWAP == pixi track: ticker is the only clock (C1). */
+        if (!pixiTrack) raf = requestAnimationFrame(tick);
       }
 
       function syncCrtIdleHint() {
@@ -3687,7 +3741,10 @@
         running = true;
         syncCrtIdleHint();
         if (raf) cancelAnimationFrame(raf);
-        raf = requestAnimationFrame(tick);
+        raf = 0;
+        /* == RENDERER-SWAP == */
+        if (pixiTrack && window.NFPixiRenderer) window.NFPixiRenderer.start();
+        else raf = requestAnimationFrame(tick);
         renderInfo.running = true;
         window.__nfRender = renderInfo;
       }
@@ -3701,7 +3758,10 @@
         running = true;
         syncCrtIdleHint();
         if (raf) cancelAnimationFrame(raf);
-        raf = requestAnimationFrame(tick);
+        raf = 0;
+        /* == RENDERER-SWAP == */
+        if (pixiTrack && window.NFPixiRenderer) window.NFPixiRenderer.start();
+        else raf = requestAnimationFrame(tick);
         renderInfo.running = true;
         window.__nfRender = renderInfo;
       }
@@ -3712,6 +3772,8 @@
         clearQuietWait();
         if (raf) cancelAnimationFrame(raf);
         raf = 0;
+        /* == RENDERER-SWAP == */
+        if (pixiTrack && window.NFPixiRenderer) window.NFPixiRenderer.stop();
         syncCrtIdleHint();
         publishRenderInfo();
         publishB41();
@@ -3931,8 +3993,16 @@
         return mxT >= fitX && mxT <= fitX + fitW && myT >= fitY && myT <= fitY + fitH;
       }
 
+      function pointerHostRect() {
+        /* == RENDERER-SWAP == */
+        if (pixiTrack && window.NFPixiRenderer && window.NFPixiRenderer.canvas) {
+          return window.NFPixiRenderer.canvas.getBoundingClientRect();
+        }
+        return canvas.getBoundingClientRect();
+      }
+
       function onPointerMove(e) {
-        var r = canvas.getBoundingClientRect();
+        var r = pointerHostRect();
         mxT = e.clientX - r.left;
         myT = e.clientY - r.top;
         if (!finePointer.matches && performance.now() >= touchUntil) return;
@@ -3951,7 +4021,7 @@
       }
 
       function onPointerDown(e) {
-        var r = canvas.getBoundingClientRect();
+        var r = pointerHostRect();
         mxT = e.clientX - r.left;
         myT = e.clientY - r.top;
         mx = mxT;
@@ -4036,6 +4106,44 @@
           if (booted) render();
           if (!reduced && !shouldStopLoop()) wakeLoop();
         }, 150);
+      }
+
+      function loadScriptOnce(src) {
+        return new Promise(function (resolve, reject) {
+          var el = document.createElement("script");
+          el.src = src;
+          el.onload = function () { resolve(); };
+          el.onerror = function () { reject(new Error("script " + src)); };
+          document.head.appendChild(el);
+        });
+      }
+
+      function ensurePixi() {
+        if (!pixiTrack) return Promise.resolve();
+        return loadScriptOnce("vendor/pixi.min.js")
+          .then(function () {
+            return loadScriptOnce("renderer.pixi.js");
+          })
+          .then(function () {
+            if (!window.NFPixiRenderer) throw new Error("NFPixiRenderer missing");
+            return window.NFPixiRenderer.init({
+              parent: stage,
+              before: canvas,
+              width: cssW,
+              height: cssH,
+              resolution: dpr,
+              background: 0x050505
+            });
+          })
+          .then(function () {
+            canvas.hidden = true;
+            canvas.setAttribute("aria-hidden", "true");
+            window.NFPixiRenderer.onTick(function (ticker) {
+              tick(performance.now(), ticker.elapsedMS / 1000);
+            });
+            pixiReady = true;
+            publishRenderInfo();
+          });
       }
 
       function boot(points) {
@@ -4161,7 +4269,14 @@
         freezeLoaded(coerced, timings);
         publishTarget(TARGETS.INTRO, coerced);
         return buildPaletteAtlas().then(function () {
+          return ensurePixi();
+        }).then(function () {
           boot(coerced.points);
+        }).catch(function (err) {
+          if (pixiTrack) {
+            window.__nfPixiLive = { track: true, ready: false, ok: false, error: String(err && err.stack ? err.stack : err) };
+          }
+          throw err;
         });
       });
     })();
