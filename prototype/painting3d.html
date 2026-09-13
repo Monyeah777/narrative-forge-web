@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NF · 画作 3D 浮雕（环绕）</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #05060a; overflow: hidden; }
+  canvas { display: block; width: 100vw; height: 100vh; }
+  .hud { position: fixed; left: 16px; bottom: 14px; z-index: 2; max-width: 52vw;
+    font: 11px/1.7 ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: rgba(232,230,226,.78); letter-spacing: .05em; pointer-events: none; }
+  .hud b { font-weight: 500; color: rgba(255,255,255,.94); }
+  .bar { position: fixed; right: 16px; bottom: 14px; z-index: 3; display: flex; gap: 8px; align-items: center;
+    font: 11px/1 ui-monospace, Menlo, monospace; }
+  .bar button { all: unset; cursor: pointer; padding: 7px 11px; letter-spacing: .1em;
+    color: rgba(238,236,232,.86); border: 1px solid rgba(255,255,255,.26); }
+  .bar button:hover { border-color: rgba(255,255,255,.6); }
+  .bar button[aria-pressed="true"] { border-color: rgba(255,255,255,.85); color: #fff; }
+  .toast { position: fixed; left: 50%; top: 28px; transform: translateX(-50%); z-index: 3;
+    font: 11px/1.6 ui-monospace, Menlo, monospace; color: rgba(238,236,232,.7); pointer-events: none; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="hud" id="hud">载入中…</div>
+<div class="bar" id="bar"></div>
+<div class="toast" id="toast"></div>
+<script src="vendor/pixi.min.js"></script>
+<script src="pixi-bridge/points-bin.js"></script>
+<script src="nf-particles3d.js"></script>
+<script>
+/* 画作 3D 浮雕（独立页）：直接读现网的粒子 bin + 256 色 meta → 同一批粒子立体化后环绕。
+   一眼可见的 demo：不用开整个站点，也不依赖拖拽。主站里等价入口是放映条「3D 粒子」键。 */
+(function () {
+  "use strict";
+  var WORKS = [
+    { key: "dallas", bin: "pixi-cloud/dallas-radial-50k.bin", meta: "pixi-cloud/meta-radial.json", title: "Les peupliers (Poplars, Pink Effect)", artist: "Claude Monet", year: 1891, museum: "Dallas Museum of Art" },
+    { key: "scotland", bin: "pixi-hall/scotland-radial-50k.bin", meta: "pixi-hall/meta-radial.json", title: "Poplars on the Epte", artist: "Claude Monet", year: 1891, museum: "National Galleries of Scotland" },
+    { key: "met", bin: "pixi-community/met-radial-50k.bin", meta: "pixi-community/meta-radial.json", title: "The Four Trees", artist: "Claude Monet", year: 1891, museum: "The Metropolitan Museum of Art" }
+  ];
+  var qs = new URLSearchParams(location.search);
+  var qd = parseFloat(qs.get("depth") || "");
+  var qo = parseFloat(qs.get("orbit") || "");
+  var canvas = document.getElementById("c");
+  var hud = document.getElementById("hud");
+  var bar = document.getElementById("bar");
+  var toast = document.getElementById("toast");
+  var handle = window.NF3D.mount(canvas, {
+    mode: "relief",
+    depth: isFinite(qd) && qd >= 0 && qd <= 1.5 ? qd : 0.95,
+    pointSize: 3.6,
+    orbit: isFinite(qo) && qo >= -2 && qo <= 2 ? qo : 0.28,
+    captureWheel: true
+  });
+  var cache = {};
+
+  function load(key) {
+    var w = null;
+    var i;
+    for (i = 0; i < WORKS.length; i++) if (WORKS[i].key === key) w = WORKS[i];
+    if (!w) return;
+    Array.prototype.forEach.call(bar.children, function (b) {
+      b.setAttribute("aria-pressed", b.dataset.key === key ? "true" : "false");
+    });
+    toast.textContent = "";
+    if (cache[key]) {
+      var n0 = handle.setPainting(cache[key]);
+      paint(w, n0);
+      return;
+    }
+    hud.textContent = "载入 " + w.title + " …";
+    Promise.all([
+      fetch(w.meta).then(function (r) { return r.json(); }),
+      fetch(w.bin).then(function (r) { return r.arrayBuffer(); })
+    ])
+      .then(function (res) {
+        var meta = res[0];
+        var raw = window.NFPointsBin.readPointsBin(res[1], meta.count);
+        var pts = new Array(raw.length);
+        for (var k = 0; k < raw.length; k++) {
+          pts[k] = { x: raw[k].x / 65535, y: raw[k].y / 65535, i: raw[k].idx };
+        }
+        var rec = {
+          id: meta.id + "-relief",
+          w: meta.w,
+          h: meta.h,
+          count: pts.length,
+          palette: meta.palette,
+          points: pts,
+          source: "bin"
+        };
+        cache[key] = rec;
+        var n = handle.setPainting(rec);
+        paint(w, n);
+      })
+      .catch(function (err) {
+        hud.textContent = "载入失败：" + err;
+      });
+  }
+
+  function paint(w, n) {
+    var s = handle.state();
+    hud.innerHTML =
+      "<b>" + w.title + "</b> · " + w.artist + " · " + w.year + "<br>" +
+      w.museum + " ｜ " + (n || s.reliefN).toLocaleString("en-US") + " 粒 ｜ 浮雕深度 " + s.depth +
+      " ｜ 环绕 " + (2 * Math.PI / Math.max(1e-6, Math.abs(s.orbit))).toFixed(0) + "s/圈<br>" +
+      "同一批画作粒子立体化：z = 该粒子颜色的亮度（明凸暗凹）｜拖拽可自由环绕 · 滚轮缩放";
+  }
+
+  WORKS.forEach(function (w) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.dataset.key = w.key;
+    b.textContent = w.museum.split(" ")[0];
+    b.setAttribute("aria-pressed", "false");
+    b.addEventListener("click", function () {
+      load(w.key);
+    });
+    bar.appendChild(b);
+  });
+  window.addEventListener("keydown", function (e) {
+    if (e.code === "Space") {
+      e.preventDefault();
+      var s = handle.state();
+      handle.setPaused(!s.paused);
+      toast.textContent = s.paused ? "已继续" : "已暂停";
+    }
+  });
+  window.__nfPainting3D = handle;
+  load(qs.get("p") || "dallas");
+})();
+</script>
+</body>
+</html>
