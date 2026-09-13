@@ -1,0 +1,46 @@
+name: Pages
+
+# 把 prototype/ 目录发布成可浏览的网页（作者需求：「生成一个可供我浏览的网页链接」）。
+# 站点根 = prototype/，所以页内的相对路径（assets/、pixi-cloud/、pixi-hall/…）原样可用；
+# index.html 里指向 Next 站点的 /hall、/community 是绝对路径，在 Pages 上照旧不可达（本地亦然）。
+on:
+  push:
+    branches: [codex/batch0-confirm, main]
+    paths:
+      - "prototype/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同一时刻只允许一次发布；新版覆盖旧版
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # enablement: true —— 仓库还没开 Pages 时由本步骤开启（Source = GitHub Actions）
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Upload prototype
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: prototype
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
