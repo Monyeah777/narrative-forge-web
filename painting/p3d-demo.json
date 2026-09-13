@@ -62,5 +62,16 @@
       },
       "screenshots": ["nf-baseline-artifacts/3d-relief-deep.png", "3d-relief-flat.png（depth=0 对照）", "3d-on.png", "3d-off.png"]
     }
+    ,
+    "orbit_2026-09-13": {
+      "request": "作者：「我希望可以变成环绕的」",
+      "before": "浮雕模式自转 0.05 rad/s（一圈 126 秒）几乎看不出在转；可见动态主要来自着色器里 ±12° 的轻微摆动",
+      "after": "默认环绕 **0.28 rad/s ≈ 16°/s（一圈 ≈ 22 秒）**；拖拽时接管（环绕暂停），松手继续；可调 `?p3dorbit=<rad/s>` 或运行时 `nf3d({orbit})`，`0` = 静止只手动转",
+      "evidence": {
+        "script": "check-3d-orbit.js",
+        "checks": "5/5：默认在环绕（orbit=0.280 rad/s、一圈 22.4s）｜4 秒转过 **71.4°**（≥25° 阈值）｜画面随时间明显变化（平均亮度差 3.78、变化像素 5.87%）｜环绕可关（接口已暴露）｜0 页面错误",
+        "shots": ["nf-baseline-artifacts/3d-orbit-a.png", "3d-orbit-b.png（4 秒后）"]
+      }
+    }
   }
 }

@@ -296,8 +296,10 @@
       return n;
     }
 
-    /* 默认就是 3/4 侧视 + 慢自转：一眼能看出浮雕起伏（正面视角下浮雕≈平面，实测会被当成「没变 3D」） */
-    var cam = { yaw: 0.62, pitch: 0.34, dist: 2.45, autoYaw: 0.05 };
+    /* 默认 3/4 侧视 + **持续环绕**：作者 2026-09-13「我希望可以变成环绕的」
+       —— 原来 0.05rad/s（一圈 126s）几乎看不出在转；现默认 0.28rad/s ≈ 16°/s（一圈 ≈ 22s）。
+       拖拽时接管（autoYaw 暂停），松手后继续环绕。 */
+    var cam = { yaw: 0.62, pitch: 0.34, dist: 2.45, autoYaw: opts.orbit == null ? 0.28 : opts.orbit };
     var paused = 0;
     var depth = opts.depth == null ? 0.95 : opts.depth;
     var pointSize = opts.pointSize == null ? 3.6 : opts.pointSize;
@@ -472,7 +474,7 @@
         cam.yaw = mode === "relief" ? 0.62 : 0.6;
         cam.pitch = mode === "relief" ? 0.34 : 0.34;
         cam.dist = mode === "relief" ? 2.45 : 5.2;
-        cam.autoYaw = mode === "relief" ? 0.05 : 0.045;
+        cam.autoYaw = mode === "relief" ? 0.28 : 0.045;
         return mode;
       },
       setPaused: function (p) {
@@ -488,6 +490,11 @@
         pointSize = Math.max(0.5, Math.min(12, +s || 0));
         return pointSize;
       },
+      /* 环绕速度（rad/s；0 = 静止，仅手动拖拽）。?p3dorbit=<°/s> 亦可 */
+      setOrbit: function (radPerSec) {
+        cam.autoYaw = Math.max(-2, Math.min(2, +radPerSec || 0));
+        return cam.autoYaw;
+      },
       state: function () {
         return {
           mode: mode,
@@ -498,6 +505,7 @@
           paused: paused,
           depth: depth,
           yaw: cam.yaw,
+          orbit: cam.autoYaw,
           dist: cam.dist,
           lost: handle.lost,
           restored: handle.restored,
