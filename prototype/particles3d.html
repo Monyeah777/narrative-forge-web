@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NF · 立体动态粒子（3D particle demo）</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #05060a; overflow: hidden; }
+  canvas { display: block; width: 100vw; height: 100vh; }
+  .hud {
+    position: fixed; left: 16px; bottom: 14px; z-index: 2;
+    font: 11px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: rgba(232, 230, 226, .78); letter-spacing: .06em; pointer-events: none;
+  }
+  .hud b { font-weight: 500; color: rgba(255, 255, 255, .92); }
+  .hint { position: fixed; right: 16px; bottom: 14px; z-index: 2;
+    font: 11px/1.6 ui-monospace, Menlo, monospace; color: rgba(232,230,226,.5); pointer-events: none; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="hud">NF 立体粒子 · <b id="n">–</b> 粒 · <b id="fps">–</b> fps · 单次 draw call（0 CPU/帧）</div>
+<div class="hint">拖动旋转 · 滚轮缩放 · 空格暂停</div>
+<script>
+/* 立体动态粒子（WebGL2，零依赖）
+ *
+ * 技法（与业内一致）：
+ *  - 点精灵 + 尺寸衰减：gl_PointSize ∝ 1/gl_Position.w（近大远小）
+ *  - 加法混合（gl.ONE, gl.ONE）+ 片元内软圆点 → **无需深度排序**、天然发光感
+ *  - 程序化运动（GPU 端解析流场）：涡旋（绕 Y 轴、角速度随半径）+ 3D 正弦势场的 curl 抖动
+ *    （curl noise 思路同 Bridson 2007；本仓库 2D 版本已在 nf-radial-physics.js 使用）
+ *  - 深度雾 + 按深度/速度着色；每帧只更新 uniform，位置全在 VS 里算（CPU/帧 ≈ 0）
+ *  - 若将来要「有状态」粒子（碰撞/寿命/拖尾），同一套可升级为 transform feedback
+ *    双缓冲（MDN：2021-09 起全平台可用）
+ */
+(function () {
+  "use strict";
+  var canvas = document.getElementById("c");
+  var gl = canvas.getContext("webgl2", { antialias: false, alpha: false, powerPreference: "high-performance" });
+  var hudN = document.getElementById("n");
+  var hudFps = document.getElementById("fps");
+  if (!gl) {
+    document.body.innerHTML = '<p style="color:#eee;font:13px monospace;padding:20px">此浏览器不支持 WebGL2。</p>';
+    return;
+  }
+  /* 查询参数（先解析，后面多处要用） */
+  var qs = new URLSearchParams(location.search);
+  var qsN = parseInt(qs.get("n") || "", 10);
+  var N = qsN >= 1000 && qsN <= 400000 ? qsN : 120000;
+  var SIMPLE = qs.get("simple") === "1";
+
+  var VS = "#version 300 es\n" +
+    "precision highp float;\n" +
+    "layout(location=0) in vec2 aGrid;\n" +   /* 球面/环面上的基准点 */
+    "layout(location=1) in vec2 aRand;\n" +   /* 随机相位/半径扰动 */
+    "uniform mat4 uVP;\n" +
+    "uniform float uTime;\n" +
+    "uniform float uSize;\n" +
+    "uniform float uPR;\n" +
+    "uniform float uPaused;\n" +
+    "out vec3 vColor;\n" +
+    "out float vAlpha;\n" +
+    "const float PI = 3.14159265359;\n" +
+    "/* 解析 curl：ψ = (sin(ky+φ), sin(kz+φ'), sin(kx+φ''))，v = ∇×ψ */\n" +
+    "vec3 curlNoise(vec3 p, float t) {\n" +
+    "  float k = 1.35;\n" +
+    "  vec3 q = p * k + vec3(t * 0.25, t * 0.19, t * 0.31);\n" +
+    "  // ψ = (sin(q.y), sin(q.z), sin(q.x))\n" +
+    "  // v = ∇×ψ = (cos(q.z)*k, cos(q.x)*k, cos(q.y)*k)\n" +
+    "  return vec3(cos(q.z), cos(q.x), cos(q.y)) * k;\n" +
+    "}\n" +
+    "void main() {\n" +
+    "  float t = uTime * (1.0 - uPaused);\n" +
+    "  // 1) 基准分布：球壳 + 环（aGrid.x = 环半径, aGrid.y = 环上角）\n" +
+    "  float ringR = 1.15 + aGrid.x * 0.95;\n" +
+    "  float ringA = aGrid.y + aRand.x * 0.6;\n" +
+    "  float lift = aRand.y * 2.0 - 1.0;\n" +
+    "  lift = sign(lift) * pow(abs(lift), 1.6) * 1.05;\n" +
+    "  vec3 base = vec3(cos(ringA) * ringR, lift, sin(ringA) * ringR);\n" +
+    "  // 2) 涡旋：绕 Y 轴角速度随半径与高度变化（内快外慢 → 立体扭矩感）\n" +
+    "  float spin = (0.55 / (0.55 + ringR * 0.55) + 0.12 * lift) * 1.25;\n" +
+    "  float a2 = ringA + t * spin;\n" +
+    "  vec3 p = vec3(cos(a2) * ringR, lift, sin(a2) * ringR);\n" +
+    "  // 3) curl 抖动：越外越强（呼吸感）\n" +
+    "  float breath = 0.55 + 0.45 * sin(t * 0.6);\n" +
+    "  p += curlNoise(base, t) * (0.16 + 0.20 * aGrid.x) * breath;\n" +
+    "  // 4) 轻微整体起伏\n" +
+    "  p.y += 0.10 * sin(t * 0.4 + ringA * 2.0);\n" +
+    "  vec4 clip = uVP * vec4(p, 1.0);\n" +
+    "  gl_Position = clip;\n" +
+    "  float w = max(clip.w, 0.001);\n" +
+    "  gl_PointSize = clamp(uSize * uPR / w, 0.7, 7.0 * uPR);\n" +
+    "  // 5) 颜色：按半径（青→品红）+ 高度提亮；深度雾压远点\n" +
+    "  float hue = clamp((ringR - 1.0) / 1.6, 0.0, 1.0);\n" +
+    "  vec3 warm = vec3(1.00, 0.62, 0.34);\n" +
+    "  vec3 cool = vec3(0.36, 0.74, 1.00);\n" +
+    "  vec3 col = mix(warm, cool, hue);\n" +
+    "  col = mix(col, vec3(1.0), 0.35 * smoothstep(0.65, 1.0, abs(lift)));\n" +
+    "  vColor = col;\n" +
+    "  float fog = smoothstep(9.0, 3.0, w);\n" +
+    /* 加法混合下 12 万点会迅速叠加到白：单点 alpha 必须压得很低（0.03–0.15），
+       亮度靠「点密度 + 深度雾」堆出来，而不是靠单点不透明度 */
+    "  vAlpha = (0.030 + 0.115 * fog) * (0.45 + 0.55 * aRand.x);\n" +
+    "}\n";
+
+  var FS = "#version 300 es\n" +
+    "precision highp float;\n" +
+    "in vec3 vColor;\n" +
+    "in float vAlpha;\n" +
+    "out vec4 outColor;\n" +
+    "void main() {\n" +
+    "  vec2 d = gl_PointCoord - vec2(0.5);\n" +
+    "  float r2 = dot(d, d);\n" +
+    "  if (r2 > 0.25) discard;\n" +                 /* 圆形点精灵（软边） */
+    "  float a = smoothstep(0.25, 0.02, r2) * vAlpha;\n" +
+    "  outColor = vec4(vColor * a, a);\n" +         /* 加法混合下用预乘色，无需排序 */
+    "}\n";
+
+  function sh(type, src) {
+    var s = gl.createShader(type);
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+      throw new Error("shader: " + gl.getShaderInfoLog(s));
+    }
+    return s;
+  }
+  var prog = null;
+  var diag = [];
+  function chk(tag) {
+    var e = gl.getError();
+    if (e) diag.push(tag + ":" + e);
+    window.__nfP3dDiag = diag;
+  }
+  /* ?simple=1：最小着色器（不引用 aRand / curl / 点大小衰减）——用于把「我的着色器」与「驱动」分开定位 */
+  var VS_SIMPLE = "#version 300 es\n" +
+    "precision highp float;\n" +
+    "layout(location=0) in vec2 aGrid;\n" +
+    "uniform mat4 uVP;\n" +
+    "out vec3 vColor;\n" +
+    "void main(){ vColor = vec3(0.6, 0.8, 1.0); gl_Position = uVP * vec4(aGrid * 1.2 - 0.6, 0.0, 1.0); gl_PointSize = 3.0; }\n";
+  var FS_SIMPLE = "#version 300 es\n" +
+    "precision highp float;\n" +
+    "in vec3 vColor; out vec4 o;\n" +
+    "void main(){ o = vec4(vColor, 0.6); }\n";
+  var grid = new Float32Array(N * 2);
+  var rand = new Float32Array(N * 2);
+  var i;
+  var rngState = 0x9e3779b9;
+  function rnd() {
+    rngState ^= rngState << 13;
+    rngState ^= rngState >>> 17;
+    rngState ^= rngState << 5;
+    return ((rngState >>> 0) % 100000) / 100000;
+  }
+  for (i = 0; i < N; i++) {
+    /* 环半径分布：偏内密（pow）→ 中心有核、外圈稀疏 */
+    var u = Math.pow(rnd(), 0.65);
+    grid[i * 2] = u;
+    grid[i * 2 + 1] = rnd() * Math.PI * 2;
+    rand[i * 2] = rnd();
+    rand[i * 2 + 1] = rnd();
+  }
+  function buf(data, loc, comps) {
+    var b = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, b);
+    gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(loc);
+    gl.vertexAttribPointer(loc, comps, gl.FLOAT, false, 0, 0);
+    return b;
+  }
+  var U = null;
+
+  /* 建立/重建全部 GL 资源（初建 + 上下文恢复都走这里 —— WebGL 官方的上下文丢失处理要求：
+     丢失期间不调用 GL，恢复后在 webglcontextrestored 里**重新创建** program/buffer/uniform） */
+  function buildGL() {
+    prog = gl.createProgram();
+    gl.attachShader(prog, sh(gl.VERTEX_SHADER, SIMPLE ? VS_SIMPLE : VS));
+    chk("vs");
+    gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, SIMPLE ? FS_SIMPLE : FS));
+    chk("fs");
+    gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error("link: " + gl.getProgramInfoLog(prog));
+    chk("link");
+    gl.useProgram(prog);
+    chk("use");
+    buf(grid, 0, 2);
+    buf(rand, 1, 2);
+    chk("buf");
+    U = {
+      vp: gl.getUniformLocation(prog, "uVP"),
+      time: gl.getUniformLocation(prog, "uTime"),
+      size: gl.getUniformLocation(prog, "uSize"),
+      pr: gl.getUniformLocation(prog, "uPR"),
+      paused: gl.getUniformLocation(prog, "uPaused")
+    };
+    gl.disable(gl.DEPTH_TEST);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.ONE, gl.ONE);      /* 加法混合：顺序无关、天然发光 */
+    gl.clearColor(0.02, 0.024, 0.039, 1);
+  }
+  hudN.textContent = N.toLocaleString("en-US");
+  buildGL();
+
+  /* 上下文丢失兜底：丢失期间停绘，恢复后重建资源（SwiftShader/双 GPU/低端机偶发） */
+  var ctxLost = false;
+  canvas.addEventListener("webglcontextlost", function (e) {
+    e.preventDefault();
+    ctxLost = true;
+    window.__nfP3dLost = (window.__nfP3dLost | 0) + 1;
+  });
+  canvas.addEventListener("webglcontextrestored", function () {
+    ctxLost = false;
+    window.__nfP3dRestored = (window.__nfP3dRestored | 0) + 1;
+    buildGL();
+  });
+
+  /* ---- 相机（轨道 + 自动旋转 + 拖拽 + 滚轮） ---- */
+  var cam = { yaw: 0.6, pitch: 0.34, dist: 5.2, autoYaw: 0.045 };
+  var paused = 0;
+  var dragging = false;
+  var lastX = 0;
+  var lastY = 0;
+  canvas.addEventListener("pointerdown", function (e) {
+    dragging = true;
+    lastX = e.clientX;
+    lastY = e.clientY;
+    canvas.setPointerCapture && canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener("pointerup", function () {
+    dragging = false;
+  });
+  canvas.addEventListener("pointermove", function (e) {
+    if (!dragging) return;
+    cam.yaw -= (e.clientX - lastX) * 0.006;
+    cam.pitch = Math.max(-1.2, Math.min(1.2, cam.pitch + (e.clientY - lastY) * 0.004));
+    lastX = e.clientX;
+    lastY = e.clientY;
+  });
+  canvas.addEventListener("wheel", function (e) {
+    e.preventDefault();
+    cam.dist = Math.max(2.6, Math.min(11, cam.dist * (1 + Math.sign(e.deltaY) * 0.08)));
+  }, { passive: false });
+  window.addEventListener("keydown", function (e) {
+    if (e.code === "Space") {
+      e.preventDefault();
+      paused = paused ? 0 : 1;
+    }
+  });
+
+  function perspective(fovy, aspect, near, far) {
+    var f = 1 / Math.tan(fovy / 2);
+    return new Float32Array([
+      f / aspect, 0, 0, 0,
+      0, f, 0, 0,
+      0, 0, (far + near) / (near - far), -1,
+      0, 0, (2 * far * near) / (near - far), 0
+    ]);
+  }
+  function lookAt(eye, target, up) {
+    var zx = eye[0] - target[0];
+    var zy = eye[1] - target[1];
+    var zz = eye[2] - target[2];
+    var zl = Math.hypot(zx, zy, zz) || 1;
+    zx /= zl; zy /= zl; zz /= zl;
+    var xx = up[1] * zz - up[2] * zy;
+    var xy = up[2] * zx - up[0] * zz;
+    var xz = up[0] * zy - up[1] * zx;
+    var xl = Math.hypot(xx, xy, xz) || 1;
+    xx /= xl; xy /= xl; xz /= xl;
+    var yx = zy * xz - zz * xy;
+    var yy = zz * xx - zx * xz;
+    var yz = zx * xy - zy * xx;
+    return new Float32Array([
+      xx, yx, zx, 0,
+      xy, yy, zy, 0,
+      xz, yz, zz, 0,
+      -(xx * eye[0] + xy * eye[1] + xz * eye[2]),
+      -(yx * eye[0] + yy * eye[1] + yz * eye[2]),
+      -(zx * eye[0] + zy * eye[1] + zz * eye[2]),
+      1
+    ]);
+  }
+  function mul(a, b) {
+    var o = new Float32Array(16);
+    for (var r = 0; r < 4; r++) {
+      for (var c = 0; c < 4; c++) {
+        var s = 0;
+        for (var k = 0; k < 4; k++) s += a[k * 4 + r] * b[c * 4 + k];
+        o[c * 4 + r] = s;
+      }
+    }
+    return o;
+  }
+
+  var dpr = Math.min(2, window.devicePixelRatio || 1);
+  function resize() {
+    dpr = Math.min(2, window.devicePixelRatio || 1);
+    var w = Math.floor(window.innerWidth * dpr);
+    var h = Math.floor(window.innerHeight * dpr);
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+    }
+  }
+  window.addEventListener("resize", resize);
+  resize();
+
+  var t0 = performance.now();
+  var last = t0;
+  var fpsAcc = 0;
+  var fpsN = 0;
+
+  function frame(now) {
+    var dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    var t = (now - t0) / 1000;
+    if (ctxLost) {
+      requestAnimationFrame(frame);
+      return;
+    }
+    if (!dragging) cam.yaw += cam.autoYaw * dt * (1 - paused);
+    resize();
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    var cy = Math.cos(cam.pitch);
+    var eye = [
+      Math.sin(cam.yaw) * cy * cam.dist,
+      Math.sin(cam.pitch) * cam.dist,
+      Math.cos(cam.yaw) * cy * cam.dist
+    ];
+    var vp = mul(perspective(0.85, canvas.width / canvas.height, 0.1, 60), lookAt(eye, [0, 0, 0], [0, 1, 0]));
+    gl.uniformMatrix4fv(U.vp, false, vp);
+    gl.uniform1f(U.time, t);
+    gl.uniform1f(U.size, 14);
+    gl.uniform1f(U.pr, dpr);
+    gl.uniform1f(U.paused, paused);
+    if (diag.length < 6) chk("uni");
+    gl.drawArrays(gl.POINTS, 0, N);
+    if (diag.length < 6) chk("draw");
+
+    fpsAcc += dt;
+    fpsN += 1;
+    if (fpsAcc >= 0.5) {
+      hudFps.textContent = (fpsN / fpsAcc).toFixed(0);
+      fpsAcc = 0;
+      fpsN = 0;
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+  window.__nfParticles3D = { n: N, gl: gl, state: function () { return { paused: paused, yaw: cam.yaw, dist: cam.dist }; } };
+})();
+</script>
+</body>
+</html>

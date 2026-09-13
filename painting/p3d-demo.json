@@ -1,0 +1,29 @@
+{
+  "task": "particles3d-demo",
+  "volume": "作者 2026-09-13：「我想额外搞一个有带立体动态粒子炫酷效果的，你可以搜索相关专业知识弄一下」",
+  "timestamp": "2026-09-13T23:55:00.000Z",
+  "file": "prototype/particles3d.html（独立演示页，零依赖、零改动现网）",
+  "technique": {
+    "basis": [
+      "点精灵 + 尺寸衰减：gl_PointSize ∝ 1/gl_Position.w（近大远小；WebGL 点渲染的标准做法）",
+      "加法混合 (gl.ONE, gl.ONE) + 片元内软圆点 → 顺序无关、无需深度排序，天然发光",
+      "程序化流场运动（GPU 端解析式）：涡旋（角速度随半径/高度变化）+ 3D 正弦势场的 curl 抖动（curl noise = Bridson 2007；本仓库 2D 版本已在 nf-radial-physics.js 使用）+ 呼吸脉冲",
+      "深度雾 + 按半径/高度着色（暖→冷）；每帧只更新 uniform，位置全在 VS 里算（CPU/帧≈0、单次 draw call）",
+      "上下文丢失处理：丢失期间停绘，webglcontextrestored 里重建 program/buffer/uniform（WebGL 官方要求；本环境 SwiftShader 启动时必丢一次，恢复路径已验证）"
+    ],
+    "upgrade_path": "若要「有状态」粒子（寿命/碰撞/拖尾），同一套可升级为 transform feedback 双缓冲（MDN：2021-09 起全平台可用、可在 Worker 运行）"
+  },
+  "knobs": { "?n=<1000–400000>": "粒子数（默认 120000）", "?simple=1": "最小着色器（把「我的着色器」与「驱动」分开定位用）", "拖拽": "旋转", "滚轮": "缩放", "空格": "暂停" },
+  "acceptance": {
+    "script": "check-particles3d.js（headless Edge + SwiftShader）",
+    "checks": "7/7：WebGL2 建立（ANGLE/Vulkan/SwiftShader）｜120,000 粒｜**glErr=0、0 JS 错误**｜HUD 60fps（软件渲染下）｜画布按 dpr（1280×800）｜画面 13.77% 亮点｜拖拽后平均亮度差 4.53（动态可见）",
+    "visual_profile": {
+      "method": "p3d-profile.js：整帧平均亮度 + 以画面中心为原点的半径分箱亮点占比（8 环）",
+      "meanLum": 19.51,
+      "ringLitPct": [42.28, 47.01, 54.12, 55.11, 54.43, 53.62, 46.39, 35.56],
+      "reading": "亮点在中环（r≈0.35–0.65 画面半径）达峰 55%、中心与四角更暗 → 呈现清晰的**立体环/结**轮廓（不是一团糊）：这是 3D 分布 + 透视投影 + 深度雾共同作用的结果"
+    },
+    "tuning_note": "初版点径 26px、单点 alpha 0.16–1.0 → 12 万点加法叠加把画面刷成白（整帧平均亮度 119、99% 像素超阈值）。改为点径 14px、alpha 0.03–0.15 后：平均亮度 19.5、13.8% 亮点、环状轮廓清晰。"
+  },
+  "screenshots": ["nf-baseline-artifacts/particles3d-1.png", "particles3d-2.png（拖拽后）", "p3d-profile.png"]
+}
