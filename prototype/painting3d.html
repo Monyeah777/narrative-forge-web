@@ -43,6 +43,9 @@
   var qd = parseFloat(qs.get("depth") || "");
   var qo = parseFloat(qs.get("orbit") || "");
   var qf = parseFloat(qs.get("flip") || "");
+  var qb = parseFloat(qs.get("bright") || "");
+  var qp = parseFloat(qs.get("pulse") || "");
+  var qsz = parseFloat(qs.get("size") || "");
   var canvas = document.getElementById("c");
   var hud = document.getElementById("hud");
   var bar = document.getElementById("bar");
@@ -50,10 +53,12 @@
   var handle = window.NF3D.mount(canvas, {
     mode: "relief",
     depth: isFinite(qd) && qd >= 0 && qd <= 1.5 ? qd : 0.95,
-    pointSize: 3.6,
+    pointSize: isFinite(qsz) && qsz >= 0.5 && qsz <= 12 ? qsz : 5.0,
     /* 不自动环绕（可拖拽）；动态交给浮雕极性交叠 */
     orbit: isFinite(qo) && qo >= -2 && qo <= 2 ? qo : 0,
     flipSeconds: isFinite(qf) && qf >= 0 && qf <= 120 ? qf : 18,
+    bright: isFinite(qb) && qb >= 0.2 && qb <= 4 ? qb : 2.5,
+    pulse: isFinite(qp) && qp >= 0 && qp <= 4 ? qp : 0.55,
     captureWheel: true
   });
   var cache = {};

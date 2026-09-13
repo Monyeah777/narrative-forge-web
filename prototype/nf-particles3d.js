@@ -27,7 +27,6 @@
     "uniform float uTime;\n" +
     "uniform float uSize;\n" +
     "uniform float uPR;\n" +
-    "uniform float uPaused;\n" +
     "out vec3 vColor;\n" +
     "out float vAlpha;\n" +
     "vec3 curlNoise(vec3 p, float t) {\n" +
@@ -36,7 +35,8 @@
     "  return vec3(cos(q.z), cos(q.x), cos(q.y)) * k;\n" +
     "}\n" +
     "void main() {\n" +
-    "  float t = uTime * (1.0 - uPaused);\n" +
+    /* 暂停由 JS 侧冻结时钟（见 frame() 的 animT），着色器不再自乘 */
+    "  float t = uTime;\n" +
     "  float ringR = 1.15 + aGrid.x * 0.95;\n" +
     "  float ringA = aGrid.y + aRand.x * 0.6;\n" +
     "  float lift = aRand.y * 2.0 - 1.0;\n" +
@@ -69,16 +69,22 @@
     "uniform float uTime;\n" +
     "uniform float uSize;\n" +
     "uniform float uPR;\n" +
-    "uniform float uPaused;\n" +
     "uniform float uDepth;\n" +
     "uniform float uFlip;\n" +   /* 浮雕极性：+1 = 明凸暗凹，-1 = 明凹暗凸（周期性交叠） */
+    "uniform float uBright;\n" + /* 整体亮度倍率 */
+    "uniform float uPulse;\n" +  /* 交替节奏（每秒周期数） */
     "out vec3 vColor;\n" +
     "out float vAlpha;\n" +
     "void main() {\n" +
-    "  float t = uTime * (1.0 - uPaused);\n" +
+    "  float t = uTime;\n" +
     "  vec3 p = aPos;\n" +
     "  p.z *= uFlip;\n" +                       /* 极性交叠：明凸暗凹 ⇄ 明凹暗凸 */
     "  p.z += uDepth * 0.22 * sin(t * 0.55 + aPos.x * 3.1 + aPos.y * 2.3);\n" +
+    /* == 交替的粒子节奏 == 每粒子一个固定相位（由坐标散列）+ 行进波：
+       相邻粒子的呼吸不同步，整体又像一段从画面一侧扫过的浪 —— 不是整幅一起亮灭 */
+    "  float ph = fract(sin(dot(aPos.xy, vec2(12.9898, 78.233))) * 43758.5453);\n" +
+    "  float wave = sin(6.2831853 * (t * uPulse + ph) + (aPos.x * 3.2 + aPos.y * 2.4));\n" +
+    "  float pulse = 0.42 + 0.58 * (0.5 + 0.5 * wave);\n" +
     "  float swing = 0.22 * sin(t * 0.18);\n" +
     "  float cs = cos(swing);\n" +
     "  float sn = sin(swing);\n" +
@@ -90,8 +96,8 @@
     "  float lumN = clamp(aPos.z * uFlip / max(uDepth, 0.001) + 0.5, 0.0, 1.0);\n" +
     /* 凸起处点更大一点：进一步强化立体读感 */
     "  gl_PointSize = clamp(uSize * uPR * (0.85 + 0.5 * lumN) / w, 0.6, 5.0 * uPR);\n" +
-    "  vColor = aCol.rgb * (0.62 + 0.62 * lumN);\n" +
-    "  vAlpha = aCol.a * (0.42 + 0.58 * smoothstep(4.2, 1.5, w));\n" +
+    "  vColor = aCol.rgb * (0.70 + 0.70 * lumN) * uBright;\n" +
+    "  vAlpha = clamp(aCol.a * pulse * (0.55 + 0.45 * smoothstep(4.2, 1.5, w)) * uBright, 0.0, 1.0);\n" +
     "}\n";
 
   var FS = "#version 300 es\n" +
@@ -197,8 +203,7 @@
         vp: gl.getUniformLocation(progAbs, "uVP"),
         time: gl.getUniformLocation(progAbs, "uTime"),
         size: gl.getUniformLocation(progAbs, "uSize"),
-        pr: gl.getUniformLocation(progAbs, "uPR"),
-        paused: gl.getUniformLocation(progAbs, "uPaused")
+        pr: gl.getUniformLocation(progAbs, "uPR")
       };
       gl.useProgram(progRelief);
       bPos = attr(null, 0, 3, pos);
@@ -208,9 +213,10 @@
         time: gl.getUniformLocation(progRelief, "uTime"),
         size: gl.getUniformLocation(progRelief, "uSize"),
         pr: gl.getUniformLocation(progRelief, "uPR"),
-        paused: gl.getUniformLocation(progRelief, "uPaused"),
         depth: gl.getUniformLocation(progRelief, "uDepth"),
-        flip: gl.getUniformLocation(progRelief, "uFlip")
+        flip: gl.getUniformLocation(progRelief, "uFlip"),
+        bright: gl.getUniformLocation(progRelief, "uBright"),
+        pulse: gl.getUniformLocation(progRelief, "uPulse")
       };
       gl.disable(gl.DEPTH_TEST);
       gl.enable(gl.BLEND);
@@ -300,13 +306,24 @@
     }
 
     /* 视角：作者 2026-09-13 先要环绕、随后「还是不环绕了吧」→ 默认 autoYaw=0（不自己转，可拖拽），
-       动态交给浮雕极性交叠（明凸暗凹 ⇄ 明凹暗凸）+ 呼吸/轻摆。?p3dorbit= 可再开环绕。 */
-    var cam = { yaw: 0.62, pitch: 0.34, dist: 2.45, autoYaw: opts.orbit == null ? 0 : opts.orbit };
+       动态交给浮雕极性交叠（明凸暗凹 ⇄ 明凹暗凸）+ 呼吸/轻摆。?p3dorbit= 可再开环绕。
+       注意：显式给的 orbit 必须记住（orbitSet），否则 setMode() 会把它按模式默认值覆盖掉 ——
+       这正是「?p3dorbit= 传了却仍是 0」的根因。 */
+    var orbitSet = opts.orbit == null ? null : opts.orbit;
+    var modeOrbit = function () {
+      return orbitSet == null ? (mode === "relief" ? 0 : 0.045) : orbitSet;
+    };
+    var cam = { yaw: 0.62, pitch: 0.34, dist: 2.45, autoYaw: modeOrbit() };
     var paused = 0;
     var depth = opts.depth == null ? 0.95 : opts.depth;
-    var pointSize = opts.pointSize == null ? 3.6 : opts.pointSize;
+    var pointSize = opts.pointSize == null ? 5.0 : opts.pointSize;
     /* 浮雕极性交叠周期（秒）：默认 18s（9s 正向 / 9s 反向）；0 = 固定明凸暗凹 */
     var flipPeriod = opts.flipSeconds == null ? 18 : opts.flipSeconds;
+    /* 亮度倍率 / 交替节奏（每秒周期数）；作者 2026-09-13「亮度太低，需要交替的粒子节奏动感」。
+       1.7→2.5 是标定出来的：全帧平均亮度 16.5→23.1、亮区均值 143→190/255；
+       再往上（2.7+）增益被加法混合的饱和吃掉，且过曝像素占比翻倍，故停在 2.5。 */
+    var bright = opts.bright == null ? 2.5 : opts.bright;
+    var pulseRate = opts.pulse == null ? 0.55 : opts.pulse;
     var flipNow = 1;
     var dragging = false;
     var lastX = 0;
@@ -403,8 +420,11 @@
       }
     }
 
-    var t0 = performance.now();
-    var last = t0;
+    var last = performance.now();
+    /* 动画时钟：只在未暂停时累加 → 暂停即「冻结在当前相位」。
+       旧实现是着色器里的 uTime*(1.0-uPaused)，按空格会把 t 归零、画面跳回起始相位；
+       且 JS 侧的极性交叠用的仍是未暂停的 t（暂停了还在翻转）——两处不一致，一并修掉。 */
+    var animT = 0;
     var fpsAcc = 0;
     var fpsN = 0;
     var rafId = 0;
@@ -412,12 +432,13 @@
       if (disposed) return;
       var dt = Math.min(0.05, (now - last) / 1000);
       last = now;
-      var t = (now - t0) / 1000;
+      if (!paused) animT += dt;
+      var t = animT;
       if (ctxLost) {
         rafId = requestAnimationFrame(frame);
         return;
       }
-      if (!dragging && cam.autoYaw) cam.yaw += cam.autoYaw * dt * (1 - paused);
+      if (!paused && !dragging && cam.autoYaw) cam.yaw += cam.autoYaw * dt;
       resize();
       gl.viewport(0, 0, canvas.width, canvas.height);
       gl.clear(gl.COLOR_BUFFER_BIT);
@@ -434,10 +455,11 @@
         gl.uniform1f(UR.time, t);
         gl.uniform1f(UR.size, pointSize);
         gl.uniform1f(UR.pr, dpr);
-        gl.uniform1f(UR.paused, paused);
         gl.uniform1f(UR.depth, depth);
         flipNow = flipPeriod > 0 ? Math.cos((2 * Math.PI * t) / flipPeriod) : 1;
         gl.uniform1f(UR.flip, flipNow);
+        gl.uniform1f(UR.bright, bright);
+        gl.uniform1f(UR.pulse, pulseRate);
         gl.drawArrays(gl.POINTS, 0, nRelief);
       } else {
         gl.useProgram(progAbs);
@@ -451,7 +473,6 @@
         gl.uniform1f(UAbs.time, t);
         gl.uniform1f(UAbs.size, 14);
         gl.uniform1f(UAbs.pr, dpr);
-        gl.uniform1f(UAbs.paused, paused);
         gl.drawArrays(gl.POINTS, 0, nAbs);
       }
       fpsAcc += dt;
@@ -481,8 +502,9 @@
         cam.yaw = mode === "relief" ? 0.62 : 0.6;
         cam.pitch = mode === "relief" ? 0.34 : 0.34;
         cam.dist = mode === "relief" ? 2.45 : 5.2;
-        /* 浮雕默认不自动环绕（作者 2026-09-13「还是不环绕了吧」）；抽象模式仍慢转 */
-        cam.autoYaw = mode === "relief" ? 0 : 0.045;
+        /* 浮雕默认不自动环绕（作者 2026-09-13「还是不环绕了吧」）；抽象模式仍慢转。
+           显式设定过 orbit 的（?p3dorbit= / nf3d({orbit})）以显式值为准。 */
+        cam.autoYaw = modeOrbit();
         return mode;
       },
       setPaused: function (p) {
@@ -500,13 +522,23 @@
       },
       /* 环绕速度（rad/s；0 = 静止，仅手动拖拽）。?p3dorbit=<°/s> 亦可 */
       setOrbit: function (radPerSec) {
-        cam.autoYaw = Math.max(-2, Math.min(2, +radPerSec || 0));
+        orbitSet = Math.max(-2, Math.min(2, +radPerSec || 0));
+        cam.autoYaw = orbitSet;
         return cam.autoYaw;
       },
       /* 浮雕极性交叠周期（秒）：0 = 固定明凸暗凹；?p3dflip=<s> 同效 */
       setFlip: function (sec) {
         flipPeriod = Math.max(0, +sec || 0);
         return flipPeriod;
+      },
+      /* 亮度倍率（默认 2.5）与交替节奏（每秒周期数，默认 0.55） */
+      setBright: function (b) {
+        bright = Math.max(0.2, Math.min(4, +b || 0));
+        return bright;
+      },
+      setPulse: function (hz) {
+        pulseRate = Math.max(0, Math.min(4, +hz || 0));
+        return pulseRate;
       },
       state: function () {
         return {
@@ -517,10 +549,13 @@
           fps: +handle.fps.toFixed(1),
           paused: paused,
           depth: depth,
+          size: pointSize,
           yaw: cam.yaw,
           orbit: cam.autoYaw,
           flipPeriod: flipPeriod,
           flipNow: +flipNow.toFixed(3),
+          bright: bright,
+          pulse: pulseRate,
           dist: cam.dist,
           lost: handle.lost,
           restored: handle.restored,

@@ -2456,6 +2456,11 @@
           reliefN: s ? s.reliefN : 0,
           absN: s ? s.absN : 0,
           depth: s ? s.depth : 0,
+          size: s ? s.size : 0,
+          bright: s ? s.bright : 0,
+          pulse: s ? s.pulse : 0,
+          orbit: s ? s.orbit : 0,
+          flipPeriod: s ? s.flipPeriod : 0,
           fps: s ? s.fps : 0,
           lost: s ? s.lost : 0,
           restored: s ? s.restored : 0
@@ -2495,27 +2500,48 @@
 
       function set3D(on) {
         var want = !!on;
-        if (want === p3d.on) return p3d.on;
+        if (want === p3d.on && !(want && !p3d.handle && !p3d.pending)) return p3d.on;
         if (want) {
+          if (p3d.pending) return true;                 /* 载入中：重复点击忽略（状态已乐观置位） */
+          if (p3d.handle) {                             /* 已挂载：只做显示 + 停 2D */
+            ensure3DCanvas().style.display = "block";
+            p3d.on = true;
+            p3dPaintBtn();
+            stopLoop();
+            return true;
+          }
+          /* == 硬化（作者 2026-09-13「点击 3D 粒子按钮时无法切换」）==
+             乐观置位：按钮**立刻**变成「回到画作」并进入载入态 → 再点一次即可取消；
+             载入失败则回滚状态并给出可见提示（不再静默无反应）。 */
+          p3d.pending = true;
+          p3d.on = true;
+          p3dPaintBtn();
+          if (btn3D) btn3D.textContent = "3D 载入中…";
           var cv = ensure3DCanvas();
           loadScriptOnce("nf-particles3d.js")
             .then(function () {
               if (!window.NF3D) throw new Error("NF3D missing");
+              if (!p3d.on) return;                      /* 载入期间已被取消 */
               if (!p3d.handle) {
                 var qn = parseInt(NF_QUERY.get("p3dn") || "", 10);
                 var qd = parseFloat(NF_QUERY.get("p3ddepth") || "");
                 var qs2 = parseFloat(NF_QUERY.get("p3dsize") || "");
                 var qo = parseFloat(NF_QUERY.get("p3dorbit") || "");
                 var qf = parseFloat(NF_QUERY.get("p3dflip") || "");
+                var qb = parseFloat(NF_QUERY.get("p3dbright") || "");
+                var qp = parseFloat(NF_QUERY.get("p3dpulse") || "");
                 p3d.handle = window.NF3D.mount(cv, {
                   mode: "relief",
                   count: qn >= 1000 && qn <= 400000 ? qn : 120000,
                   depth: isFinite(qd) && qd >= 0 && qd <= 1.5 ? qd : 0.95,
-                  pointSize: isFinite(qs2) && qs2 >= 0.5 && qs2 <= 12 ? qs2 : 3.6,
+                  pointSize: isFinite(qs2) && qs2 >= 0.5 && qs2 <= 12 ? qs2 : 5.0,
                   /* 不自动环绕（作者 2026-09-13「还是不环绕了吧」）；?p3dorbit= 可再开（rad/s） */
                   orbit: isFinite(qo) && qo >= -2 && qo <= 2 ? qo : 0,
                   /* 浮雕极性交叠周期：默认 18s（明凸暗凹 ⇄ 明凹暗凸）；?p3dflip=0 固定 */
-                  flipSeconds: isFinite(qf) && qf >= 0 && qf <= 120 ? qf : 18
+                  flipSeconds: isFinite(qf) && qf >= 0 && qf <= 120 ? qf : 18,
+                  /* 亮度倍率与交替节奏：作者「亮度太低，需要交替的粒子节奏动感」 */
+                  bright: isFinite(qb) && qb >= 0.2 && qb <= 4 ? qb : 2.5,
+                  pulse: isFinite(qp) && qp >= 0 && qp <= 4 ? qp : 0.55
                 });
                 /* 把当前画作（粒子 + 原调色板）交给 3D：同一批粒子立体化 */
                 if (window.__nfPoints) {
@@ -2530,6 +2556,8 @@
                   if (o && typeof o.size === "number") p3d.handle.setSize(o.size);
                   if (o && typeof o.orbit === "number") p3d.handle.setOrbit(o.orbit);
                   if (o && typeof o.flip === "number") p3d.handle.setFlip(o.flip);
+                  if (o && typeof o.bright === "number") p3d.handle.setBright(o.bright);
+                  if (o && typeof o.pulse === "number") p3d.handle.setPulse(o.pulse);
                   if (o && typeof o.paused === "boolean") p3d.handle.setPaused(o.paused);
                   if (o && o.repaint && window.__nfPoints) p3d.handle.setPainting(window.__nfPoints);
                   p3dPublish();
@@ -2538,12 +2566,19 @@
               }
               cv.style.display = "block";
               p3d.on = true;
+              p3d.pending = false;
               p3dPaintBtn();
               stopLoop();
-              window.setInterval(p3dPublish, 500);
+              if (!p3d.timer) p3d.timer = window.setInterval(p3dPublish, 500);
             })
             .catch(function (err) {
               if (window.console) console.warn("[nf-3d] 载入失败：" + err);
+              p3d.pending = false;
+              p3d.on = false;
+              if (p3d.canvas) p3d.canvas.style.display = "none";
+              p3dPaintBtn();
+              if (btn3D) btn3D.textContent = "3D 不可用";
+              wakeLoop();
             });
         } else {
           if (p3d.canvas) p3d.canvas.style.display = "none";
@@ -2557,6 +2592,7 @@
             window.__nfP3dHandle = null;
           }
           p3d.on = false;
+          p3d.pending = false;
           p3dPaintBtn();
           wakeLoop();
         }

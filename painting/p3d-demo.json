@@ -71,7 +71,8 @@
         "script": "check-3d-orbit.js",
         "checks": "5/5：默认在环绕（orbit=0.280 rad/s、一圈 22.4s）｜4 秒转过 **71.4°**（≥25° 阈值）｜画面随时间明显变化（平均亮度差 3.78、变化像素 5.87%）｜环绕可关（接口已暴露）｜0 页面错误",
         "shots": ["nf-baseline-artifacts/3d-orbit-a.png", "3d-orbit-b.png（4 秒后）"]
-      }
+      },
+      "superseded_by": "flip_2026-09-13（默认环绕已被作者否决：「还是不环绕了吧」）。`check-3d-orbit.js` 的断言已随之改为「默认静止 + 显式 ?p3dorbit= 可开启」，现为 7/7；本条保留为当时的实测记录。"
     }
     ,
     "flip_2026-09-13": {
@@ -90,6 +91,51 @@
       "regressions": {
         "painting3d": "check-painting3d.js 6/6（orbit=0 · flipPeriod=18s · 50,601 粒 · 可切画作 · 0 错误）",
         "main_site": "check-3d-toggle.js 9/9（relief · paintingId===pointsId · 切回 2D 正常）"
+      }
+    },
+    "brightness_pulse_2026-09-13": {
+      "request": "作者：「点击 3d 粒子按钮时无法切换，然后还是在环绕，而且亮度太低，需要交替的粒子节奏动感」",
+      "fixes": {
+        "toggle_hardening": "`set3D` 改乐观置位：点击**立即**变「回到画作」+「3D 载入中…」，失败则回滚并显示「3D 不可用」（不再静默无反应）；载入中重复点击忽略；500ms 发布定时器只建一次",
+        "orbit_clobber": "**根因**：`setMode(\"relief\")` 无条件 `cam.autoYaw = 0`，把 `?p3dorbit=` 的显式值一并覆盖 —— 实测传 `?p3dorbit=0.3` 读回仍是 `orbit=0`。改为记住显式设定（`orbitSet`），仅在未显式设定时才按模式取默认（浮雕 0 / 抽象 0.045）；`setOrbit()` 同步更新该设定",
+        "brightness": "点径 4.2 → **5.0**、亮度倍率 `uBright` 1.7 → **2.5**（`?p3dbright=` / `?bright=` 0.2–4 可调）",
+        "pulse": "新增 `uPulse`（默认 **0.55Hz**，`?p3dpulse=` / `?pulse=` 0–4）：每粒子取坐标散列相位 + 行进波 `sin(2π(t·pulse+ph)+3.2x+2.4y)`，alpha 在 0.42–1.0 之间呼吸 —— 相邻粒子不同步、整体像一道扫过画面的浪，不是整幅一起亮灭",
+        "pause_semantics": "**真缺陷**：原 `t = uTime * (1.0 - uPaused)` 会把动画时钟归零（按空格画面**跳回起始相位**），且 JS 侧极性交叠用的仍是未暂停的 t（暂停了还在翻转）。改为 JS 侧累加时钟 `animT`，暂停即冻结在当前相位，极性交叠一并冻结",
+        "painting3d_size_knob": "`painting3d.html` 补 `?size=`（与 `?depth/?bright/?pulse` 同规格）"
+      },
+      "calibration": {
+        "method": "脚本 `C:/tmp/nf-tools/tune-3d-bright2.js`：painting3d.html?flip=0&pulse=0.55，**原生 1280×800**（2 像素步长抽样），每档跨 ≥1 个波纹周期（11.4s）取 14 帧均值，四档并行开页；同时给出亮区包围盒",
+        "why_native_res": "400×250 降采样会把稀疏点精灵抹掉：同一配置重复测得亮点占比 8.6% / 12.5%（差 45%），据此调参会得出「亮度越高画面越暗」的结论（实测确实出现过 meanLum 随 bright 上升而下降的假象）",
+        "measured_before": { "bright": 1.7, "pointSize": 4.2, "frameMeanLum": 16.51, "litRegionMeanLum": 143.27, "litPct": 7.6, "blownPct": 1.27 },
+        "measured_after": { "bright": 2.5, "pointSize": 5.0, "frameMeanLum": "≈23.1（验收脚本实测 24.22）", "litRegionMeanLum": "≈190", "litPct": "≈8.9", "blownPct": "≈4.4" },
+        "sweep": {
+          "note": "frameMeanLum = 整帧平均亮度（含黑底）；litRegionMeanLum = 亮点像素的平均亮度（/255）；blownPct = 亮度 ≥248 的像素占比",
+          "rows": [
+            { "bright": 1.7, "pointSize": 4.2, "frameMeanLum": 16.51, "litRegionMeanLum": 143.27, "blownPct": 1.27 },
+            { "bright": 1.7, "pointSize": 5.2, "frameMeanLum": 20.03, "litRegionMeanLum": 164.06, "blownPct": 2.42 },
+            { "bright": 2.2, "pointSize": 4.2, "frameMeanLum": 19.84, "litRegionMeanLum": 181.26, "blownPct": 2.94 },
+            { "bright": 2.2, "pointSize": 5.2, "frameMeanLum": 23.3, "litRegionMeanLum": 197.93, "blownPct": 4.48 },
+            { "bright": 2.7, "pointSize": 4.2, "frameMeanLum": 21.67, "litRegionMeanLum": 204.08, "blownPct": 4.36 },
+            { "bright": 2.7, "pointSize": 5.2, "frameMeanLum": 25.02, "litRegionMeanLum": 215.83, "blownPct": 5.88 },
+            { "bright": 3.2, "pointSize": 4.2, "frameMeanLum": 22.89, "litRegionMeanLum": 216.44, "blownPct": 5.33 },
+            { "bright": 3.2, "pointSize": 5.2, "frameMeanLum": 26.03, "litRegionMeanLum": 225.4, "blownPct": 6.76 }
+          ],
+          "reading": "点径的线性收益是稳的（每 +1.0 ≈ +3.4 整帧亮度）；亮度倍率在 2.2 之后明显饱和（2.2→2.7 只 +1.8，2.7→3.2 只 +1.2），过曝占比却持续上涨 → 停在 **2.5 / 5.0**，留 0.2–4 的运行时旋钮给真机微调"
+        }
+      },
+      "evidence": {
+        "script": "check-3d-bright-pulse.js",
+        "checks": "8/8：按钮文案「3D 粒子」｜点击后**立即**进入载入/开启态（乐观状态）｜3D 挂载就绪（relief · 50,601 粒）｜再点一次切回画作（on=false · 2D running=true）｜**亮度 ≥22：实测 meanLum=24.22**（原 16.84）｜**交替节奏可见：半周期帧平均亮度差 9.64、变化像素 10.87%**｜节奏参数生效（pulse=0.5 bright=2.5）｜0 页面错误",
+        "shots": ["nf-baseline-artifacts/3d-bright-on.png", "3d-pulse-a.png", "3d-pulse-b.png（相差半周期）", "3d-sweep-b*.png（标定档）", "3d-pause.png"]
+      },
+      "regressions": {
+        "toggle": "check-3d-toggle.js 9/9",
+        "painting3d": "check-painting3d.js 6/6（orbit=0 · flipPeriod=18s）",
+        "flip": "check-3d-flip.js 6/6（corr(+1,−1)=0.18）",
+        "orbit": "check-3d-orbit.js 7/7（默认 4 秒 0° 不动｜?p3dorbit=0.3 → 4 秒 72.5°｜壳内呼吸仍在）",
+        "relief": "check-3d-relief.js 5/5",
+        "pause": "check-3d-pause.js 5/5（暂停后 1.8s 两帧逐像素一致；暂停不跳相位；继续后恢复变化）",
+        "repo": "npm run lint 0 error（7 条既有 warning，均在 prototype/scripts 的无关文件）；scripts/check-goldens.mjs 全绿"
       }
     }
   }
