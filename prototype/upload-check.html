@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>NF · 上传采样口径自检（§9-B）</title>
+<style>
+  body { margin:0; background:#0b0b0d; color:#e8e6e2; font:13px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace; }
+  main { max-width: 900px; margin: 40px auto; padding: 0 20px; }
+  h1 { font-size: 15px; letter-spacing: .12em; font-weight: 500; }
+  pre { background:#15151a; border:1px solid #26262e; padding:14px; overflow:auto; }
+  .ok { color:#8fd694; } .bad { color:#e59a9a; }
+</style>
+</head>
+<body>
+<main>
+  <h1>NF · 上传采样口径自检（§9-B：真图复刻）</h1>
+  <p>与 Python 参考管线对比：R95 目标 0.599042（±0.01）、s0 目标 2.667368（±10%）。图片须以**原生分辨率**载入且同源（本页由 prototype/ 目录提供，故用 ../painting/01-dallas.jpg 需另起一个仓库根目录的静态服务；若同源取不到图，可把图拖到本页）。</p>
+  <p>参考：<code>node scripts/check-upload.mjs</code>（§9-A 冒烟）。</p>
+  <pre id="out">载入 nf-upload-worker.js …</pre>
+</main>
+<script src="nf-upload-worker.js"></script>
+<script>
+(function () {
+  var out = document.getElementById("out");
+  var REF = { r95: 0.599042, s0: 2.667368 };
+  function log(s) { out.textContent += "\n" + s; }
+
+  function report(w, h, rec, ms) {
+    var okR = Math.abs(rec.stats.r95 - REF.r95) <= 0.01;
+    var okS = Math.abs(rec.stats.s0 - REF.s0) / REF.s0 <= 0.1;
+    out.innerHTML = "";
+    log("图片 " + w + "×" + h + "（原生）");
+    log("R95   " + rec.stats.r95.toFixed(6) + "   目标 " + REF.r95 + " ±0.01   " + (okR ? "✓" : "✗"));
+    log("s0    " + rec.stats.s0.toFixed(4) + "   目标 " + REF.s0 + " ±10%   " + (okS ? "✓" : "✗"));
+    log("count " + rec.count + "   palette " + rec.palette.length + "   dark-cull " + rec.stats.darkCullPct.toFixed(3) + "%");
+    log("耗时  " + ms.toFixed(0) + "ms   " + JSON.stringify(rec.stats.ms));
+    log("");
+    log(okR && okS ? "§9-B 通过" : "§9-B 未达标（检查分辨率 / 是否原生载入）");
+    window.__nfUploadCheck = { w: w, h: h, r95: rec.stats.r95, s0: rec.stats.s0, count: rec.count, pass: okR && okS };
+  }
+
+  function run(bitmap) {
+    var w = bitmap.width;
+    var h = bitmap.height;
+    var cv = document.createElement("canvas");
+    cv.width = w;
+    cv.height = h;
+    var cx = cv.getContext("2d", { willReadFrequently: true });
+    cx.drawImage(bitmap, 0, 0);
+    var img = cx.getImageData(0, 0, w, h);
+    var t0 = performance.now();
+    var rec = window.NFUploadSampler.runSampler({ rgba: img.data, width: w, height: h }, { count: 50000 });
+    report(w, h, rec, performance.now() - t0);
+  }
+
+  fetch("../painting/01-dallas.jpg")
+    .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.blob(); })
+    .then(function (b) { return createImageBitmap(b, { imageOrientation: "from-image" }); })
+    .then(run)
+    .catch(function (err) {
+      out.textContent = "同源取图失败（" + err.message + "）；请把 01-dallas.jpg 拖到本页再试。";
+      window.addEventListener("drop", function (e) {
+        e.preventDefault();
+        var f = e.dataTransfer.files[0];
+        if (f) createImageBitmap(f, { imageOrientation: "from-image" }).then(run);
+      });
+      window.addEventListener("dragover", function (e) { e.preventDefault(); });
+    });
+})();
+</script>
+</body>
+</html>

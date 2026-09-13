@@ -1,0 +1,138 @@
+{
+  "task": "upload-sampler-and-show-s1-s3",
+  "volume": "《NF_上传采样与三图放映_设计规格_v1_2026-09-13》（作者转发即开工；4 处不兼容按 Codex 评估口径落地，作者 2026-09-13 确认「按您的来」）",
+  "timestamp": "2026-09-13T23:10:00.000Z",
+  "tip": "d80cb67 (codex/batch0-confirm) + 工作区未提交",
+  "artifacts": {
+    "new_files": [
+      "prototype/nf-upload-worker.js（采样核心：S0 屏蔽/质心/R95 + S2a 候选 + S2b 细化 + OKLab 256 色 + count 拟合；Worker 与 Node 双环境）",
+      "prototype/nf-upload.js（主线程：入口/校验/解码/Worker 编排/槽位/状态行）",
+      "prototype/upload-check.html（§9-B 真图口径自检页）",
+      "scripts/check-upload.mjs（§9-A Node 冒烟）"
+    ],
+    "hooks": [
+      "loadTargetRecord 顶部分支（uploadRecord 直返，放在 targetHref 之前）",
+      "radialPaintingKey(): upload:<id>",
+      "radialR95(key): upload 分支 → 采样时的 mask 口径 R95",
+      "openArchive(view, origin, overrideTarget)：第三参",
+      "exhibitShow：显式传入 TARGETS[key]（否则 upload 键会被解析回三画）",
+      "EXHIBIT_WORKS 动态条目（标题=文件名 / 艺术家=自定义投放 / 年 / 本机会话）",
+      "exhibitOnFormed：单图停留（paused-control）",
+      "exhibitResumePlay：上传态拦截 = 返回默认放映",
+      "onUploadRecord / startUploadShow / exitUploadShow / updateUploadBar（catalog 换入换出）",
+      "boot() 后 initUploadModule()（loadScriptOnce 惰性加载；?upload=0 全不加载）",
+      "UI：#btn-upload（控制台 UPLOAD 键）、#btn-upload-show（放映条「自定义放映 ▶（n）」）"
+    ]
+  },
+  "corrections_vs_spec": {
+    "points_param": "规格 §8 写 ?points=50000；现网计数闸是 ?n=<2000–100000> → 采样目标取 engineCount()（跟随 ?n=）",
+    "key_fn_name": "规格 §6.1-3 写 radialPaintKey()；现网是 radialPaintingKey()（radialPaintKey 是变量）",
+    "loadtarget_position": "上传分支必须在 loadTargetRecord **最顶部**（早于 targetHref / nf-points 闸 / 三支 bin）",
+    "openarchive_third_arg": "规格 §6.2-6 的第三参修正**确认为必需**（否则 upload 键装错目标）"
+  },
+  "acceptance": {
+    "A_smoke_node": {
+      "script": "node scripts/check-upload.mjs（--n=50000）",
+      "result": "11 项全绿：count 拟合===N；points.length===count；mask 率 ∈(0,1)；s0>0；R95>0；palette 全 6 位 hex；无 NaN；坐标 ∈[0,1]；校准有记录；id 形如 upload-xxxxxxxx；R95 量级合理",
+      "perf": "N=50000 用时 842ms（mask 50 / cand 33 / thin 657 / palette 75）；预算 ≤3500ms"
+    },
+    "B_real_image": {
+      "script": "同源页面里 fetch 01-dallas.jpg → createImageBitmap 原生 1200×1540 → 同一采样器（N=50000）",
+      "R95": { "got": 0.599041977587153, "ref": 0.599042, "tol": "±0.01", "ok": true },
+      "s0": { "got": 2.6673683472607888, "ref": 2.667368, "tol": "±10%", "ok": true },
+      "count": { "got": 50000, "ok": true },
+      "palette": { "got": 256, "ok": true },
+      "ms": { "got": 1377, "budget": 3500, "ok": true },
+      "reading": "R95 与 s0 与 Python 参考**逐位吻合到 6 位小数** → 采样口径复刻成立"
+    },
+    "C_end_to_end": {
+      "script": "upload-e2e.js（?autoplay=1&dwell=60000&upload=1）：合成图 File → window.nfUpload → 装配 → 停留",
+      "checks": "10/10：API 可用；record count=50601；palette=256；场景键 upload:upload-dd8b7bca；radiusMode=scene-box；mode=formed；exhibit=paused-control（单图停留）；caption=「自定义投放 · e2e-sample.png · 2026 · 本机会话」；上传态 single-stay；0 页面错误",
+      "physics_on_upload": "§9-C：escP95 0 → 34.29（10s）→ 上传图与三画走同一物理链（外逸/丝缕照常）",
+      "ms": "整链 2763ms（解码+采样 1313ms + 注册 + 装配启动）"
+    },
+    "D_show_loop": {
+      "script": "upload-show-loop.js（?autoplay=1&dwell=3000&upload=1）：投三张 → 点「自定义放映 ▶（3）」",
+      "checks": "8/8：三张均拟合 N=50601；queue-ready + 键出现；rotating；循环 UPLOAD_1→2→3→1→2（两圈）；逐张场景键 upload:<id>；导航离开后回到默认目录（INTRO/dallas）；队列保留 3；0 页面错误"
+    },
+    "regression": {
+      "goldens": "全绿（C2 / NFPT / S3 dual 未漂 cdff7877… / vendor）",
+      "three_paintings": "painting/*.bin 与三画资产未改动（仅新增 2 个 prototype 文件 + 1 个 check 页 + 1 个 scripts 脚本 + index.html 挂钩）",
+      "existing_probes": "err-probe / source-isolation / perf-hover / repel-ring 均无页面错误"
+    }
+  },
+  "switches": {
+    "?upload=0": "总关：不加载 nf-upload.js、不绑拖拽/键（100% 旧行为）",
+    "?upmax=<1–3>": "槽位上限（默认 3）",
+    "?upstart=auto": "槽满 1 张以上即自动开始放映（默认 manual：点「自定义放映 ▶」）",
+    "?sampler=fast": "跳过 s0 二分（解析初值 + 1 轮）"
+  },
+  "open": [
+    "§13 待议项仍待作者拍板：①「导出 NFPT bin + meta」按钮（v1 未做）；③ 放映键样式已按「极简键」实现；④ 槽满策略取「拒绝 + 提示」；⑤ 自定义投放面板 v1 复用 intro 面板",
+    "上传图**继承中心源**（作者 2026-09-13 确认「对」）——画作态中心补洞对上传图同样生效",
+    "本会话未提交（规格 §11「不 commit」+ 裁决 §5）"
+  ],
+  "ui_panel_2026-09-13": {
+    "trigger": "作者「太不方便了，你搜一下专业的解决方案」",
+    "research": {
+      "source": "uxpatterns.dev/patterns/forms/file-input（File Input Pattern，含 WCAG 2.2 与 MDN 引用）；旁证：saasui.design/blog/saas-file-upload-ux-patterns、blog.filestack.com/upload-ui-components-drag-drop-progress-preview/",
+      "checklist_used": [
+        "drag-and-drop 只能是**增强**，必须同时给可见的 click-to-browse 入口（「Don't use type=button that only works via drag-drop」）",
+        "始终显示所选文件：文件名 + 大小 + 逐项移除（「Don't hide the file name after selection」）",
+        "图片场景给缩略图预览",
+        "把约束前置到 helper text（可接受类型 / 上限）",
+        ">1s 的过程要有进度指示（role=progressbar + aria-valuenow）",
+        "拖放区键盘可达：role=button + tabindex=0，Enter/Space 打开选择框",
+        "选中/完成/错误用 aria-live 播报；移除键 aria-label=\"Remove <file>\"",
+        "拖放区 ≥200×100，拖动中高亮（dashed → solid + 背景）"
+      ],
+      "our_gap_before": "v1 只有「拖到页面 + 控制台一个不起眼的 UPLOAD 键」；无可见入口、无文件列表/缩略图、无进度条、拖放区无键盘路径"
+    },
+    "implemented": {
+      "panel": "prototype/nf-upload.js 内建投放面板（单色纪律：灰阶 + 细虚线）——虚线拖放区（≥200×100，拖动中高亮）+「拖入图片，或点击选择」+ 约束提示（图片 · ≤20MB · 短边 ≥16px · 长边缩到 2400 · 最多 3 张）+ 槽位列表（缩略图/文件名/读数/移除）+ 底部「开始放映 ▶（n）」「清空」",
+      "entry": "控制台 UPLOAD 键 → 打开面板（不再直接弹文件框）；拖文件到页面 → 自动展开面板 + 中央提示",
+      "a11y": "拖放区 role=button/tabindex=0（Enter/Space 打开选择框）；列表 aria-live=polite；每行 role=progressbar + aria-valuenow；移除键 aria-label=\"移除 <文件名>\"",
+      "progress": "Worker 新增 stage 进度消息（mask/cand/thin/palette/done）→ 面板逐行进度条（粗粒度 4 档，不是像素级百分比）",
+      "objectURL": "缩略图用 URL.createObjectURL（移除/清空时 revokeObjectURL，避免泄漏）"
+    },
+    "evidence": {
+      "script": "upload-panel-check.js（?autoplay=1&dwell=4000&upload=1）",
+      "checks": "9/9：面板可开；拖放区 role=button/tabindex=0；约束提示含 20MB/3 张；两行槽位均有 blob: 缩略图 + aria-valuenow=100 + 「移除 <名>」；≥2 张时「开始放映 ▶（2）」可用；点面板键 → rotating/UPLOAD_1；移除一张 → 槽=1 且放映条隐藏；0 页面错误",
+      "shot": "nf-baseline-artifacts/upload-panel-2slots.jpg"
+    },
+    "still_open": [
+      "进度是 4 档粗粒度（Worker 阶段）；要更细可在 mask/thin 内部分块上报",
+      "持久化（刷新保留）仍是规格 §13-⑦ 的未来件：专业做法是 IndexedDB 存 File/Blob（或 File System Access API 的句柄 + 重新授权）——要不要做请你拍板"
+    ]
+  },
+  "always_first_image_2026-09-13": {
+    "report": "作者：「你看看是不是放映的时候一直都是第一个上传的图片」",
+    "verdict": "**不是**——数据与画面两侧都证明会逐张切换；作者看到的「一直是第一张」由两件事造成（产品语义 + 时长），已把两者显式化到面板状态行",
+    "data_proof": {
+      "method": "upload-show-data.js：三张明显不同的图（亮斑分别在左上/中/右下）→ 起放映 → 每换一步读 `__nfExhibit.key` / `__nfRadial.scene` / `__nfPoints.id` / palette[0] / world.tx[0..2]",
+      "observed": "UPLOAD_1(ac0…) → UPLOAD_2(81f…) → UPLOAD_3(05d…) → UPLOAD_1 → UPLOAD_2 → UPLOAD_3（两圈）；每一步 scene/points.id/palette[0]/tx 全部不同（例：pal0 #161513 → #131516 → #161314；tx0 468.1 → 587.6 → 661.1）",
+      "errors": []
+    },
+    "visual_proof": {
+      "method": "upload-show-pixels.js：逐步截图 → 同页 canvas 逐像素比较；show-step-centroid.js：在画作盒内取「亮度 >40」像素的亮度加权质心",
+      "centroid_in_box": [
+        { "step": "UPLOAD_1", "x": 132.6, "y": 160.4 },
+        { "step": "UPLOAD_2", "x": 244.0, "y": 323.7 },
+        { "step": "UPLOAD_3", "x": 359.1, "y": 483.5 },
+        { "step": "UPLOAD_1（回到第一张）", "x": 131.6, "y": 160.2 }
+      ],
+      "pixel_diff": "相邻两步平均亮度差 10.2–11.1、明显变化像素 5.6%（粒子是暗场，阈值内变化集中在画作里）",
+      "shots": ["nf-baseline-artifacts/show-step-1-UPLOAD_1.jpg", "show-step-2-UPLOAD_2.jpg", "show-step-3-UPLOAD_3.jpg", "show-step-4-UPLOAD_1.jpg"]
+    },
+    "why_it_looked_frozen": [
+      "**单图停留**（规格 §7 的既定语义）：投第 1 张就自动装配并停在它上面（`paused-control`，不武装 dwell）；只有按面板/放映条的「开始放映 ▶（n）」才换成 `UPLOAD_1..n` 循环目录。投完 2–3 张后屏幕仍停在第一张 = 正常，但此前**没有任何提示**。",
+      "**时长**：`?dwell=30000` ⇒ 每张停留 30s + 过渡 3s；一分钟内只看到 1–2 张，很容易判成「没换」。",
+      "（另查）悬停暂停**不是**原因：upload-show-hover.js 复现——指针停在画作正中 14s 内仍 U1→U2→U3 正常推进；指针移开同样推进。"
+    ],
+    "fix": {
+      "state_line": "面板新增状态行（250ms 刷新，role=status + aria-live）：空队列 =「未投放…」；投完 1 张 =「单图停留（不自动换）· 再投 ≥1 张后按「开始放映 ▶」即循环」；投完 ≥2 张 =「队列就绪 3/3 · 按「开始放映 ▶」进入循环」；放映中 =「自定义放映中 · 第 2/3 张（文件名） · 下一张 12s」；悬停 =「… · 悬停暂停」",
+      "evidence": "upload-state-line.js：四条状态逐条命中（空 / 队列就绪 3/3 / 自定义放映中 · 第 1/3 张（s1.png）/ …· 悬停暂停），0 页面错误；截图 upload-state-single-stay.jpg、upload-state-rotating.jpg"
+    },
+    "use_it": "想立刻看到循环：用 `?autoplay=1&dwell=4000&upload=1`（4s 一张，两秒就能看见换图）；或保持 30s 但看面板状态行的「下一张 Ns」倒计时。"
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "task": "p0p1f1-round7-pointer-repel",
+  "volume": "作者 2026-09-13 追加：「交互周围会有圆圈，范围太大，驱散也不符合物理规律效果不好，不用圆圈小范围」",
+  "timestamp": "2026-09-13T19:05:00.000Z",
+  "tip": "d80cb67 (codex/batch0-confirm) + 工作区未提交",
+  "root_cause": {
+    "what": "旧口径 applyRepel：REPEL_R=100px 邻域 + f = 1.1·R²/d²（近处被 REPEL_FMAX=2.4/帧压平、到 100px 处才硬截断）",
+    "why_ring": "1/d² 的力一直到**边界才突然归零**，被推出去的粒子在边界外没有力继续推、又被弹簧往回拉 → 在 r≈100px 处堆积成可见「圆圈」",
+    "why_unphysical": "近处被上限压平成常数推力（不再是 1/d²），相当于一个硬活塞；范围又大（100px）",
+    "measured_old": "按住指针 1–4s：显示径向密度在 95–105px 两带为 0.063/0.070，邻带 0.024–0.025 → **峰值/邻带 ≈ 2.7×**；0–25px 全空；「目标在 20px 内的粒子被推出 20px」比例 100%"
+  },
+  "change": {
+    "range": "REPEL_R 100 → **42px**（?repelr=<16–200> 可调）",
+    "law": "改**紧凑核** w=(1−d/R)²（边界处力→0，C¹，无硬边 → 不结环）；去掉「直到边界都满力」的 1/d² 形态",
+    "strength": "中心速度增量 1.35/固定步（旧上限 2.4），上限 1.6；?repelv=<0.2–6> 可调",
+    "rate": "每固定步（1/60s，与 rAF 帧率无关）施加一次 → 与帧率无关",
+    "rollback": "?repel=old（回 100px + 1/d² + 硬截断/上限）"
+  },
+  "evidence": {
+    "ring_AB": {
+      "method": "?autoplay=0&dwell=120000；指针移到画作中心；按「目标在指针 200px 内」的粒子统计**显示位置**的径向密度（10px 环带、按 2πr·dr 归一）",
+      "old_hold_1s": [0, 0, 0, 0.003, 0.004, 0.005, 0.007, 0.014, 0.025, 0.063, 0.07, 0.025, 0.024, 0.025, 0.024, 0.024, 0.022, 0.019, 0.023, 0.025],
+      "new_hold_1s": [0, 0.012, 0.024, 0.031, 0.023, 0.026, 0.022, 0.021, 0.023, 0.024, 0.022, 0.019, 0.02, 0.019, 0.02, 0.021, 0.018, 0.02, 0.02, 0.02],
+      "peak_over_neighbour": { "old": 2.7, "new": 1.3 },
+      "reading": "旧口径的**环**（r≈95–105px 峰值 2.7× 邻带）消失；新口径只有 0–40px 的一段温和抬升（1.3×）——粒子被轻推后回流，不再结圈"
+    },
+    "local_clearing": {
+      "metric": "「目标在指针 20px 内」的粒子中被推出 20px 的比例（近心清空率）",
+      "old_hold": { "1s": 100, "2.5s": 100, "4s": 100 },
+      "new_hold": { "1s": 64.3, "2.5s": 71.4, "4s": 75 },
+      "new_after_pointer_leave_2s": 17.9,
+      "reading": "旧口径把 20px 内清空到底（100%）；新口径是局部轻推（64–75%），指针离开 2s 内基本复原（17.9%）"
+    },
+    "radius_check": { "old": 100, "new": 42, "knob_demo": { "?repelr=70&repelv=3": { "repelR": 70, "repelV": 3 }, "?repelr=5&repelv=99（越界）": { "repelR": 42, "repelV": 1.35 } } },
+    "regression": {
+      "flags": { "repelR": 42, "repelV": 1.35, "repelLaw": "compact(1-u)^2", "?repel=old": { "repelR": 100, "repelLaw": "inv2-cut" } },
+      "phase_walk": ["DWELL", "REPEL", "DWELL"],
+      "assembleClose_capHit": 0,
+      "pageErrors": []
+    },
+    "goldens": "全绿（C2 / NFPT / S3 dual 未漂 cdff7877… / vendor）——本轮只动页面侧驱离，模块未改"
+  },
+  "artifacts": [
+    "nf-baseline-artifacts/repel-ring.json",
+    "nf-baseline-artifacts/repel-new_compact_42-hold.jpg",
+    "nf-baseline-artifacts/repel-old_inv2_100-hold.jpg"
+  ],
+  "rollback_matrix": {
+    "?repel=old": "回旧口径（100px + 1/d² + 硬截断）",
+    "?repelr=<16–200>": "影响半径（默认 42）",
+    "?repelv=<0.2–6>": "中心推力（默认 1.35/步）"
+  },
+  "pending": "半径与力度是否合适：更小 32px（?repelr=32）／更温和（?repelv=0.8）都能直接试；若希望「推得更远一点」可提到 60px"
+  ,
+  "revision_2026-09-13_hover_hitch": {
+    "symptom": "作者 2026-09-13：「有时滑动鼠标会顿住」",
+    "investigated": {
+      "world_rebuild_on_hover": "假设：扫进扫出触发世界重建（重建要重分配 6 万粒 × 多张表 → 必然卡）。实测：**滑动期间重建 0 次**（计数器 `__nfRadialRebuilds` 在 8s 连续滑动中不增长）→ 排除",
+      "pointer_path_cost": "实测同一页（autoplay=1，成画态）：静止 work p95 **17.3ms**、持续滑动 **20.6ms**（+3.3ms；另一轮 15.9 → 19.5）。开销来自每帧：① `wakeAll()` 把 **全部 60,721 粒叫醒**（睡眠优化整段失效）；② 8 次 6 万粒整表拷贝（x/y/vx/vy 拷进世界、算完再拷回来）"
+    },
+    "fix": {
+      "targeted_wake": "只唤醒**被驱离真正波及**的粒子（模块内 `asleep[k]=0`）；未涉及的粒子状态与行为完全不变",
+      "repel_in_module": "驱离改在模块内施加（新 API `world.repelAt(mx,my,R,strength,oldOn,fmax)`）→ 省掉 4 次「拷进去」的整表拷贝；页面侧旧路径保留为回退",
+      "rollback": "?repelmodule=0（回旧的「整表拷入 → 页面算 → 拷回」路径）"
+    },
+    "verification": {
+      "interaction_unchanged": "指针停在画作中心：显示径向密度剖面与改前同形（r<10px 清空、20–40px 温和抬升、之后平坦；近心清空率 56–60%），指针离开 2s 回到 12%",
+      "old_law_control": "?repel=old 仍复现 100px 圆环（r≈95–105px 峰值 0.054/0.056）→ 力形开关未被影响",
+      "goldens": "全绿（C2 / NFPT / S3 dual 未漂 / vendor）",
+      "pageErrors": []
+    },
+    "honest_caveat": "本地是无头 SwiftShader 软件渲染、机器负载高（基线 14–16ms/帧、~17fps、每 6s 近百个 long task），噪声 ±3ms，**量不出 1–2ms 的改善**。这两处优化去掉的是**随粒子数增长**的每帧工作量（60,721 粒），在真机上应能显著缓解滑动时的顿挫。若仍偶尔顿：下一个候选是渲染侧每 6 帧一次的 `container.update()`（6 万粒 alpha 回写）与物理步本身；可用 `__nfGetPerf()` 在真机上取 p95 定位。"
+  }
+}

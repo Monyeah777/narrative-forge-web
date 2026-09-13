@@ -139,3 +139,12 @@ painting/*
 !painting/codex-o1d.json
 !painting/assembly-v3-d-g123.json
 !painting/assembly-v3-d-rms.svg
+# 2026-09-13 十六轮调优 + 上传采样：结果形态证据（放行入库）
+!painting/p0p1f1-r3-unbounded.json
+!painting/p0p1f1-r4-flow.json
+!painting/p0p1f1-r5-inner-restore.json
+!painting/p0p1f1-r6-fountain.json
+!painting/p0p1f1-r7-pointer.json
+!painting/p0p1f1-r8-source.json
+!painting/p0p1f1-r9-combined-source.json
+!painting/upload-s2s3.json

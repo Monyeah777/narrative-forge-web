@@ -1,0 +1,97 @@
+{
+  "task": "p0p1f1-round4-whole-field-flow",
+  "volume": "作者 2026-09-13 追加：「这次不再固定中心，整幅画都向外逸散不是只有边框，别忘了复原机制，整幅画都是流动状态，但注意先外围后内」",
+  "timestamp": "2026-09-13T16:40:00.000Z",
+  "tip": "d80cb67 (codex/batch0-confirm) + 工作区未提交",
+  "changes": {
+    "F1_drift_all": {
+      "what": "丝缕门槛由「带内（rBand ≥ 0.82）」放开到**全幅**：所有粒子都参与外向流动",
+      "weight": "带内权重仍按半径梯度（weOfR），并加下限 DRIFT_WE_FLOOR=0.45 —— 圆心也有速度，不再是「固定中心」",
+      "default": "driftAll = true",
+      "rollback": "?driftall=off（回「只动带内」）"
+    },
+    "F2_onset_order": {
+      "what": "启动排序：lag(R) = driftLag·(1 − min(1, R/R_REF))，R = 粒子**当前位置**到画作中心的盒半径，R_REF=1.5",
+      "effect": "屏幕外缘（R≥1.5）立即起；盒沿 R=1 等 1/3·driftLag；R=0.5 等 2/3；圆心 R=0 等满 driftLag",
+      "default": "driftLag = 6s",
+      "rollback": "?driftlag=0（全幅同时起）／ 0–60s 任意值"
+    },
+    "F3_speed_knob": {
+      "what": "逸散速度可调（视觉档位用；默认仍是卷面 §7 的 U0=5px/s）",
+      "knob": "?streaku0=<0.5–20>"
+    },
+    "F4_restore_kept": {
+      "what": "复原机制不变且外露计数：回收（含出画回收 recycleFar）+ 生命期淡出 → respawn 回目标附近（birthIn=0.02 内缩、0.6s 淡入）",
+      "evidence": "__nfRadial.recycleCount 与 __nfRadialWorld.counters"
+    }
+  },
+  "finding_stale_rband": {
+    "issue": "页面直接写 radialWorld.tx/ty（chaos 位置与画作位置）但**从不调用 radialWorld.refreshR()**",
+    "consequence": "模块内 rBand[]/rr[]/rPix[]/urx[]/ury[]/wb[] 只在建 world 时算过一次：本页 rBand ∈ [0.002, 0.999]（画作层），而屏幕上的实际半径 ∈ [0, 3.81]（云铺满视口）——两者脱节",
+    "observed": "若用 rBand 做启动排序，全幅延迟被统一压到 ≈2.2s（观感=同时起），看不出「先外围后内」；实测 gatePass 在 dwell 0–2.2s 恒为 0",
+    "decision": "本轮排序改用**实时半径** rBandOf(x+escX, y+escY)（同一值复用给 we，不额外增加调用）；不动 refreshR 接线",
+    "open_item": "是否补 refreshR：会让 Q(r) 边界与各向异性的径向方向改用当前位置口径（超出本轮授权范围），需单独裁决"
+  },
+  "evidence": {
+    "onset_by_ring_px0_5": {
+      "method": "页面 rAF 记录（从加载起，避免发布节流截断）→ 每环平均 |esc| 首次 ≥0.5px 的停留秒数；环 = 到画作中心的盒半径 0 / 0.5 / 1 / 1.5 / 2 / 3+",
+      "drift_all_lag6": [4.88, 3.05, 1.25, 1.02, 0.78, 0.78],
+      "drift_lag0": [1.12, 0.88, 0.88, 0.88, 0.88, 0.88],
+      "band_only": [24.83, 3.83, 1.75, 1.75, 1.75, 1.75],
+      "reading": "默认档严格由外向内（0.78 → 1.02 → 1.25 → 3.05 → 4.88s）；lag=0 全环同时起；band_only 只由「画作层半径」挑载体，屏幕上不分内外"
+    },
+    "ring_mean_esc_8s": {
+      "drift_all_lag6": [8.5, 17.5, 22.6, 23.8, 23.9, 24.0],
+      "drift_lag0": [15.9, 23.3, 24.6, 24.6, 24.6, 24.6],
+      "band_only": [0.1, 1.9, 5.9, 6.1, 6.1, 5.1],
+      "reading": "默认档 8s 时全环在动，外层 ≈ 内层 3 倍（径向速度梯度）；band_only 环 0 几乎不动"
+    },
+    "pixel_motion_500ms_diff": {
+      "method": "同一状态先后两张截屏（间隔 500ms）逐像素亮度差；按盒半径 8 环统计运动像素占比",
+      "drift_all": {
+        "dwell_4.5s": { "allMovPct": 22.95, "rings": [7.06, 23.92, 24.0, 25.28, 21.81, 24.5, 24.92, 21.04] },
+        "dwell_7.2s": { "allMovPct": 23.9, "rings": [24.98, 24.96, 23.47, 24.7, 21.83, 24.26, 24.56, 20.88] }
+      },
+      "band_only": { "dwell_4.6s": { "allMovPct": 8.9, "rings": [7.1, 7.47, 9.6, 9.62, 8.89, 9.59, 9.67, 7.51] } },
+      "reading": "默认档在 4.5s 时最内环只有 7.06%（外面 22–25%）＝肉眼可见「先外后内」；7.2s 起各环齐平＝整幅流动。页面自身还有 ≈9% 底噪（尘埃层）故看相对结构"
+    },
+    "carriers_formed_state": {
+      "method": "?autoplay=1&dwell=30000（成画 formed 态）在 9s / 17s 读「|esc|>0.5px 的粒子占比」",
+      "drift_all": { "9s": 92, "17s": 100 },
+      "band_only": { "9s": 23.5, "17s": 24.6 },
+      "other": { "mode": "formed", "capHit": 0, "pageErrors": [] },
+      "reading": "成画态载体 23.5% → **100%**：整幅画都在流动，不再只有边框"
+    },
+    "restore_mechanism": {
+      "method": "?autoplay=0&dwell=120000，38s 时读计数与分布",
+      "respawn_38s": 24121,
+      "respawn_per_s": 635,
+      "ring_pop_samples": [183, 586, 868, 532, 539, 455],
+      "n_const": 50601,
+      "display_radius_mean_by_ring": [0.662, 1.23, 1.573, 2.128, 2.961, 3.756],
+      "max_display_radius": 4.103,
+      "reading": "各环样本数与总量恒定（复原在跑，画面不空）；显示半径整体比目标半径外移 ≈0.2–0.4 盒半径（≈50–100px）＝稳定外流，不是一次性抽空"
+    },
+    "perf_AB_ms": {
+      "method": "同一会话 __nfResetPerf → 8/20/38s DWELL 窗口 → __nfGetPerf().work",
+      "drift_all_u0_5": { "mean": 11.683, "p95": 13.9, "fps": 23.9 },
+      "drift_all_u0_10": { "mean": 11.237, "p95": 13.3, "fps": 27.0 },
+      "band_only": { "mean": 9.376, "p95": 11.5, "fps": 32.8 },
+      "delta": "+2.31ms（全幅载体 ⇒ 每帧多跑 ~2.3 倍粒子的丝缕分支）",
+      "note": "SwiftShader 软件渲染，绝对值不代表真机；相对量是物理侧真实开销。要压可选 ?streaku0 调低、?driftlag 调大或回 ?driftall=off"
+    },
+    "goldens": "全绿（C2 / NFPT / S3 dual 未漂 cdff7877… / vendor）——隔离路径 lifecycle/recycle/streak 默认全关，不受本轮影响"
+  },
+  "rollback_matrix": {
+    "?driftall=off": "回「只动带内」（本轮之前的行为）",
+    "?driftlag=0": "全幅同时起（无先外后内排序）；0–60s 任意值",
+    "?streaku0=<0.5–20>": "逸散速度（默认 5px/s）",
+    "?streakcap=on / ?recyclefar=0 / ?shapering=1 / ?streakband= / ?rampa= / ?birthin= / ?repelfamily= / ?scenebox= / ?qpush= / ?repelscope= / ?streakgate=": "前几轮既有回退，未变"
+  },
+  "pending_decisions": [
+    "全幅流动的强度：U0=5px/s（默认）是否合适，还是改 ?streaku0=8/10（10px/s 实测 respawn 61520/38s，内环外移更明显）",
+    "排序跨度：driftLag=6s 是否合适（0=同时起；12s 更慢的分层）",
+    "成画（formed）态是否也要全幅流动——当前已生效（载体 100%）；若希望「成画保持完整、只有首页云流动」，需按模式加条件",
+    "是否补 radialWorld.refreshR() 接线（见 finding_stale_rband，会改 Q 边界与各向异性方向口径）"
+  ]
+}

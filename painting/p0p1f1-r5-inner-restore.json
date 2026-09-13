@@ -1,0 +1,63 @@
+{
+  "task": "p0p1f1-round5-inner-restore",
+  "volume": "作者 2026-09-13 追加：「就这样，但可以中间复原的速度稍快一点」",
+  "timestamp": "2026-09-13T17:20:00.000Z",
+  "tip": "d80cb67 (codex/batch0-confirm) + 工作区未提交",
+  "change": {
+    "what": "内核区复原加速（restore）：粒子按**所属半径** R（用物理位置 x,y——它被弹簧压在目标附近、不随 esc 外移）加速复原节奏",
+    "formula": "lifeRate = 1 + restore·(1 − min(1, R/R_REF))，R_REF=1.5",
+    "effects": [
+      "生命推进 lifeAge += H·lifeRate → 内核粒子更早走完生命、更早回收重生（复原更频繁）",
+      "入生淡入时长 ×(1/lifeRate)（lifeEnvelope 第三参 inScale；不传参时与旧实现逐位一致）→ 重生后更快回到画面",
+      "外圈 R≥R_REF 时 lifeRate=1 —— 与第四轮逐项一致，外圈不受影响"
+    ],
+    "default": "restore = 0.6（内核生命 1.6×、淡入 1/1.6 ≈ 0.375s）",
+    "rollback": "?restore=0（回第四轮）／ 0–2 任意值"
+  },
+  "evidence": {
+    "inner_vs_outer_38s": {
+      "method": "?autoplay=0&dwell=120000，38s 读数；环 = 到画作中心的盒半径 0 / 0.5 / 1 / 1.5 / 2 / 3+；每 16 粒抽样",
+      "esc_mean_by_ring_px": {
+        "restore_0": [109.2, 142.4, 99.8, 109.6, 130.2, 96.1],
+        "restore_0.6_default": [86.3, 120.3, 93.6, 110.6, 136.2, 94.5],
+        "restore_1.2": [56.6, 106.6, 88.2, 105.4, 136.8, 96.1]
+      },
+      "at_home_pct_lt20px": {
+        "restore_0": [10.1, 7.1, 16.0, 10.4, 11.5, 16.3],
+        "restore_0.6_default": [14.7, 9.9, 16.3, 10.5, 11.7, 15.2],
+        "restore_1.2": [26.4, 11.0, 16.4, 12.5, 9.8, 18.8]
+      },
+      "respawn_total_38s": { "restore_0": 23991, "restore_0.6_default": 27276, "restore_1.2": 30576 },
+      "reading": "只看内核环（R<0.5）：平均外移 109.2 → 86.3 → 56.6px（−21% / −48%），「在家（<20px）」比例 10.1% → 14.7% → 26.4%，复原次数 +13.7% / +27.4%；外圈 4 环三档同值（噪声内）——即「只把中间的复原调快，外圈不动」"
+    },
+    "perf_AB_ms": {
+      "method": "同会话 __nfResetPerf → 8/20/38s DWELL 窗口 → __nfGetPerf().work",
+      "restore_0": { "mean": 10.85, "p95": 12.1, "fps": 25.6 },
+      "restore_0.6_default": { "mean": 10.95, "p95": 12.4, "fps": 25.1 },
+      "restore_1.2": { "mean": 11.405, "p95": 12.9, "fps": 23.5 },
+      "delta_vs_off": "+0.10ms（默认档）/ +0.56ms（1.2 档）",
+      "note": "绝对值受机器负载与软件渲染影响，只作同会话相对比较；默认档开销 ≈0.1ms"
+    },
+    "formed_state": {
+      "method": "?autoplay=1&dwell=30000（成画 formed 态）",
+      "drift_all_restore_0.6": { "9s": { "mode": "formed", "carrierPct": 93.4 }, "17s": { "carrierPct": 100, "escP95": 46.44 } },
+      "band_only": { "9s": { "carrierPct": 23.5 }, "17s": { "carrierPct": 24.6 } },
+      "capHit": 0,
+      "pageErrors": []
+    },
+    "regression": {
+      "default_flags": { "radiusMode": "scene-box", "driftAll": true, "driftLag": 6, "streakU0": 5, "restore": 0.6 },
+      "rollback_flags": { "driftAll": false, "driftLag": 0, "streakU0": 7, "restore": 0, "radiusMode": "viewport-axes" },
+      "clamp": { "?restore=9": 0.6, "?restore=-1": 0.6, "?restore=1.2": 1.2, "?driftlag=99": 6, "?streaku0=0.1": 5 },
+      "phase_walk": ["DWELL", "REPEL", "DWELL"],
+      "assembleClose_capHit": 0,
+      "pageErrors": []
+    },
+    "goldens": "全绿（C2 / NFPT / S3 dual 未漂 cdff7877… / vendor）——隔离路径 lifecycle 默认关，lifeEnvelope 不传 inScale 时逐位同旧"
+  },
+  "rollback_matrix": {
+    "?restore=0": "关内核加速（= 第四轮行为）",
+    "?restore=<0–2>": "内核复原加速系数（默认 0.6；1.2 实测内核外移再降一半）",
+    "?driftall=off / ?driftlag= / ?streaku0= / ?streakcap=on / ?recyclefar=0 / ?shapering=1 / ?streakband= / ?rampa= / ?birthin= / ?repelfamily= / ?scenebox= / ?qpush= / ?repelscope= / ?streakgate=": "前几轮既有开关，未变"
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "task": "p0p1f1-round3-unbounded-escape",
+  "volume": "作者 2026-09-13 追加：「取消圆环边界让边角也能逸散」→「现在变成方形框了，我希望外围能不受限制逸散而不是逸散到一定程度定在外围」",
+  "timestamp": "2026-09-13T15:20:00.000Z",
+  "tip": "d80cb67 (codex/batch0-confirm) + 工作区未提交",
+  "authorization": "作者原文直接指令；仍是「结果形态」证据，未 commit（裁决 §5）",
+  "changes": {
+    "U1_streak_unbounded": {
+      "issue": "方形框：外围粒子积在盒沿，看成一个方框",
+      "cause": "weOfR 上端截断 (1 − smoothstep(1, 1.05, r)) 把带外粒子钳在 Chebyshev r≈1.0–1.05，方框口径下该壳就是**正方形轮廓**",
+      "fix": "noCut=true：带内权重恒 1，越过下沿后不再衰减，外围速度恒定（STREAK_U0=5px/s × we × ramp）",
+      "default": "streakUnbounded = true",
+      "rollback": "?streakcap=on"
+    },
+    "U2_recycle_far": {
+      "issue": "逸散到一定程度仍会「定在外围」",
+      "cause": "回收判据 rOfPixel ≥ RECYCLE_R(1.25·R95) 是**圆形**口径，与本页几何（1440×900 / 盒 490.9×630 / 中心 504,450 / r95=0.599）换算：水平 ±368px、垂直 ±472px、盒角方向仅再外 16px 就回收 —— 即画作右缘外约 122px（垂直 157px）处存在可见消失界线，且四角几乎一入带就被回收，与方框带域相互打架",
+      "fix": "recycleFar=true：只按「出画」回收（渲染位置越出视口 ±5% 才重生）；生命期 tau∈[40,120] 的透明度淡出保留为自然消散",
+      "default": "recycleFar = true",
+      "rollback": "?recyclefar=0（回旧圆形回收半径）"
+    }
+  },
+  "evidence": {
+    "rim_bump_AB": {
+      "method": "页面截图 PNG → 页内解码；按 Chebyshev 半径分箱算平均亮度；盒沿 r∈[1.00,1.05] 相对邻带 r∈[0.90,0.95]∪[1.10,1.15] 的增量。页面家具在 A/B 中相消",
+      "capped_streakcap_on": { "10s": 6.33, "26s": 8.56 },
+      "unbounded_default": { "10s": 2.31, "26s": 0.93 },
+      "reading": "旧口径在盒沿持续堆积（+6.3→+8.6 并随时间加深），默认口径无堆积（残留 +0.9 与画作自身边缘结构同量级）→ 方形框消失",
+      "artifacts": ["nf-baseline-artifacts/lowlum-analyze.json", "lowlum-{unbounded,capped}-{10,25}s.jpg"]
+    },
+    "escape_distance_AB": {
+      "method": "页面 __nfRadial.escP95（丝缕偏离目标的像素量，≥95% 分位）",
+      "unbounded_far": { "10s": 32.49, "30s": 133.21, "55s": 247.10 },
+      "circle_recycle_125": { "10s": 12.25, "30s": 13.26, "55s": 11.74 },
+      "reading": "旧圆形回收把可见逸散钉在 ~12px 常数；默认口径 10→30→55s 为 32→133→247px，越过了旧界线（水平 368px / 垂直 472px / 角向 16px）继续外走",
+      "artifacts": ["nf-baseline-artifacts/recycle-analyze.json", "recycle-{far,ellipse125}-{10,30,55}s.jpg"]
+    },
+    "long_run": {
+      "url": "?autoplay=0&dwell=180000（单浏览器独占，避免物理时钟被并发拖慢）",
+      "escP95_px": { "30s": 124.17, "60s": 141.31, "100s": 178.78, "150s": 177.74 },
+      "reading": "无回退、无收敛到零；150s 仍在 178px 量级——上限来自「出画回收 + 生命期淡出」而非空间壳层。垂直方向出画余量最小（盒高 630 / 视口 900 → 180px），故 p95 稳定在 ~180px 量级；水平方向可走 ~763px",
+      "artifacts": ["nf-baseline-artifacts/longrun-escape.json", "longrun-{30,60,100,150}s.jpg"]
+    },
+    "interior_preserved": {
+      "method": "同一分箱统计的区段平均亮度（默认口径）",
+      "regions": { "内核0-0.5": { "10s": 32.65, "30s": 30.89, "56s": 28.91 }, "中环0.5-0.8": { "10s": 34.62, "30s": 32.97, "56s": 31.02 }, "远端1.3-2.0": { "10s": 31.38, "30s": 29.76, "56s": 28.30 } },
+      "reading": "各区同幅老化（-3.7/-3.6/-3.1），没有「外围抽空、内核塌陷」的差动；内核纹丝不动"
+    },
+    "perf_AB_ms": {
+      "method": "同一会话内 __nfResetPerf → 10s DWELL 窗口 → __nfGetPerf().work（帧数 n=240）",
+      "default_unbounded_far": { "mean": 6.825, "p50": 6.8, "p95": 8.0, "fps": 46.1 },
+      "circle_recycle_125": { "mean": 7.579, "p50": 7.5, "p95": 9.0, "fps": 43.0 },
+      "streak_capped": { "mean": 6.915, "p50": 6.8, "p95": 8.3, "fps": 44.4 },
+      "longTasks": 0,
+      "reading": "默认口径不增成本（比旧圆形回收少 ~0.75ms：回收事件本身带 respawn 开销）；绝对值受机器负载影响，只作相对比较"
+    },
+    "page_regression": {
+      "default_flags": { "radiusMode": "scene-box", "shapeBand": true, "streakUnbounded": true, "recycleFar": true, "recycle": true, "n": 50601 },
+      "rollback_flags": { "radiusMode": "viewport-axes", "shapeBand": false, "streakUnbounded": false, "recycleFar": false, "streakSleeping": false, "streakWeLo": 0.72, "rampA": 2, "birthIn": 0.08, "repelFamily": false, "sceneBox": null },
+      "phase_walk": { "pointerAway": "DWELL", "pointerOnPainting": "REPEL", "pointerAway2": "DWELL" },
+      "assembleClose_capHit": 0,
+      "pageErrors": [],
+      "artifacts": ["nf-baseline-artifacts/unbounded-page-regress.json"]
+    },
+    "repel_family_escape": {
+      "method": "指针停在画作中心（phase=REPEL），读 __nfRadial.escP95 于 6s / 18s",
+      "family_on": { "6s": 51.98, "18s": 111.79, "ramp_at_6s": 1 },
+      "family_off": { "6s": 24.81, "18s": 24.81, "ramp_at_6s": 0 },
+      "reading": "R1b 倾向档下靠近画作不冻结逸散（51.98→111.79 仍在走）；关掉才冻结。本改动不改变该语义"
+    },
+    "goldens": "全绿（C2 / NFPT / S3 dual 未漂 cdff7877… / vendor）——隔离路径 switches 默认 lifecycle/recycle/streak 全关，故不受本改动影响"
+  },
+  "caveats": [
+    "escP95 是人口统计量：并发跑两个浏览器时物理时钟被 MAX_FRAME_S=50ms 钳位拖慢，读数不可跨并发比较（本件长时程为单浏览器独占）",
+    "回收只在画面外发生，但生命期 tau∈[40,120] 的透明度淡出仍是主要的「消失」机制——这是自然消散，不是空间界线",
+    "出画余量按视口算：小屏 / 窄屏下粒子出画距离会缩短（相对画作仍为「走到底再出画」）"
+  ],
+  "rollback_matrix": {
+    "?streakcap=on": "回 1.05 上端截断（方框堆积）",
+    "?recyclefar=0": "回圆形回收 1.25·R95",
+    "?shapering=1": "回圆形带域口径",
+    "?scenebox=0 / ?qpush=1 / ?repelscope=window / ?streakgate=awake / ?streakband=0.72 / ?rampa=2 / ?birthin=0.08 / ?repelfamily=off": "前两轮既有回退，未变"
+  }
+}

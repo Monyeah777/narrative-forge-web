@@ -1,0 +1,240 @@
+{
+  "task": "p0p1f1-round9-combined-source",
+  "volume": "作者 2026-09-13：「结合更平版的初始生成速度，丝滑平铺，以及生成之后结合更喷与生成更快补齐中心黑洞，三版取各自优点结合，摒弃默认」",
+  "timestamp": "2026-09-13T21:00:00.000Z",
+  "tip": "d80cb67 (codex/batch0-confirm) + 工作区未提交",
+  "recipe": {
+    "why": "三版各取优点，取消上一轮的默认档（source=0.15 / target=0.7 单一档）",
+    "two_phase": {
+      "前段 (0–8s)": "目标 0.4 + 速率 160 粒/秒 → 轻、按中心带铺开（更平版的优点：丝滑平铺，不结块）",
+      "过渡 (8–22s)": "目标/速率按 smoothstep 平滑升档（无突变）",
+      "后段 (≥22s)": "目标 1.0 + 速率 600 粒/秒 → 把中心黑洞补齐（更喷 + 生成更快版的优点）"
+    },
+    "capacity": "临时上限 +20%（50,601 → 60,721）；后段实测源粒子峰值 7,003（≈13.8%N），留有余量",
+    "params": {
+      "SRC_PHASE_T0": 8,
+      "SRC_PHASE_RAMP": 14,
+      "SRC_TARGET_SMOOTH": 0.4,
+      "SRC_TARGET_STRONG": 1,
+      "SRC_RATE_SMOOTH": 160,
+      "SRC_RATE_STRONG": 600,
+      "source_frac_default": 0.2
+    }
+  },
+  "evidence": {
+    "phase_table": {
+      "method": "?autoplay=0&dwell=120000；读 world 的 sourceTargetNow / sourceRateNow / sourcePhase / centerFill，以及 10 环密度剖面（显示位置、基准 dwell≈0.9s）",
+      "rows": [
+        { "dwell": 4.8, "target": 0.4, "rate": 160, "phase": 0, "alive": 50781, "sourceAlive": 180, "centerFill": 0.156, "density_ratio": [1.222, 1.093, 0.848, 0.942, 0.822, 0.914, 0.836, 0.818, 1.017, 1.032] },
+        { "dwell": 11.8, "target": 0.5, "rate": 234, "phase": 0.17, "alive": 51105, "sourceAlive": 504, "centerFill": 0.147, "density_ratio": [1.0, 1.019, 0.752, 0.65, 0.856, 0.677, 0.74, 0.732, 0.89, 1.206] },
+        { "dwell": 19.8, "target": 0.96, "rate": 568, "phase": 0.93, "alive": 52873, "sourceAlive": 2272, "centerFill": 0.353, "density_ratio": [2.333, 2.759, 1.419, 0.496, 0.555, 0.546, 0.594, 0.635, 0.836, 1.272] },
+        { "dwell": 34.2, "target": 1.0, "rate": 600, "phase": 1, "alive": 56231, "sourceAlive": 5630, "centerFill": 0.788, "density_ratio": [5.611, 5.759, 3.114, 0.372, 0.582, 0.479, 0.467, 0.496, 0.79, 1.236] },
+        { "dwell": 57.4, "target": 1.0, "rate": 600, "phase": 1, "alive": 57604, "sourceAlive": 7003, "centerFill": 0.962, "density_ratio": [6.222, 7.111, 3.819, 0.35, 0.486, 0.499, 0.525, 0.573, 0.799, 1.247] }
+      ],
+      "reading": "① 前段（4.8s）密度剖面 0.82–1.22 = **平**（丝滑铺开，不结块）；② 后段密度剖面最内 3 环 3.8–7.1×、中心填充爬到 **0.962** = **黑洞被补齐**；③ 全过程中粒子数 50.8k→57.6k（上限 60,721）＝外围还在飞、中心已在生成"
+    },
+    "control_off": {
+      "method": "?source=0（回纯 50,601）",
+      "density_ratio_60s": [0.063, 0.229, 0.236, 0.504, 0.328, 0.441, 0.531, 0.624, 0.788, 1.374],
+      "reading": "关掉源 → 最内环回到基准的 6.3%（就是那个黑洞）；对照明确"
+    },
+    "regression": { "goldens": "全绿（C2 / NFPT / S3 dual 未漂 cdff7877… / vendor）", "pageErrors": [] },
+    "runs": [
+      { "id": "dry_run", "desc": "先做纯读数验证（Node 受控 world + 页面），确认源槽出生/目标/home 都在中心带、控制器按填充率生成与退役" }
+    ]
+  },
+  "knobs": {
+    "?source=<0–0.6>": "临时上限比例（默认 0.20；0 = 关）",
+    "?sourcetarget=<0.3–1>": "覆盖**后段目标**（前段固定 0.4 保证丝滑）",
+    "?sourcerate=<5–3000>": "覆盖**后段速率**（前段固定 160）",
+    "?sourcelife=<1–60>": "源粒子寿命（默认 11.5s）",
+    "?streaku0 / ?fountain / ?restore / ?driftall / ?driftlag / ?repel*": "前几轮开关，未变（速度仍是「以前那档」U0=5、fountain=0）"
+  },
+  "caveats": [
+    "后段中心带密度是「基准」的 3.8–7.1×、也是「当时周围」的数倍——这是「补齐黑洞」的直接后果；要柔一点用 ?sourcetarget=0.6",
+    "成本随存活粒子数增长（44–57s 时 +11–14%）：未做本轮独立帧时基准",
+    "渲染容器按容量 60,721 一次建好，死槽 alpha=0（不可见）但占顶点；?source=0 时容量回到 50,601"
+  ],
+  "revision_2026-09-13_range": {
+    "request": "作者「中心后面生成的范围有点大，稍微缩小一点」",
+    "change": "中心带 SRC_FILL_R 0.25 → **0.18**（横向 ≈44px、纵向 ≈57px）、出生抖动 SRC_BIRTH_R 0.12 → **0.08**；页面池阈值改为跟随模块常数（SRC_FILL_R/2），两边不会再脱节",
+    "measured": {
+      "note": "同一次 accept 采样（?autoplay=0&dwell=120000）",
+      "5s": { "target": 0.4, "rate": 160, "fill": 0.167, "sourceAlive": 187, "density_ratio": [1.438, 1.196, 0.811, 0.891, 0.886, 0.847, 0.935, 0.838, 0.976, 1.069] },
+      "20s": { "target": 0.96, "rate": 574, "fill": 0.508, "sourceAlive": 2052, "density_ratio": [4.5, 3.667, 0.556, 0.473, 0.47, 0.488, 0.626, 0.663, 0.832, 1.398] },
+      "60s": { "target": 1.0, "rate": 600, "fill": 0.955, "sourceAlive": 4434, "alive": 55035, "density_ratio": [8.0, 7.471, 0.933, 0.333, 0.383, 0.409, 0.597, 0.539, 0.81, 1.389] },
+      "compare_previous": "收窄前 60s 的最内三环是 6.22 / 7.11 / 3.82（第 3 环也被抬高）；收窄后 **0.2–0.3 环回到 0.933**（不再被源覆盖）→ 生成范围确实缩小了，中心填充仍 0.955（洞照样补齐），源粒子数 7,003 → 4,434（更省）"
+    }
+  }
+  ,
+  "revision_2026-09-13_014_early": {
+    "request": "作者「中心生成的时间再稍微早一点，采取 0.14 方案」",
+    "change": "中心带 0.18 → **0.14**（≈34×44px）；出生抖动 0.08 → **0.06**；强档起始 8s → **5s**、过渡 14s → **10s**（即 15s 到满强档）",
+    "measured": {
+      "note": "?autoplay=0&dwell=120000；对照 ?source=0",
+      "rows": [
+        { "dwell": 2.8, "target": 0.4, "rate": 160, "phase": 0, "fill": 0.144, "sourceAlive": 112, "density_ratio": [1.235, 1.089, 0.849, 0.872, 0.979, 0.91, 0.934, 0.862, 1.016, 1.01] },
+        { "dwell": 5.8, "target": 0.41, "rate": 168, "phase": 0.02, "fill": 0.198, "sourceAlive": 223 },
+        { "dwell": 9.8, "target": 0.67, "rate": 358, "phase": 0.45, "fill": 0.255, "sourceAlive": 542 },
+        { "dwell": 15.8, "target": 1.0, "rate": 600, "phase": 1, "fill": 0.644, "sourceAlive": 1965 },
+        { "dwell": 29.7, "target": 1.0, "rate": 600, "phase": 1, "fill": 0.932, "sourceAlive": 3133 },
+        { "dwell": 54.5, "target": 1.0, "rate": 600, "phase": 1, "fill": 0.946, "sourceAlive": 3163, "density_ratio": [7.118, 6.378, 0.237, 0.355, 0.489, 0.469, 0.524, 0.535, 0.798, 1.286] }
+      ],
+      "reading": "① 升档更早：9.8s 已到 0.67/358 粒/s（上一版 19.8s 才 0.96/568），15.8s 满强档；② 中心填充 15.8s **0.644** → 29.7s **0.932** → 54.5s 0.946（上一版 34s 才 0.788）；③ 源粒子 60s 时 7,003 → **3,163**（范围更小、更省）；④ 前段 2.8s 剖面 0.85–1.24 仍平（丝滑）",
+      "control_off_55s": [0.182, 0.161, 0.329, 0.368, 0.333, 0.45, 0.58, 0.628, 0.803, 1.264]
+    }
+  }
+  ,
+  "revision_2026-09-13_isolate_sink_final": {
+    "request": "作者 2026-09-13：「后段弱一点版最终定稿」＋质疑「切换回首页中心怎么还在生成？没有隔离机制吗？没有边缘消失防止爆满的机制吗？」",
+    "found": {
+      "no_phase_gate": "srcTick 原本**不判相位** → INTRO/HANDOVER 等过渡态也在生成",
+      "no_edge_sink": "源粒子出画/寿命到期走的是 base 粒子的 `respawn()`（**重生**）→ 槽位永不释放，只能靠控制器慢慢退役，总数会一路堆到上限"
+    },
+    "fix": {
+      "phase_isolation": "srcTick 只在 dwell-like（DWELL；REPEL 若保留余韵族）生成；一旦离开相位，`srcRetireAll()` 立刻释放**全部**源粒子 → 换场景/换幅/进过渡不携带上一段的中心源",
+      "edge_sink": "源粒子（idx ≥ n）出画（越过视口 +5%）或寿命到期 → `srcFree()` **释放槽位**（不是重生）；基础粒子行为不变",
+      "target_weaker": "后段目标 1.0 → **0.6**（作者「后段弱一点版最终定稿」）",
+      "gain": "后段速率 600 → **1500 粒/s**：有边缘汇后，比例控制要更高增益才能压住稳态误差（600 时稳态只有 0.42）"
+    },
+    "evidence": {
+      "phase_isolation": {
+        "method": "?autoplay=1&dwell=60000（INTRO 装配 → DWELL 成画），每 2s 采样",
+        "t2s_INTRO": { "alive": 50601, "sourceAlive": 0 },
+        "t4_8s_DWELL_fresh": { "sourceAlive": 0, "centerFill": 1 },
+        "t18s": { "sourceAlive": 50, "centerFill": 0.464 },
+        "t34s": { "sourceAlive": 701, "alive": 51302 },
+        "reading": "过渡态 **源恒为 0**；只有进入 DWELL 且中心真的开始变稀（10s 后）才生成 ✓ 隔离生效"
+      },
+      "scene_switch": {
+        "method": "?autoplay=0&dwell=120000：等源起来（sourceAlive 207）→ 点导航 btn-hall 切场景 → 4s 后读数",
+        "before": { "phase": "DWELL", "mode": "chaos", "alive": 50808, "sourceAlive": 207 },
+        "afterNav": { "phase": "DWELL", "mode": "formed", "alive": 50601, "sourceAlive": 0, "centerFill": 1 },
+        "reading": "切场景 → 世界重建 → **总数精确回到 N=50,601、源清零** ✓ 不跨场景泄漏"
+      },
+      "no_overflow": {
+        "method": "?autoplay=0&dwell=120000（后段目标 0.6 / 速率 1500），10 环密度剖面",
+        "rows": [
+          { "dwell": 2.9, "fill": 0.18, "alive": 50694, "sourceAlive": 93, "density_ratio": [0.897, 1.057, 0.987, 0.927, 0.895, 0.892, 0.901, 0.941, 0.963, 1.054] },
+          { "dwell": 15.7, "fill": 0.446, "alive": 52001, "sourceAlive": 1400, "density_ratio": [1.828, 2.811, 0.571, 0.492, 0.599, 0.627, 0.599, 0.782, 0.824, 1.32] },
+          { "dwell": 54.6, "fill": 0.471, "alive": 52021, "sourceAlive": 1420, "density_ratio": [2.552, 2.17, 0.299, 0.355, 0.523, 0.41, 0.489, 0.628, 0.789, 1.308] }
+        ],
+        "reading": "总数稳定在 **+1,420（+2.8%）**，离临时上限 60,721 还有 8,700 余量——**不再向满上限爬**；中心最内两环 2.2–2.6×（弱档），比此前 7–8× 温和得多"
+      }
+    },
+    "final_defaults": {
+      "capacity": "+20%（60,721）",
+      "band": "0.14 盒半径（≈34×44px）",
+      "birth_jitter": 0.06,
+      "phase": "5s 起升档 / 10s 过渡（15s 满）",
+      "target": "前段 0.4 → 后段 0.6",
+      "rate": "前段 160/s → 后段 1500/s",
+      "sink": "源粒子出画/寿命到期即释放槽位"
+    }
+  },
+  "revision_2026-09-13_mode_isolation": {
+    "request": "作者再报：「切换首页的时候中心还会继续生成」",
+    "cause": "上一轮只加了**相位**门；首页混沌态的相位恰好就是 DWELL，所以照旧生成——缺的是**模式**门",
+    "fix": {
+      "module": "新 API `setSourceEnabled(on)`（关闭时立刻 `srcRetireAll()` 释放全部源粒子；`sourceEnabled` 只读外露）",
+      "page": "`setMode()` 与 `rebuildRadialWorld()` 里按模式开关：**只有 assemble / formed（画作态）开**；chaos（首页）/ disperse / handover 一律关",
+      "expose": "证据字段 `__nfRadial.sourceEnabled`"
+    },
+    "evidence": {
+      "home_chaos_long_stay": {
+        "method": "?autoplay=0&dwell=120000（首页混沌态）连续 45s 采样",
+        "rows": "t=3/9/15/21/27/33/39/45s：mode=chaos、**生成开关=false、源=0、存活=50601/50601、中心填充=1**",
+        "reading": "首页**完全不生成**，总数恒为 N ✓（作者报的问题已修）"
+      },
+      "switch_to_painting": {
+        "method": "首页（源 0 / 开关 false）→ 点导航 btn-hall 切到画作",
+        "after": { "mode": "formed", "sourceEnabled": true, "sourceAlive": 0, "alive": 50601, "dwell": 1.2 },
+        "reading": "切到画作态才开开关，源从 0 重新按需生成 ✓ 不回灌到首页"
+      },
+      "formed_state_behaviour": {
+        "method": "?autoplay=1&dwell=60000（INTRO → DWELL 成画）每 2s 采样",
+        "samples": "INTRO 相位源=0；进入 formed 后中心开始变稀才生成：18s 源 143 → 24s 919 → 28s **1,029**（随后稳定在 ~970–1,030，填充 ~0.49–0.51）",
+        "reading": "画作态里也只在「中心真的稀了」时补，稳态约 +1,000 粒（+2%）"
+      }
+    }
+  },
+  "revision_2026-09-13_strong_earlier": {
+    "request": "作者 2026-09-13：「画作态更强可以可以，生成再稍微早那么 1s 或者 2s 就完美了」",
+    "change": {
+      "target": "后段目标 0.6 → **0.8**（正是作者试的 `?sourcetarget=0.8` 那档，定为默认）",
+      "onset": "升档起点 5s → **3.5s**（提前 1.5s；满强档从 15s → **13.5s**）",
+      "unchanged": "中心带 0.14、出生抖动 0.06、过渡 10s、容量 +20%、边缘汇、相位/模式隔离"
+    },
+    "evidence": {
+      "method": "?autoplay=1&dwell=60000（画作态）每 2s 采样",
+      "rows": [
+        { "t": 8, "phase": "DWELL", "mode": "formed", "alive": 50601, "sourceAlive": 0, "centerFill": 1 },
+        { "t": 14, "centerFill": 0.676, "sourceAlive": 0 },
+        { "t": 16, "centerFill": 0.615, "sourceAlive": 192, "alive": 50793 },
+        { "t": 20, "centerFill": 0.673, "sourceAlive": 891, "alive": 51492 },
+        { "t": 24, "centerFill": 0.637, "sourceAlive": 1356, "alive": 51957 },
+        { "t": 30, "centerFill": 0.662, "sourceAlive": 1509, "alive": 52110 },
+        { "t": 34, "centerFill": 0.665, "sourceAlive": 1444, "alive": 52045 }
+      ],
+      "reading": "① 源介入时点 **18s → 16s**（提前 2s）；② 稳态源粒子 ~**1,480**（+2.9%）、中心填充稳定在 **0.63–0.67**（弱档 0.6 setpoint 时是 ~0.49，确实更强）；③ 页面侧仍是「画作态才开、首页关」",
+      "home_chaos_still_off": "同一批次 C 组：首页 mode=chaos、开关 false、源 0、存活 = N"
+    }
+  },
+  "revision_2026-09-13_1s_085": {
+    "request": "作者 2026-09-13：「改成 1s，画作态可以 0.85」",
+    "change": { "onset": "升档起点 3.5s → **1s**（满强档 = 1 + 10 = **11s**）", "target": "后段目标 0.8 → **0.85**" },
+    "evidence": {
+      "method": "?autoplay=1&dwell=60000（画作态）每 2s 采样",
+      "rows": [
+        { "t": 10, "sourceAlive": 0, "centerFill": 0.906 },
+        { "t": 12, "sourceAlive": 0, "centerFill": 0.777 },
+        { "t": 14, "sourceAlive": 128, "alive": 50729, "centerFill": 0.727 },
+        { "t": 18, "sourceAlive": 780, "alive": 51381, "centerFill": 0.709 },
+        { "t": 24, "sourceAlive": 1492, "alive": 52093, "centerFill": 0.665 },
+        { "t": 30, "sourceAlive": 1631, "alive": 52232, "centerFill": 0.68 },
+        { "t": 34, "sourceAlive": 1542, "alive": 52143, "centerFill": 0.673 }
+      ],
+      "reading": "① 源介入 **16s → 14s**；② 稳态源粒子 ~**1,600（+3.2%）**、中心填充 **0.67–0.72**（0.8 档时 0.63–0.67）；③ 首页仍完全不生成（同批 B/C 组：mode=chaos、开关 false、源 0、存活 = N）",
+      "note": "页面 dwell 从装配结束后起算，所以 wall 14s ≈ dwell 10s（此时目标已升到 ~0.83、填充 0.727 → 触发）"
+    }
+  },
+  "revision_2026-09-13_band_010": {
+    "request": "作者 2026-09-13：「中心生成区范围还是有点大，改小一点」",
+    "change": { "band": "中心带 0.14 → **0.10** 盒半径（≈横向 24px × 纵向 31px）", "birth_jitter": "0.06 → **0.05**（页面池阈值按 SRC_FILL_R/2 自动跟随 = 0.05 图像坐标）" },
+    "evidence": {
+      "method": "?autoplay=1&dwell=60000（画作态）每 2s 采样；另测**存活源粒子的实际分布半径**（盒半径）",
+      "rows": [
+        { "t": 10, "sourceAlive": 0, "centerFill": 0.838 },
+        { "t": 12, "sourceAlive": 95, "centerFill": 0.694, "srcMeanR": 0.061, "srcP90R": 0.094 },
+        { "t": 14, "sourceAlive": 429, "centerFill": 0.738, "srcMeanR": 0.073, "srcP90R": 0.104 },
+        { "t": 18, "sourceAlive": 1091, "centerFill": 0.731, "srcMeanR": 0.085, "srcP90R": 0.119 },
+        { "t": 24, "sourceAlive": 1286, "centerFill": 0.713, "srcMeanR": 0.087, "srcP90R": 0.126 },
+        { "t": 34, "sourceAlive": 1211, "centerFill": 0.775, "srcMeanR": 0.09, "srcP90R": 0.126 }
+      ],
+      "reading": "① 源粒子的 P90 只在 0.094–0.129 盒半径（≈24–32px），均值 ≈0.09（≈22px）→ **生成确实被压在更小的范围里**；② 因为带更小、相对更快见稀，源介入提前到 **12s**；③ 稳态源 ~**1,200–1,300 粒（+2.4%）**、中心填充 ~**0.69–0.78**；④ 首页仍完全不生成（同批 B 组：mode=chaos、开关 false、源 0、存活 = N）"
+    }
+  },
+  "revision_2026-09-13_taper_samespeed": {
+    "request": "作者 2026-09-13：「生成太快了，到了后期都挤中间，可以一开始快，后面减低速度和周围粒子相同速度」",
+    "cause": "① 生成速率恒定在 1500 粒/s → 后期持续往中间灌；② 源粒子吃内核慢档（we 下限 0.45 ⇒ ≈2.25px/s），比周围粒子慢 → 赖在中心越积越密",
+    "fix": {
+      "rate_curve": "起步快 → 后段降到维持档：快档 1500 粒/s，自升档起点 +12s 起用 12s 平滑降到 **维持 450 粒/s**（= 强档 × 0.30，下限 120；`?sourcerate=` 成比例缩放）",
+      "same_speed": "源粒子外逸权重下限 **SRC_WE_MIN = 1.0**（≈5px/s，与周围中/外场同速），不再吃内核 0.45 的慢档"
+    },
+    "evidence": {
+      "rate_curve": {
+        "t12s": "1233/s（升档中）→ t16s **1500/s** → t20s 1445/s（降速 0.05）→ t24s 1114/s（0.37）→ t30s 540/s（0.91）→ t32s+ **450/s（维持档）**"
+      },
+      "same_speed_effect": {
+        "srcMeanRadius": "0.039(12s) → 0.086(16s) → 0.104(20s) → 0.121(28s) → 0.123(32s)",
+        "srcP90Radius": "0.062(12s) → 0.123(16s) → 0.154(20s) → 0.18(30s)",
+        "reading": "源粒子不再停在中心：平均半径一路外移到 0.12、P90 0.18（≈29–44px），与周围粒子一起往外走；源数量 25s 达峰 ~1,889 后回落到 ~1,245（不再累积）"
+      },
+      "no_crowding_formed_state": {
+        "method": "?autoplay=1&dwell=120000（画作态）38.8s 的 10 环密度剖面（基准 = dwell≈0.9s）",
+        "density_ratio": [0.431, 0.579, 0.507, 0.609, 0.52, 0.534, 0.477],
+        "reading": "**中心带 0.43–0.61，与相邻环 0.48–0.61 基本齐平** → 不再「挤中间」；同时最内环 0.43 远高于关源时的 0.06–0.18 → 洞也还在被补"
+      }
+    }
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "task": "p0p1f1-round6-fountain",
+  "volume": "作者 2026-09-13 追加：「再稍微快一点不留中间的洞，就行喷泉一样」",
+  "timestamp": "2026-09-13T18:15:00.000Z",
+  "tip": "d80cb67 (codex/batch0-confirm) + 工作区未提交",
+  "changes": {
+    "G1_speed": {
+      "what": "整体再快一档：U0 5 → 7px/s；内核速度下限 DRIFT_WE_FLOOR 0.45 → 0.7（内核不再「密但不快」）",
+      "default": "streakU0 = 7",
+      "knob": "?streaku0=<0.5–20>（?streaku0=5 回上一档）"
+    },
+    "G2_inner_restore": {
+      "what": "内核复原再快一点：restore 0.6 → 0.8（内核生命推进 ×1.8、重生淡入 ÷1.8）",
+      "default": "restore = 0.8",
+      "knob": "?restore=<0–2>"
+    },
+    "G3_fountain": {
+      "what": "喷泉回流：画作主体的逸散位移**超出各自的比例振幅后被拉回** → 走出-拉回成循环，中间被持续补回，不再留洞",
+      "reach": "reach(R) = fountain·(8px + 0.25·R·盒短半轴)，R = 粒子**所属半径**（取物理位置，不随 esc 外移）→ 整场按比例伸缩、密度守恒",
+      "return": "回流速度恒定 = 3·U0（不按 R 削弱——削弱会让中环粒子跑很远，留下环状变薄）",
+      "membership": "fw = 1 − smoothstep(0.8, 1.0, R)：R<0.8 全回流、0.8→1.0 柔和退出、R≥1.0（盒沿外）不回流 → 最外圈继续一路向外逸散、喂外围光晕",
+      "default": "fountain = 0.6",
+      "knob": "?fountain=0（关，回「只外逸不回」）／0–2（1.5 外移更大但中心会变薄）"
+    }
+  },
+  "evidence": {
+    "density_profile_ratio": {
+      "method": "?autoplay=0&dwell=120000；按**显示位置**的盒半径分 10 环，密度 = 计数/(r²−r₀²)，取 dwell≈0.9s 为基准做比；每 8 粒抽样",
+      "edges": [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.7, 0.9, 1.1, 1.4, 1.8],
+      "default_40s": [0.571, 0.556, 0.636, 0.773, 0.675, 0.768, 0.686, 0.778, 0.52, 1.046],
+      "no_fountain_round5_40s": [0.067, 0.151, 0.255, 0.333, 0.365, 0.353, 0.499, 0.599, 0.884, 1.252],
+      "fountain_1.5_40s": [0, 0.587, 0.37, 0.615, 0.517, 0.545, 0.576, 0.651, 0.786, 1.025],
+      "reading": "跨度 <0.1 环（画作正中）：旧档 6.7% → 默认 **57%**；剖面 0.56–0.78 平坦（无洞、无环状变薄）。?fountain=1.5 会让最内环重新掉到 0（外移太大）→ 要「不留洞」应 ≤0.8"
+    },
+    "motion_map_1.5s": {
+      "method": "同一状态两张截屏相隔 1.5s 的逐像素亮度差；按盒半径 8 环统计运动像素占比",
+      "default_14s": { "all": 17.55, "rings": [10.85, 10.96, 15.33, 22.13, 20.69, 23.06, 23.69, 19.72] },
+      "default_27s": { "all": 15.97, "rings": [13.63, 13.89, 9.41, 18.98, 18.1, 21.38, 22.73, 26.49] },
+      "no_fountain_14s": { "all": 22.02, "rings": [18.12, 21.76, 21.78, 22.89, 20.89, 24.33, 24.67, 19.77] },
+      "reading": "诚实的代价：回流把内核兜在自家附近后，**内核运动量比「任其外走」时低**（内环 ~11–14% vs 外环 19–24%）。洞没有了，但中间是「密、持续小幅脉动」，不是「密且大幅流动」。要中间更活只能放大 ?fountain（代价=洞回来）或提高 ?streaku0"
+    },
+    "carriers_formed": {
+      "method": "?autoplay=1&dwell=30000（成画 formed）",
+      "default": { "9s": 91.9, "17s": 100, "mode": "formed", "capHit": 0 },
+      "band_only": { "9s": 24.2, "17s": 25 },
+      "pageErrors": []
+    },
+    "perf_AB_ms": {
+      "method": "同会话 __nfResetPerf → DWELL 窗口 → __nfGetPerf().work",
+      "default": { "mean": 11.681, "fps": 22.6 },
+      "no_fountain": { "mean": 11.452, "fps": 22.4 },
+      "reading": "喷泉本身 ≈ +0.2ms（一次 sqrt/粒）；绝对值受软件渲染与机器负载影响，只作同会话比较"
+    },
+    "regression": {
+      "default_flags": { "radiusMode": "scene-box", "driftAll": true, "driftLag": 6, "streakU0": 7, "restore": 0.8, "fountain": 0.6 },
+      "rollback_flags": { "driftAll": false, "driftLag": 0, "streakU0": 7, "restore": 0, "fountain": 0, "radiusMode": "viewport-axes" },
+      "phase_walk": ["DWELL", "REPEL", "DWELL"],
+      "assembleClose_capHit": 0,
+      "pageErrors": []
+    },
+    "goldens": "全绿（C2 / NFPT / S3 dual 未漂 cdff7877… / vendor）；隔离路径 streak/lifecycle 默认关，不受本轮影响"
+  },
+  "design_note": {
+    "why": "「不留洞」与「中间大幅流动」在物理上互相拉扯：粒子一旦外移就离开中心带，中心必然变薄。本轮选择**成比例振幅 + 恒定回流速度**：每个半径带都被各自的振幅兜住 → 密度守恒（剖面平坦），代价是内核运动量低于「任其外走」档",
+    "tradeoff_table": {
+      "fountain_0": "中间大幅外移 → 洞（最内环 6.7%）",
+      "fountain_0.6": "默认：最内环 57%、剖面 0.56–0.78，内核小幅持续脉动",
+      "fountain_1.5": "外移更大、更「喷」，最内环回到 0（洞回来）"
+    }
+  },
+  "rollback_matrix": {
+    "?fountain=0": "关喷泉（回「只外逸不回」）",
+    "?fountain=<0–2>": "喷泉幅度（默认 0.6）",
+    "?streaku0=<0.5–20>": "整体速度（默认 7）",
+    "?restore=<0–2>": "内核复原加速（默认 0.8）",
+    "?driftall=off / ?driftlag= / ?streakcap=on / ?recyclefar=0 / ?shapering=1 / ?streakband= / ?rampa= / ?birthin= / ?repelfamily= / ?scenebox= / ?qpush= / ?repelscope= / ?streakgate=": "前几轮既有开关，未变"
+  }
+}

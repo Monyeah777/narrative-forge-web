@@ -899,6 +899,7 @@
     <aside class="paper">
       <p class="exhibit-bar" id="exhibit-bar">
         <button type="button" class="exhibit-pause" id="btn-exhibit-pause">放映暂停</button>
+        <button type="button" class="exhibit-pause" id="btn-upload-show" hidden>自定义放映 ▶</button>
         <span class="exhibit-caption" id="exhibit-caption" aria-live="off"></span>
       </p>
       <header class="mast">
@@ -955,6 +956,7 @@
       <span class="arcade-meta" aria-hidden="true">INSERT COIN</span>
       <div class="console" role="group" aria-label="控制台">
         <button type="button" class="console-key" id="btn-start">START</button>
+        <button type="button" class="console-key" id="btn-upload">UPLOAD</button>
         <button type="button" class="console-key" id="btn-save" aria-pressed="false">SAVE</button>
         <button type="button" class="console-key" id="btn-settings">SETTINGS</button>
       </div>
@@ -990,9 +992,22 @@
       var PAINT_H = 0.70;
       var PAINT_CX = 0.35;
       var SEED_CLOUD_SIG = 0.26;
-      var REPEL_R = 100;
-      var REPEL = 1.1;
-      var REPEL_FMAX = 2.4;
+      /* == 指针驱离（作者 2026-09-13 修订）==
+         旧口径：REPEL_R=100px + f=1.1·R²/d²（到边界才硬截断、近处被上限压平）——
+         结果是「一团被推空 + 粒子在 100px 处结成可见圆圈」，既不像物理也不好看。
+         新口径：小范围 42px + **平滑衰减到边界为 0** 的紧凑核 w=(1−d/R)²（C¹，无硬边 → 不结环），
+         并按帧长缩放（速度增量 ↔ 力×时间，物理一致）。回退 `?repel=old`。 */
+      var REPEL_R = 42;
+      var REPEL_V = 1.35;
+      var REPEL_FMAX = 1.6;
+      var REPEL_R_OLD = 100;
+      var REPEL_OLD = 1.1;
+      var REPEL_FMAX_OLD = 2.4;
+      /* 生效值在 NF_QUERY 就位后解析（见下方「指针驱离闸」） */
+      var REPEL_OLD_ON = false;
+      var REPEL_R_USE = REPEL_R;
+      var REPEL_V_USE = REPEL_V;
+      var REPEL_FMAX_USE = REPEL_FMAX;
       var POINTER_LERP = 0.2;
       var STOP_PX = 0.6;
       var STOP_V = 0.06;
@@ -1057,6 +1072,9 @@
       var cssW = 1;
       var cssH = 1;
       var N = 0;
+      /* == 中心源 == 运行时容量：N = 画作本身；NCAP = N + 临时上限源槽 SRC_N */
+      var NCAP = 0;
+      var SRC_N = 0;
       /* == BATCH4-DEAD == gid / tid 随 assignGlyphTint 一起删除（旧字形染色索引，现网无消费方）。 */
       var x, y, vx, vy, hx, hy, tx, ty, nx, ny, nhx, nhy, ntx, nty, z, sid, pid;
       var ax, ay, sx, sy, delayOut, delayIn, hs, arcSign;
@@ -1143,7 +1161,7 @@
         spring: SPRING,
         damp: DAMP,
         vmax: VMAX,
-        repelR: REPEL_R,
+        repelR: REPEL_R_USE,
         stopPx: STOP_PX,
         stopV: STOP_V,
         assembleS: ASSEMBLE_S,
@@ -1235,6 +1253,13 @@
       var pointerOn = false;
       var pointerEver = false;
       var touchUntil = 0;
+      /* == 指针路径优化（作者 2026-09-13「有时滑动鼠标会顿住」）==
+         原来每帧 wakeAll() 把 6 万粒全部叫醒（睡眠优化整段失效）+ 每帧一次 6 万粒的整表拷贝；
+         现在只记录**被驱离波及**的粒子并只唤醒它们（未涉及的粒子状态与行为完全不变）。 */
+      var repelWakeN = 0;
+      var repelWakeIdx = new Int32Array(4096);
+      /* 回退（在 NF_QUERY 就位后赋值）：?repelmodule=0 走旧的「整表拷入 → 页面算 → 拷回」路径 */
+      var repelUseModule = true;
       var reduced = false;
       var finePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
       var reduceMq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -1280,6 +1305,80 @@
         }
       }
       degradeOn = NF_QUERY.get("degrade") === "1";
+      /* == 指针驱离闸（作者 2026-09-13）== 默认新口径（小范围 42px + 紧凑核）；
+         ?repel=old 回旧口径（100px + 1/d² + 硬截断/上限）；?repelr=<16–200>、?repelv=<0.2–6> 调参 */
+      REPEL_OLD_ON = NF_QUERY.get("repel") === "old";
+      repelUseModule = NF_QUERY.get("repelmodule") !== "0";
+      if (REPEL_OLD_ON) {
+        REPEL_R_USE = REPEL_R_OLD;
+        REPEL_V_USE = REPEL_OLD;
+        REPEL_FMAX_USE = REPEL_FMAX_OLD;
+      } else {
+        var repelRRaw = parseFloat(NF_QUERY.get("repelr") || "");
+        REPEL_R_USE = isFinite(repelRRaw) && repelRRaw >= 16 && repelRRaw <= 200 ? repelRRaw : REPEL_R;
+        var repelVRaw = parseFloat(NF_QUERY.get("repelv") || "");
+        REPEL_V_USE = isFinite(repelVRaw) && repelVRaw >= 0.2 && repelVRaw <= 6 ? repelVRaw : REPEL_V;
+        REPEL_FMAX_USE = REPEL_FMAX;
+      }
+      /* == 修-1 / 修-2 / 修-3 回退开关（裁决 §5：三次改动全部带回退）==
+         scenebox=0 → rOfPixel 回旧视口轴归一；qpush=1 → 恢复 Q 恒定内推；
+         repelscope=window → 相位判据回旧口径（指针在窗口内即 live）。 */
+      var useSceneBoxNorm = NF_QUERY.get("scenebox") !== "0";
+      var betaPushLegacy = NF_QUERY.get("qpush") === "1";
+      var repelscopeWindow = NF_QUERY.get("repelscope") === "window";
+      /* == §4#2（已授权）== streak 门槛回退开关：?streakgate=awake 回旧门槛（只醒着的累积） */
+      var streakSleepingOn = NF_QUERY.get("streakgate") !== "awake";
+      /* == §4#2 成本评估闸（只读，默认不变）== ?streakband=0.82 收窄丝缕带下沿（0.72–0.95） */
+      var streakBandRaw = parseFloat(NF_QUERY.get("streakband") || "");
+      /* §4#2 成本档（已授权）：默认 0.82（收窄带）；?streakband=0.72 回全带 */
+      var streakBand = isFinite(streakBandRaw) && streakBandRaw >= 0.72 && streakBandRaw <= 0.95 ? streakBandRaw : 0.82;
+      /* == 圆环修正（已授权）== 默认方框口径；?shapering=1 回退圆形口径 */
+      var shapeBandOn = NF_QUERY.get("shapering") !== "1";
+      /* == 无上限逸散（作者 2026-09-13）== 默认 true：外围持续外走、不在方框沿停住；?streakcap=on 回退 */
+      var streakUnboundedOn = NF_QUERY.get("streakcap") !== "on";
+      /* == 无边界逸散（作者 2026-09-13）== 默认 true：回收只按「出画」判（视口 +5% 余量），
+         途中没有可见的停/消失界线；?recyclefar=0 回退旧圆形回收半径 1.25·R95 */
+      var recycleFarOn = NF_QUERY.get("recyclefar") !== "0";
+      /* == 整幅流动（作者 2026-09-13 追加）== 默认 true：丝缕带放开到圆心、全幅外向流动，
+         启动按半径排序（先外围后内，圆心最晚 driftLag 秒）；?driftall=off 回旧「只动带内」 */
+      var driftAllOn = NF_QUERY.get("driftall") !== "off";
+      var driftLagRaw = parseFloat(NF_QUERY.get("driftlag") || "");
+      var driftLagS = isFinite(driftLagRaw) && driftLagRaw >= 0 && driftLagRaw <= 60 ? driftLagRaw : 6;
+      /* == 逸散速度档（视觉调参用）== 默认卷面 §7 的 U0=5px/s；?streaku0=<0.5–20> 覆盖 */
+      var streakU0Raw = parseFloat(NF_QUERY.get("streaku0") || "");
+      /* 作者 2026-09-13「先把以前的速度改回来」：默认回到 5px/s（第 4/5 轮那档；
+         第 6 轮曾抬到 7，回收窄；?streaku0=7 仍可试更快） */
+      var streakU0 = isFinite(streakU0Raw) && streakU0Raw >= 0.5 && streakU0Raw <= 20 ? streakU0Raw : 5;
+      /* == 中间复原（作者 2026-09-13）== 内核复原加速：默认 0.6（内核生命推进 1.6×、淡入 1/1.6）；
+         ?restore=0 关闭、0–2 任意值；「不留中间的洞」后默认抬到 0.8 */
+      var restoreRaw = parseFloat(NF_QUERY.get("restore") || "");
+      var restoreBoost = isFinite(restoreRaw) && restoreRaw >= 0 && restoreRaw <= 2 ? restoreRaw : 0.8;
+      /* == 喷泉回流（作者 2026-09-13）== 作者判定「改的不好，不如以前流动了」→ 默认**关**（0）。
+         机制保留备用：reach = fountain·(8px + 0.25·R·盒短半轴) 超出即恒速回流（中间不留洞，但流动变弱）。
+         ?fountain=<0.3–2> 可再试（0 = 只外逸不回，即现在默认） */
+      var fountainRaw = parseFloat(NF_QUERY.get("fountain") || "");
+      var fountain = isFinite(fountainRaw) && fountainRaw >= 0 && fountainRaw <= 2 ? fountainRaw : 0;
+      /* == 中心源 + 临时上限（作者 2026-09-13「让从中心生成的更快 / 增加一个临时最大粒子上限」）==
+         容量 = N + round(N×source)，源槽从画作中心生成、目标落在**中心带**；中心缺氧就生成、
+         补满后慢速退役 → 总粒子数在 [N, N+源槽] 之间呼吸，外围还在飞时中心已经在生成。
+         ?source=0 关（回纯 N 粒）；?source=<0–0.6> 调临时上限占比；?sourcerate= / ?sourcelife= 调生成。 */
+      var sourceFracRaw = parseFloat(NF_QUERY.get("source") || "");
+      /* 容量留够「更喷」档（后段目标 1.0 时实测源粒子峰值 ≈12%N，取 20% 余量） */
+      var sourceFrac = isFinite(sourceFracRaw) && sourceFracRaw >= 0 && sourceFracRaw <= 0.6 ? sourceFracRaw : 0.2;
+      var sourceRateRaw = parseFloat(NF_QUERY.get("sourcerate") || "");
+      var sourceRate = isFinite(sourceRateRaw) && sourceRateRaw >= 5 && sourceRateRaw <= 3000 ? sourceRateRaw : null;
+      var sourceLifeRaw = parseFloat(NF_QUERY.get("sourcelife") || "");
+      var sourceLife = isFinite(sourceLifeRaw) && sourceLifeRaw >= 1 && sourceLifeRaw <= 60 ? sourceLifeRaw : null;
+      var sourceTargetRaw = parseFloat(NF_QUERY.get("sourcetarget") || "");
+      var sourceTarget = isFinite(sourceTargetRaw) && sourceTargetRaw >= 0.3 && sourceTargetRaw <= 1 ? sourceTargetRaw : null;
+      /* == R1b（已授权·倾向档）== 默认 REPEL 保留余韵族；?repelfamily=off 回退 */
+      var repelFamilyOn = NF_QUERY.get("repelfamily") !== "off";
+      /* == §4#3（已授权）== 默认余韵斜坡前段 1s（0.4@1s）；?rampa=2 回退 */
+      var rampaRaw = parseFloat(NF_QUERY.get("rampa") || "");
+      var rampa = isFinite(rampaRaw) && rampaRaw >= 0.5 && rampaRaw <= 4 ? rampaRaw : 1;
+      /* == §4#4（已授权）== 默认回收出生点内缩 0.02；?birthin=0.08 回退 */
+      var birthinRaw = parseFloat(NF_QUERY.get("birthin") || "");
+      var birthin = isFinite(birthinRaw) && birthinRaw >= 0 && birthinRaw <= 0.5 ? birthinRaw : 0.02;
       if (degradeOn) {
         nTier.logs.push({ phase: "boot", note: "应急看门狗开启（停留期 work.p95 > " + nTier.degradeMs + "ms 连续 " + nTier.degradeChecks + " 次检查 → 降 " + COUNT_EMERGENCY + "）" });
         console.info("[NF][count-tier] ?degrade=1 应急看门狗开启（阈值 work.p95 > " + nTier.degradeMs + "ms）");
@@ -1563,7 +1662,8 @@
       function applyPaintingTargets() {
         var i;
         layoutContain();
-        for (i = 0; i < N; i++) {
+        /* == 中心源 == 覆盖到容量：源槽也要跟着版式拿到自己的目标位 */
+        for (i = 0; i < NCAP; i++) {
           tx[i] = mapPaintingX(ntx[i]);
           ty[i] = mapPaintingY(nty[i]);
         }
@@ -1751,7 +1851,9 @@
         animInfo.spring = SPRING;
         animInfo.damp = DAMP;
         animInfo.vmax = VMAX;
-        animInfo.repelR = REPEL_R;
+        animInfo.repelR = REPEL_R_USE;
+        animInfo.repelV = REPEL_OLD_ON ? REPEL_OLD : REPEL_V_USE;
+        animInfo.repelLaw = REPEL_OLD_ON ? "inv2-cut" : "compact(1-u)^2";
         animInfo.stopPx = STOP_PX;
         animInfo.stopV = STOP_V;
         animInfo.assembleS = ASSEMBLE_S;
@@ -1863,32 +1965,35 @@
 
       function alloc(n) {
         N = n;
-        x = new Float32Array(n);
-        y = new Float32Array(n);
-        vx = new Float32Array(n);
-        vy = new Float32Array(n);
-        hx = new Float32Array(n);
-        hy = new Float32Array(n);
-        tx = new Float32Array(n);
-        ty = new Float32Array(n);
-        nx = new Float32Array(n);
-        ny = new Float32Array(n);
-        nhx = new Float32Array(n);
-        nhy = new Float32Array(n);
-        ntx = new Float32Array(n);
-        nty = new Float32Array(n);
-        ax = new Float32Array(n);
-        ay = new Float32Array(n);
-        sx = new Float32Array(n);
-        sy = new Float32Array(n);
-        delayOut = new Float32Array(n);
-        delayIn = new Float32Array(n);
-        hs = new Uint8Array(n);
-        arcSign = new Int8Array(n);
-        z = new Float32Array(n);
-        sid = new Uint8Array(n);
-        pid = new Uint16Array(n);
-        bucketIndex = new Uint16Array(n);
+        /* == 中心源 == 容量 = 基础 n + 临时上限源槽（结果 = NCAP；源槽在装载完成后填充） */
+        SRC_N = sourceFrac > 0 ? Math.round(n * sourceFrac) : 0;
+        NCAP = n + SRC_N;
+        x = new Float32Array(NCAP);
+        y = new Float32Array(NCAP);
+        vx = new Float32Array(NCAP);
+        vy = new Float32Array(NCAP);
+        hx = new Float32Array(NCAP);
+        hy = new Float32Array(NCAP);
+        tx = new Float32Array(NCAP);
+        ty = new Float32Array(NCAP);
+        nx = new Float32Array(NCAP);
+        ny = new Float32Array(NCAP);
+        nhx = new Float32Array(NCAP);
+        nhy = new Float32Array(NCAP);
+        ntx = new Float32Array(NCAP);
+        nty = new Float32Array(NCAP);
+        ax = new Float32Array(NCAP);
+        ay = new Float32Array(NCAP);
+        sx = new Float32Array(NCAP);
+        sy = new Float32Array(NCAP);
+        delayOut = new Float32Array(NCAP);
+        delayIn = new Float32Array(NCAP);
+        hs = new Uint8Array(NCAP);
+        arcSign = new Int8Array(NCAP);
+        z = new Float32Array(NCAP);
+        sid = new Uint8Array(NCAP);
+        pid = new Uint16Array(NCAP);
+        bucketIndex = new Uint16Array(NCAP);
       }
 
       function toPx() {
@@ -2097,6 +2202,49 @@
         else placeNow(false);
       }
 
+      /* == 中心源（作者 2026-09-13）== 源槽 [N, NCAP) 的布置：
+         目标取自**画作中心带**的点（图像坐标 |x−0.5|、|y−0.5| ≤ 0.125 ⇒ 盒半径 ≤ 0.25，
+         与模块的 SRC_FILL_R 同一把尺），home 也放在画作中心 (PAINT_CX, 0.5) 附近，
+         于是源粒子无论在混沌态还是成画态都待在中心：从中心出生 → 中心补满 → 不掏空。 */
+      function fillSourceSlots(points) {
+        var i;
+        var k;
+        var p;
+        var pal;
+        var pool = [];
+        var poolHalf;
+        if (SRC_N <= 0 || !points || !points.length) return;
+        layoutContain();
+        /* == 中心源 == 池阈值直接跟模块的 SRC_FILL_R 走（盒半径 r ↔ 图像 |Δ| = r/2），
+           改中心带口径时两边不会再脱节 */
+        poolHalf =
+          ((window.NFRadialPhysics && window.NFRadialPhysics.SRC_FILL_R) || 0.18) * 0.5;
+        for (i = 0; i < points.length; i++) {
+          p = points[i];
+          if (Math.abs(p.x - 0.5) <= poolHalf && Math.abs(p.y - 0.5) <= poolHalf) pool.push(p);
+        }
+        if (!pool.length) pool = points;
+        for (k = N; k < NCAP; k++) {
+          p = pool[(rand() * pool.length) | 0];
+          ntx[k] = p.x;
+          nty[k] = p.y;
+          pal = p.i | 0;
+          if (pal < 0) pal = 0;
+          if (atlasPalN && pal >= atlasPalN) pal = pal % atlasPalN;
+          pid[k] = pal;
+          sid[k] = palSize ? palSize[pal] : k % 3;
+          /* 混沌态用的 home 也按**画作映射**落在中心带内（不放成小团，否则中心会堆成亮斑：
+             实测小团 → 最内环密度比 11×）。成画态用 ntx/nty，两者正好同一区域。 */
+          nhx[k] = cssW > 0 ? (fitX + p.x * fitW) / cssW : PAINT_CX;
+          nhy[k] = cssH > 0 ? (fitY + p.y * fitH) / cssH : 0.5;
+          /* home 的像素位（混沌态用的就是 hx/hy；漏写会被当成 0 目标 → 源粒子被拉到左上角） */
+          hx[k] = nhx[k] * cssW;
+          hy[k] = nhy[k] * cssH;
+          x[k] = hx[k];
+          y[k] = hy[k];
+        }
+      }
+
       function formTargets(points) {
         var i, p, pal;
         if (points && points.length) currentPointsRef = points;
@@ -2111,6 +2259,7 @@
             pid[i] = pal;
             sid[i] = palSize ? palSize[pal] : (i % 3);
           }
+          fillSourceSlots(currentPointsRef);
           applyPaintingTargets();
           rebuildBuckets();
           rebuildRadialWorld();
@@ -2122,6 +2271,7 @@
           pid[i] = i % Math.max(1, atlasPalN);
           sid[i] = palSize ? palSize[pid[i]] : (i % 3);
         }
+        fillSourceSlots(currentPointsRef);
         applyPaintingTargets();
         rebuildBuckets();
         rebuildRadialWorld();
@@ -2173,6 +2323,175 @@
       currentTarget = TARGETS.INTRO;
       lastImageTarget = TARGETS.INTRO;
       window.TARGETS = TARGETS;
+
+      /* == 上传采样 · 页面侧状态（规格 §6.1 / §7）==
+         record 由 nf-upload.js 产出；这里只做：注册目标 → 装配 → 单图停留 / 队列就绪 →（S3）循环放映。
+         目标键 UPLOAD_1..n；radialPaintingKey/radialR95 对 upload 目标走独立分支；?upload=0 全关。 */
+      var uploadTargets = [];   /* [{ key, target, name, rec }] */
+      var uploadPrevCatalog = null;
+
+      function registerUploadTarget(rec, meta) {
+        var key = "UPLOAD_" + (uploadTargets.length + 1);
+        var target = {
+          type: "image",
+          path: "upload:" + rec.id,
+          palette: "source",
+          uploadRecord: rec,
+          r95: rec.stats.r95,
+          uploadName: (meta && meta.name) || ""
+        };
+        TARGETS[key] = target;
+        uploadTargets.push({
+          key: key,
+          target: target,
+          name: target.uploadName,
+          rec: rec,
+          slotId: (meta && meta.slotId) || ""
+        });
+        /* == 上传（规格 §6.2-8）== caption 动态条目：文件名 · 自定义投放 · 年 · 本机会话 */
+        if (typeof EXHIBIT_WORKS === "object" && EXHIBIT_WORKS) {
+          EXHIBIT_WORKS[key] = {
+            title: target.uploadName || "自定义投放",
+            artist: "自定义投放",
+            year: new Date().getFullYear(),
+            museum: "本机会话"
+          };
+        }
+        return target;
+      }
+
+      function onUploadRecord(rec, meta) {
+        var target = registerUploadTarget(rec, meta);
+        if (uploadTargets.length === 1) {
+          /* 规格 §7：single-stay 也走 catalog（长度 1），caption/暂停键/可见性逻辑才一致 */
+          if (!uploadPrevCatalog) uploadPrevCatalog = exhibitManifest.catalog.slice();
+          exhibitManifest.catalog = [uploadTargets[0].key];
+          if (window.NFUpload) window.NFUpload.setMode("single-stay");
+          assemble(target);
+        } else {
+          if (window.NFUpload) window.NFUpload.setMode("queue-ready");
+          updateUploadBar();
+          if (uploadAutoStart()) startUploadShow();
+        }
+      }
+
+      function onUploadClear() {
+        exitUploadShow({ keepQueue: false });
+        uploadTargets.length = 0;
+        updateUploadBar();
+      }
+
+      /* 面板里移除某张：退回默认放映 → 释放该目标 → 更新放映条（规格 §7「清空/移除」的逐张版） */
+      function onUploadRemove(slotId) {
+        var i;
+        exitUploadShow({ keepQueue: true });
+        for (i = 0; i < uploadTargets.length; i++) {
+          if (uploadTargets[i].slotId === slotId) {
+            delete TARGETS[uploadTargets[i].key];
+            if (typeof EXHIBIT_WORKS === "object" && EXHIBIT_WORKS) delete EXHIBIT_WORKS[uploadTargets[i].key];
+            uploadTargets.splice(i, 1);
+            break;
+          }
+        }
+        updateUploadBar();
+      }
+
+      function uploadAutoStart() {
+        return NF_QUERY.get("upstart") === "auto" && uploadTargets.length >= 2;
+      }
+      var btnUploadShow = document.getElementById("btn-upload-show");
+
+      /* 队列 ≥2 时在放映条露出「自定义放映 ▶」（规格 §13-③ 取极简键方案）。 */
+      function updateUploadBar() {
+        if (!btnUploadShow) return;
+        var on = uploadTargets.length >= 2;
+        btnUploadShow.hidden = !on;
+        btnUploadShow.textContent = "自定义放映 ▶（" + uploadTargets.length + "）";
+      }
+
+      /* 「开始放映」：保存默认目录 → 换成上传目录 → 从第 0 张 handover 进入循环（规格 §6.2-9 / §7）。 */
+      function startUploadShow() {
+        if (uploadTargets.length < 1) return;
+        if (!uploadPrevCatalog) uploadPrevCatalog = exhibitManifest.catalog.slice();
+        exhibitManifest.catalog = uploadTargets.map(function (t) {
+          return t.key;
+        });
+        if (window.NFUpload) window.NFUpload.setMode(uploadTargets.length === 1 ? "single-stay" : "rotating");
+        exhibit.phase = "handover";
+        exhibitShow(0, "handover");
+        updateUploadBar();
+      }
+
+      /* 「返回放映」/导航离开：还原默认目录并回 INTRO 循环（keepQueue=true 时保留已投放的槽）。 */
+      function exitUploadShow(o) {
+        var wasUpload = !!(currentTarget && currentTarget.uploadRecord);
+        if (uploadPrevCatalog) {
+          exhibitManifest.catalog = uploadPrevCatalog;
+          uploadPrevCatalog = null;
+        }
+        if (o && o.keepQueue === false) uploadTargets.length = 0;
+        if (window.NFUpload) window.NFUpload.setMode("idle");
+        updateUploadBar();
+        if (wasUpload) {
+          exhibit.catalogIndex = 0;
+          exhibit.phase = "handover";
+          exhibitShow(0, "handover");
+        }
+      }
+
+      function initUploadModule() {
+        if (NF_QUERY.get("upload") === "0") return;
+        loadScriptOnce("nf-upload.js")
+          .then(function () {
+            if (!window.NFUpload) return;
+            window.NFUpload.init({
+              query: NF_QUERY,
+              status: function (t) {
+                modeLine.textContent = t;
+              },
+              engineCount: engineCount,
+              workerUrl: "nf-upload-worker.js",
+              maxSlots: 3,
+              onRecord: onUploadRecord,
+              onClear: onUploadClear,
+              /* 面板「开始放映 ▶」→ 与放映条同一条路径 */
+              onStartShow: function () {
+                startUploadShow();
+              },
+              /* 面板移除某张：退回默认放映 → 释放该目标 → 更新放映条 */
+              onRemove: onUploadRemove
+              ,
+              /* 面板状态行：现在放第几张 / 下一张还有几秒 / 是否停着 */
+              getStatus: function () {
+                var cat = exhibitManifest.catalog || [];
+                var idx = exhibit.catalogIndex | 0;
+                var key = cat[idx] || "";
+                var t = TARGETS[key];
+                var remain = null;
+                if (exhibit.dwellT0) {
+                  remain = Math.max(0, Math.round((exhibitManifest.dwellMs - (exhibitNow() - exhibit.dwellT0)) / 1000));
+                }
+                return {
+                  phase: exhibit.phase,
+                  index: idx,
+                  total: cat.length,
+                  key: key,
+                  name: (t && t.uploadName) || "",
+                  remain: remain,
+                  custom: !!uploadPrevCatalog
+                };
+              }
+            });
+            if (btnUploadShow) {
+              btnUploadShow.addEventListener("click", function () {
+                startUploadShow();
+              });
+            }
+          })
+          .catch(function (err) {
+            if (root) console.warn("[nf-upload] 模块加载失败：" + err);
+          });
+      }
 
       var EXHIBIT_WORKS = {
         INTRO: { title: "Les peupliers (Poplars, Pink Effect)", artist: "Claude Monet", year: 1891, museum: "Dallas Museum of Art" },
@@ -2323,7 +2642,8 @@
         exhibit.phase = phase || "handover";
         exhibitClearTimers();
         if (!target) return;
-        openArchive(exhibitViewOf(key), "exhibit");
+        /* == 上传（规格 §6.2-6）== 显式传目标，否则 upload 键会被视图解析回三画 */
+        openArchive(exhibitViewOf(key), "exhibit", target);
         if (exhibit.captionTimer) window.clearTimeout(exhibit.captionTimer);
         exhibit.captionTimer = window.setTimeout(function () {
           exhibitPaintChrome();
@@ -2356,6 +2676,13 @@
 
       function exhibitOnFormed() {
         if (!exhibitEnabled()) return;
+        /* == 上传：单图停留（规格 §7）== 只装一张时形成后不武装 dwell，驻留本图 */
+        if (currentTarget && currentTarget.uploadRecord && uploadTargets.length === 1) {
+          exhibit.phase = "paused-control";
+          exhibitClearTimers();
+          exhibitPublish();
+          return;
+        }
         if (exhibit.phase === "intro" || exhibit.phase === "handover") {
           exhibit.phase = "dwell";
           exhibit.dwellT0 = exhibitNow();
@@ -2374,6 +2701,11 @@
 
       function exhibitResumePlay() {
         if (!exhibitEnabled() || reduced) return;
+        /* == 上传（规格 §6.2-9）== 单图停留时按「放映继续」= 返回默认放映 */
+        if (currentTarget && currentTarget.uploadRecord) {
+          exitUploadShow({ keepQueue: true });
+          return;
+        }
         if (currentView === "home" || (currentTarget && currentTarget.type === "text")) {
           exhibit.phase = "handover";
           exhibitShow(exhibit.catalogIndex, "handover");
@@ -2700,6 +3032,8 @@
 
       function radialPaintingKey() {
         if (!currentTarget || currentTarget.type === "text") return "";
+        /* == 上传（规格 §6.1-3）== 上传场景键 = upload:<id>（不用 "homes"，便于探针区分） */
+        if (currentTarget.uploadRecord) return "upload:" + currentTarget.uploadRecord.id;
         if (currentTarget === TARGETS.INTRO || currentTarget.path === "points_poplars.json") return "dallas";
         if (currentTarget === TARGETS.HALL || currentTarget.path === "points_artwork_b.json") return "scotland";
         if (currentTarget === TARGETS.COMMUNITY || currentTarget.path === "points_artwork_c.json") return "met";
@@ -2727,6 +3061,10 @@
       }
 
       function radialR95(key) {
+        /* == 上传（规格 §6.1-3）== 半径口径直接用采样时算出的 mask 口径 R95 */
+        if (key && key.indexOf("upload:") === 0) {
+          return (currentTarget && currentTarget.r95) || computeR95FromNorm();
+        }
         if (key === "dallas") return 0.599042;
         if (key === "scotland") return 0.599053;
         if (key === "met") return 0.592304;
@@ -2751,6 +3089,12 @@
         on: false, wanted: false, n: 0, liveN: 0, phase: "", painting: "", scene: "", r95: 0,
         springSharp: 0, handbookShape: false, criticalDamp: false, lifecycle: false, recycle: false,
         boundaryQ: false, ripple: false, streak: false, morphRamp: 0, escP95: 0, tintMin: 1, tintMean: 1,
+        streakSleeping: false,
+        shapeBand: true, streakUnbounded: true, recycleFar: true, driftAll: true, driftLag: 6, streakU0: 5, restore: 0.8, fountain: 0, recycleCount: 0,
+        sourceN: 0, nCap: 0, aliveCount: 0, sourceAlive: 0, centerFill: 1,
+        sourceTargetNow: 0, sourceRateNow: 0, sourcePhase: 0,
+        repelFamily: true, streakWeLo: 0.82, rampA: 1, birthIn: 0.02, escByRing: [],
+        radiusMode: "", sceneBox: null,
         renderModule: false,
         render: {
           backend: "pixi", isolationImageData: false, A_centerBake: "sleep",
@@ -2765,10 +3109,45 @@
       var radialSnapKey = "";
       var radialSnapInit = false;
 
+      /* == 整幅流动（作者 2026-09-13 追加）== 分环平均逸散位移：把粒子按画作盒 Chebyshev 半径分 5 环，
+         每 16 粒抽样算平均 |esc|（px）。用于验收「先外围后内」——前期外环先起、圆心环最后动。 */
+      function escRingStats() {
+        var sb;
+        var hw;
+        var hh;
+        var ringN;
+        var ringSum;
+        var i;
+        var u;
+        var v;
+        var rv;
+        var b;
+        /* 环口径 = 到画作中心的**盒半径** R（R=1 = 画作盒边，与丝缕门槛/启动延迟同一把尺）。
+           本页 DWELL 的粒子铺满视口（R 可达 ~3.8），故 6 环覆盖 0–4：0/.5/1/1.5/2/3/+。 */
+        if (!(radialWorld && radialWorld.escX && radialWorld.tx && radialWorld.sceneBox)) return [];
+        sb = radialWorld.sceneBox;
+        hw = sb.w * 0.5;
+        hh = sb.h * 0.5;
+        ringN = [0, 0, 0, 0, 0, 0];
+        ringSum = [0, 0, 0, 0, 0, 0];
+        for (i = 0; i < radialWorld.n; i += 16) {
+          u = Math.abs(radialWorld.tx[i] - sb.cx) / hw;
+          v = Math.abs(radialWorld.ty[i] - sb.cy) / hh;
+          rv = u > v ? u : v;
+          b = rv < 0.5 ? 0 : rv < 1 ? 1 : rv < 1.5 ? 2 : rv < 2 ? 3 : rv < 3 ? 4 : 5;
+          ringN[b] += 1;
+          ringSum[b] += Math.hypot(radialWorld.escX[i], radialWorld.escY[i]);
+        }
+        return ringN.map(function (cnt, k) {
+          return { lo: [0, 0.5, 1, 1.5, 2, 3][k], n: cnt, mean: cnt ? ringSum[k] / cnt : 0 };
+        });
+      }
+
       function publishRadial(force) {
         var scene = radialSceneKey();
         var sw = radialWorld ? radialWorld.switches : null;
         var escP95 = 0;
+        var escRing = [];
         var tintMin = 1;
         var tintMean = 1;
         var key;
@@ -2817,8 +3196,42 @@
         radialSnap.boundaryQ = !!(sw && sw.boundaryQ);
         radialSnap.ripple = !!(sw && sw.ripple);
         radialSnap.streak = !!(sw && sw.streak);
+        /* == §4#2（已授权）== 丝缕门槛状态外露（true = 带内睡眠粒子也累积） */
+        radialSnap.streakSleeping = !!(sw && sw.streakSleeping);
+        /* == 本轮四项（圆环修正 / R1b / §4#3 / §4#4）证据字段 == */
+        radialSnap.shapeBand = !!(sw && sw.shapeBand);
+        radialSnap.streakUnbounded = !!(sw && sw.streakUnbounded);
+        radialSnap.recycleFar = !!(sw && sw.recycleFar);
+        radialSnap.driftAll = !!(sw && sw.driftAll);
+        radialSnap.driftLag = radialWorld && typeof radialWorld.driftLag === "number" ? radialWorld.driftLag : 0;
+        radialSnap.streakU0 = radialWorld && typeof radialWorld.streakU0 === "number" ? radialWorld.streakU0 : 0;
+        radialSnap.restore = radialWorld && typeof radialWorld.restore === "number" ? radialWorld.restore : 0;
+        radialSnap.fountain = radialWorld && typeof radialWorld.fountain === "number" ? radialWorld.fountain : 0;
+        radialSnap.fountainReach = radialWorld && typeof radialWorld.fountainReach === "number" ? radialWorld.fountainReach : 0;
+        /* == 中心源 == 容量/存活/中心填充（验收：总数在 [N, NCAP] 呼吸、中心不被掏空） */
+        radialSnap.sourceN = radialWorld && typeof radialWorld.sourceN === "number" ? radialWorld.sourceN : 0;
+        radialSnap.nCap = NCAP;
+        radialSnap.aliveCount = radialWorld && typeof radialWorld.aliveCount === "number" ? radialWorld.aliveCount : N;
+        radialSnap.sourceAlive = radialWorld && typeof radialWorld.sourceAlive === "number" ? radialWorld.sourceAlive : 0;
+        radialSnap.centerFill = radialWorld && typeof radialWorld.centerFill === "number" ? +radialWorld.centerFill.toFixed(3) : 1;
+        radialSnap.sourceTargetNow = radialWorld && typeof radialWorld.sourceTargetNow === "number" ? +radialWorld.sourceTargetNow.toFixed(2) : 0;
+        radialSnap.sourceRateNow = radialWorld && typeof radialWorld.sourceRateNow === "number" ? Math.round(radialWorld.sourceRateNow) : 0;
+        radialSnap.sourcePhase = radialWorld && typeof radialWorld.sourcePhase === "number" ? +radialWorld.sourcePhase.toFixed(2) : 0;
+        radialSnap.sourceEnabled = radialWorld ? !!radialWorld.sourceEnabled : false;
+        radialSnap.recycleCount = radialWorld && radialWorld.counters ? radialWorld.counters.respawn : 0;
+        radialSnap.dwellElapsed = radialWorld && radialWorld.dwellElapsed ? radialWorld.dwellElapsed() : 0;
+        radialSnap.repelFamily = !!(sw && sw.repelFamily);
+        radialSnap.streakWeLo = sw && typeof sw.streakWeLo === "number" ? sw.streakWeLo : 0;
+        radialSnap.rampA = sw && typeof sw.rampA === "number" ? sw.rampA : 0;
+        radialSnap.birthIn = sw && typeof sw.birthIn === "number" ? sw.birthIn : 0;
         radialSnap.morphRamp = radialWorld && radialWorld.morphRamp ? radialWorld.morphRamp() : 0;
+        /* == 修-1（P0）== 半径口径外露（验收采样锚点：scene-box / viewport-axes） */
+        radialSnap.radiusMode = radialWorld && radialWorld.radiusMode ? radialWorld.radiusMode : "";
+        radialSnap.sceneBox = radialWorld && radialWorld.sceneBox ? radialWorld.sceneBox : null;
         radialSnap.escP95 = escP95;
+        /* == 整幅流动 == 分环平均逸散位移（先外围后内的直接读数）：5 环 × 每 16 粒抽样 */
+        escRing = escRingStats();
+        radialSnap.escByRing = escRing;
         radialSnap.tintMin = tintMin;
         radialSnap.tintMean = tintMean;
         radialSnap.renderModule = false;
@@ -2828,6 +3241,7 @@
 
       function destroyRadialWorld() {
         radialWorld = null;
+        window.__nfRadialWorld = null;
         radialCssW = 0;
         radialCssH = 0;
         radialPaintKey = "";
@@ -2851,8 +3265,9 @@
           return;
         }
         layoutContain();
-        nxArr = new Float64Array(N);
-        nyArr = new Float64Array(N);
+        /* == 中心源 == normX/normY 也要覆盖到容量（否则 nxArr.set(ntx) 越界） */
+        nxArr = new Float64Array(NCAP);
+        nyArr = new Float64Array(NCAP);
         /* == BATCH6-O1① == 同上：批量拷贝（Float32→Float64 无舍入），一次性路径。 */
         nxArr.set(ntx);
         nyArr.set(nty);
@@ -2860,6 +3275,8 @@
         cy = cssH > 0 ? (fitY + fitH * 0.5) / cssH : 0.5;
         radialWorld = api.createWorld({
           n: N,
+          /* == 中心源 == 临时上限源槽（?source=0 → SRC_N=0，容量 = N，行为与旧版一致） */
+          sourceN: SRC_N,
           width: cssW,
           height: cssH,
           cx: cx,
@@ -2874,9 +3291,36 @@
                 recycle: true,
                 boundaryQ: true,
                 ripple: true,
-                streak: true
+                streak: true,
+                /* == §4#2（已授权）== 带内睡眠粒子参与累积；?streakgate=awake 回旧门槛 */
+                streakSleeping: streakSleepingOn,
+                /* == §4#2 成本评估闸 == 默认 0（用模块常量 0.72） */
+                streakWeLo: streakBand,
+                /* == 圆环修正 / R1b / §4#3 / §4#4（均已授权）== */
+                shapeBand: shapeBandOn,
+                streakUnbounded: streakUnboundedOn,
+                recycleFar: recycleFarOn,
+                driftAll: driftAllOn,
+                driftLag: driftLagS,
+                streakU0: streakU0,
+                restore: restoreBoost,
+                fountain: fountain,
+                repelFamily: repelFamilyOn,
+                rampA: rampa,
+                birthIn: birthin,
+                sourceRate: sourceRate,
+                sourceLife: sourceLife,
+                sourceTarget: sourceTarget,
+                /* == 修-2（F1）== ?qpush=1 恢复旧恒定内推（回退对照；默认 false = 按裁决删除） */
+                betaPush: betaPushLegacy
               }
-            : { handbookShape: true },
+            : { handbookShape: true, betaPush: betaPushLegacy, streakSleeping: streakSleepingOn, streakWeLo: streakBand, shapeBand: shapeBandOn, streakUnbounded: streakUnboundedOn, recycleFar: recycleFarOn, driftAll: driftAllOn, driftLag: driftLagS, streakU0: streakU0, restore: restoreBoost, fountain: fountain, repelFamily: repelFamilyOn, rampA: rampa, birthIn: birthin, sourceRate: sourceRate, sourceLife: sourceLife, sourceTarget: sourceTarget },
+          /* == 修-1（P0）== 画作盒口径：盒 = contain 盒（fitW×fitH，中心 fitX+fitW/2 / fitY+fitH/2）。
+             ?scenebox=0 时不传四参 → 模块严格回退旧的视口轴归一（回退开关）。 */
+          sceneW: useSceneBoxNorm ? fitW : undefined,
+          sceneH: useSceneBoxNorm ? fitH : undefined,
+          boxCx: useSceneBoxNorm ? fitX + fitW * 0.5 : undefined,
+          boxCy: useSceneBoxNorm ? fitY + fitH * 0.5 : undefined,
           tx: tx,
           ty: ty,
           x: x,
@@ -2889,6 +3333,13 @@
         radialCssW = cssW;
         radialCssH = cssH;
         radialPaintKey = key;
+        /* == 验收把手 == 物理 world 引用（只读探针用：rBand / counters / dwellElapsed / switches） */
+        window.__nfRadialWorld = radialWorld;
+        window.__nfRadialRebuilds = (window.__nfRadialRebuilds | 0) + 1;
+        /* == 中心源模式隔离 == 新 world 默认开，按当前 mode 立刻校正（首页混沌态必须关） */
+        if (typeof radialWorld.setSourceEnabled === "function") {
+          radialWorld.setSourceEnabled(mode === "assemble" || mode === "formed");
+        }
         publishRadial(true);
       }
 
@@ -2996,6 +3447,21 @@
       }
 
       function loadTargetRecord(target) {
+        /* == 上传（规格 §6.1-2）== 必须放在最顶部：上传记录已在内存里，不走任何 fetch/bin 分支 */
+        if (target && target.uploadRecord) {
+          var upRec = target.uploadRecord;
+          upRec._timings = {
+            href: "upload:" + upRec.id,
+            source: "upload",
+            t_fetch_start_ms: 0,
+            fetch_ms: 0,
+            parse_ms: 0,
+            total_ms: 0,
+            count: upRec.count,
+            http_status: 0
+          };
+          return Promise.resolve(upRec);
+        }
         var href = targetHref(target);
         var t0 = performance.now();
         var forcePh = false;
@@ -3671,23 +4137,38 @@
       }
 
       function pointerLive() {
-        if (finePointer.matches) return pointerOn;
+        /* == 修-3（P1）== 相位作用域：只有「指针在窗口内 **且** 落在画作盒上」才算 live。
+           旧口径 pointerOn 只要指针在页面内移动过就为真 → 径向世界常驻 REPEL → 涟漪/丝缕/生命周期/Q 全关。
+           驱离力本身仍由 applyRepel 的小范围邻域控制（与相位解耦；半径 = REPEL_R_USE）。
+           回退：?repelscope=window 恢复旧口径。 */
+        if (finePointer.matches) return repelscopeWindow ? pointerOn : pointerOn && pointerOnPainting();
         return performance.now() < touchUntil;
       }
 
       function applyRepel(i, live) {
-        var dx, dy, d2, dist, f;
+        var dx, dy, d2, dist, f, u, w;
         if (!live || frozen) return;
         dx = x[i] - mx;
         dy = y[i] - my;
         d2 = dx * dx + dy * dy;
-        if (d2 >= REPEL_R * REPEL_R || d2 < 0.0001) return;
-        if (d2 < 4) d2 = 4;
-        f = REPEL * (REPEL_R * REPEL_R) / d2;
-        if (f > REPEL_FMAX) f = REPEL_FMAX;
+        if (d2 >= REPEL_R_USE * REPEL_R_USE || d2 < 0.0001) return;
         dist = Math.sqrt(d2);
+        if (REPEL_OLD_ON) {
+          /* 旧口径（回退对照）：1/d² + 硬截断 + 上限 */
+          if (d2 < 4) d2 = 4;
+          f = REPEL_OLD * (REPEL_R_OLD * REPEL_R_OLD) / d2;
+          if (f > REPEL_FMAX_OLD) f = REPEL_FMAX_OLD;
+        } else {
+          /* 新口径：紧凑核（边界处力→0，不结环）。每固定步（1/60s）施加一次 → 与帧率无关 */
+          u = dist / REPEL_R_USE;
+          w = 1 - u;
+          w = w * w;
+          f = REPEL_V_USE * w;
+          if (f > REPEL_FMAX_USE) f = REPEL_FMAX_USE;
+        }
         vx[i] += (dx / dist) * f;
         vy[i] += (dy / dist) * f;
+        if (repelWakeN < repelWakeIdx.length) repelWakeIdx[repelWakeN++] = i;
       }
 
       function applyRadialPhysics(live, assembling, formed, dispersing, toHomes) {
@@ -3713,23 +4194,33 @@
           radialWorld.ty.set(ty);
         }
         if (live) {
-          x.set(radialWorld.x);
-          y.set(radialWorld.y);
-          vx.set(radialWorld.vx);
-          vy.set(radialWorld.vy);
-          for (i = 0; i < N; i++) applyRepel(i, true);
-          radialWorld.x.set(x);
-          radialWorld.y.set(y);
-          radialWorld.vx.set(vx);
-          radialWorld.vy.set(vy);
-          radialWorld.wakeAll();
+          /* == 指针路径优化 == 驱离直接在模块内施加：省掉 x/y/vx/vy 四张 6 万粒整表「拷进去」，
+             并且只唤醒被波及的粒子（模块内 asleep[k]=0）。回退：?repelmodule=0 走旧拷贝路径。 */
+          if (repelUseModule && typeof radialWorld.repelAt === "function") {
+            radialWorld.repelAt(mx, my, REPEL_R_USE, REPEL_OLD_ON ? REPEL_OLD : REPEL_V_USE, REPEL_OLD_ON, REPEL_FMAX_USE);
+          } else {
+            x.set(radialWorld.x);
+            y.set(radialWorld.y);
+            vx.set(radialWorld.vx);
+            vy.set(radialWorld.vy);
+            repelWakeN = 0;
+            for (i = 0; i < NCAP; i++) applyRepel(i, true);
+            radialWorld.x.set(x);
+            radialWorld.y.set(y);
+            radialWorld.vx.set(vx);
+            radialWorld.vy.set(vy);
+            if (radialWorld.asleep) {
+              for (i = 0; i < repelWakeN; i++) radialWorld.asleep[repelWakeIdx[i]] = 0;
+            }
+          }
         }
         radialWorld.drain(DT);
         activeCount = 0;
         /* vx/vy 在 drain 后即为终值，渲染循环不再改它们 → 提前批量回填（healParticle 仍读到最新值）。 */
         vx.set(radialWorld.vx);
         vy.set(radialWorld.vy);
-        for (i = 0; i < N; i++) {
+        /* == 中心源 == 渲染回填覆盖到容量（源槽粒子也要拿到世界里的位置） */
+        for (i = 0; i < NCAP; i++) {
           radialWorld.renderXY(i, radialTmp);
           x[i] = radialTmp[0];
           y[i] = radialTmp[1];
@@ -3848,7 +4339,8 @@
             dustState.a = null;
           }
           window.NFPixiRenderer.draw({
-            n: N,
+            /* == 中心源 == 渲染到容量：源槽未生成时 alpha=0（不可见），但容器按容量建一次即可 */
+            n: NCAP,
             x: x,
             y: y,
             a: radialWorld && radialWorld.tintA,
@@ -4007,6 +4499,12 @@
         else if (next !== "formed") glyphTintT0 = 0;
         if (next !== "formed" || prev !== "formed") wakeLoop();
         if (next === "formed") exhibitOnFormed();
+        /* == 中心源模式隔离（作者 2026-09-13「切换首页的时候中心还会继续生成」）==
+           只有画作态（assemble / formed）才允许中心生成；首页混沌态 / disperse / handover 一律关闭，
+           关闭时模块会立刻释放全部源粒子（总数回到 N）。 */
+        if (radialWorld && typeof radialWorld.setSourceEnabled === "function") {
+          radialWorld.setSourceEnabled(next === "assemble" || next === "formed");
+        }
       }
 
       function appHref(path) {
@@ -4024,9 +4522,12 @@
         for (i = 0; i < els.length; i++) els[i].style.animation = "";
       }
 
-      function openArchive(view, origin) {
+      function openArchive(view, origin, overrideTarget) {
         var target;
         if (origin !== "exhibit") userTakeover();
+        /* == 上传（规格 §6.2-6 必需修正）== 上传键不属于三画视图，目标由调用方显式传入；
+           同时：任何「非放映来源」的导航都退出自定义放映（保留队列）。 */
+        if (origin !== "exhibit") exitUploadShow({ keepQueue: true });
         currentView = view;
         dossier.dataset.view = view;
         if (view === "home") {
@@ -4036,13 +4537,13 @@
         }
         if (view === "intro") {
           setCurrentNav(btnIntro);
-          target = TARGETS.INTRO;
+          target = overrideTarget || TARGETS.INTRO;
         } else if (view === "hall") {
           setCurrentNav(btnHall);
-          target = TARGETS.HALL;
+          target = overrideTarget || TARGETS.HALL;
         } else {
           setCurrentNav(btnCommunity);
-          target = TARGETS.COMMUNITY;
+          target = overrideTarget || TARGETS.COMMUNITY;
         }
         assemble(target);
         pulseRise();
@@ -4495,6 +4996,8 @@
           return Promise.all([ensurePixi(), ensureRadialPhysics()]);
         }).then(function () {
           boot(coerced.points);
+          /* == 上传采样（规格 v1）== 惰性加载；?upload=0 不加载、不挂钩 */
+          initUploadModule();
         }).catch(function (err) {
           if (pixiTrack) {
             window.__nfPixiLive = { track: true, ready: false, ok: false, error: String(err && err.stack ? err.stack : err) };
