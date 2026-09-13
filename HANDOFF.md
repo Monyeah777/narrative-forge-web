@@ -13,7 +13,7 @@
 手册 **§5 已完成**（真机试炼 / bench.html 协议）。B4 / B4.1 已过闸。自动放映修订包 §9.0–§9.6 已交付。作者点名《PixiJS v8 迁移总手册》最高严谨模式：现网默认 Pixi + ticker。作者再点名「在网站的基础上执行」手册后，介绍/大厅/社区默认 S2b dart-thinning **50k NFPT** + §4 径向物理；100k bin 仍留仓。NF 彩蛋仍 12k JSON（现网径向物理已覆盖彩蛋/混沌/回巢，**不**径向重采样字形）。`?radial=0` 回 100k + `applySpring` 0.055；`?bin=0` 回 12k JSON。`SPRING_SHARP = 0.055` / C2 黄金未改。现网 Canvas2D 粒子 blit / worker 启动已拆除（`render-worker.js` 文件仍留仓）。150k/250k 仍只在隔离对照页。2026-09-12 已批准：原生 DPR≤3、`points.bin` 文件头 9B（`NFPT` + u8=3 + u32le count）。径向重映射 **S0–S5 隔离闸已齐**；现网接线在 `cursor/radial-live-wire-84d9`。S6 最高严谨检索优化在 `cursor/radial-strict-opt-84d9`：宽带 3.76 是端点不是带平均（理论上限 ≈2.50，S2b 已贴上限）；现网 `handbookShape`；Pixi 映射 A–D；不加载 `nf-radial-render.js`；E 申议未启用。证据 `painting/radial-live.json`、`painting/radial-s6.json`。其它待点名：§0.9 白名单 / 无 WebGL 文案 / PC 实验性 API / 作者机双端 60fps 数字后改档 / 启用 E。
 
 - 凌厉弹簧 0.055 / 阻尼 0.90 / vmax 10；临界停止 0.6px / 0.06；驱离 100px 平方反比
-- 成画 1.5s（最早 1.2s）、回退 1.1s；相位时间走固定步长，冻结不计入
+- 成画 1.5s（最早 1.2s）、回退 1.1s；相位时间走固定步长，冻结不计入。**2026-09-13 起**：到点不再 snap 写终态，切换 formed 需再过完成度门控（p = 1 − rms/rms0 ≥ 0.995 且 rms ≤ 3px；`?autoplay=1` 的介绍首幅用 `introRevealMs` 2400ms 作预算），安全阀 = 预算 + 1.5s（触发会写 `__nfAnim.assembleClose.capHit`）。见 `painting/assembly-v3-d-g123.json`
 - START / 介绍 = assemble（可打断、不重置数组）；首页 = 软解构
 - SAVE 冻结（aria-pressed 常亮）；SETTINGS 循环 A/B/C（LOW DRIFT / STORM / STILL）
 - `prefers-reduced-motion` → 直接静态成画；自动放映不轮换
@@ -188,6 +188,52 @@ POINTER_LERP 0.2  SIZES [2,3,4]
 成画停留：径向默认开时停留继续走 ticker（边缘漂移是渲染位，不写入积分器）。`?radial=0` 时仍可在 settled 后停 ticker。指针靠近仍走现网驱离（半径 100px，冻结关闭）。混沌 / 交接 / 彩蛋仍走原弹簧。SETTINGS 可切 A/B/C（只作用于回退弹簧路径）。
 
 精灵：调色板软边图集（中心 α≈0.85），ImageBitmap，按亮度 2/3/4px，按色分桶绘制。
+
+---
+
+## 查询闸表（现网 · 2026-09-13 并入仓库文档）
+
+查询闸只解析一次（`NF_QUERY`，惰性缓存；解析失败等价取不到，不抛）。回退优先级：**先 `?radial=0`，再 `?bin=0`**。
+
+| 闸 | 取值 | 作用 |
+|---|---|---|
+| `dpr` | 1–3 | DPR 实验闸（原生整数 ≤3 为默认） |
+| `fx` | `lite` | 评测对照降到 2000 点 |
+| `bin` | `0` | 回 12k JSON（介绍/大厅/社区） |
+| `radial` | `0` | 回 100k + `applySpring` 0.055 |
+| `morph` | `0` | 回退装配形态叠构（只留 `handbookShape`） |
+| `autoplay` | `0` | 关自动放映 |
+| `dwell` | 毫秒 | 覆盖停留时长（下限 1000） |
+| `seed` | `uniform` / `cloud` | 画区云 seeding（默认 cloud） |
+| `handover` | `0` | 关交接过渡 |
+| `arc` | `off` / `on` | 交接轻弧 |
+| `group` | `sharp` / `develop` | 交接分组曲线 |
+| `block` | `0` / `1` | 像素块开关（O2 未决，现状默认开、2 设备像素） |
+| `pixel` | `2` / `3` | 像素块尺寸对照 |
+| `dust` | `0` | 关外围尘埃（默认 640 粒 ≈1.27%） |
+| `discipline` | `classic` / `v2` | 三态性能纪律（默认 v2） |
+| `frame` | `0.9` / `1` / `1.1` | 画区缩放对照 |
+| `nf-points` | `placeholder` | 占位点集（离线/无网对照） |
+| `n` | 2000–100000 | **计数档（卷面 §7）**：预览 20–30k；缺省/0 保持默认 50k（不静默改档）；非法值忽略并告警 |
+| `degrade` | `1` | 应急看门狗：停留期 work.p95 连续 3 次 > 8ms → 保画降到 30k（写 console 与 `__nfRender.nTier.logs`）；回退＝去掉该参或用 `?n=50601` |
+
+---
+
+## Codex 批次 0–5 与 O1① 现状（2026-09-13 · 分支 `codex/batch0-confirm`）
+
+- **批次 0 确认**：四项守门复验全过（C2 / NFPT / S3 dual / vendor），7 步录屏改用 14 张截图 + 程序化像素统计；证据 `painting/codex-baseline.json`。
+- **批次 1 无损清理**：查询闸改一次解析 + 惰性缓存（`NF_QUERY`）；`wakeLoop` 并为 `startLoop` 薄包装；删 `raf` 残留变量与 `cancelAnimationFrame` 残调用；死链只标记。证据 `painting/codex-batch1.json`。
+- **批次 2 性能**：验证面（`__nfRadial` / `__nfPixiLive`）对象复用 + ≤4Hz 发布；curl 网格只在 legacy 混沌消费时刷新；睡眠粒子跳丝缕 + FIL LUT 分步摊销 + 渲染侧去每帧数组分配；Pixi 整柱重建改内容键比较 + 自适应分帧（首帧 α=0.35）。参数一律未动。证据 `painting/codex-batch2.json`、申议 `docs/research/批次2-DWELL申议.md`。
+- **批次 3 生成序列**：装配结算改完成度门控（p ≥ 0.995 且 rms ≤ 3px），删除 snap 写终态；G1/G2/G3 复跑闸 `scripts/assembly-v3-d-g123.mjs`，证据 `painting/assembly-v3-d-g123.json`、`painting/assembly-v3-d-rms.svg`；申议 `docs/research/批次3-生成序列申议.md`。
+- **批次 4 结构治理**：精灵/染色簇（14 个函数）、quiet-wait 机制、worker 残链、`snapAllToTargets`、死常数（WALL/TINT/STOP/GLYPH_N,F）、不可达 `try/catch` 全部物理删除；`render-worker.js` 文件仍留仓。CI 新增 `goldens` 作业（`scripts/check-goldens.mjs`：C2 / NFPT / S3 dual / vendor），不改原 lint-build。证据 `painting/codex-batch4.json`。
+- **批次 5 轨道 B 准备**：拆分映射表（18 分区 → B1–B14 单元）与接口冻结草案（9 节）。证据 `painting/codex-batch5.json`；两份文档待作者评审。
+- **O1① 无损优化（已穷尽）**：`applyRadialPhysics` / `syncRadialFromLive` / `rebuildRadialWorld` 的逐元素拷贝改 `TypedArray.set()`，并删除非 live 路径里「拷进去又被渲染回填覆盖」的冗余预拷贝。停留帧（50k）省 **−1.4 ~ −2.0ms**（两次独立同进程 A/B）；morph 增量几乎不动（4.19 → 4.05）。`.set()` 与逐元素赋值经 20 万值比对逐位一致。证据 `painting/codex-o1a.json`、`painting/codex-o1b.json`（后者含逐块归因与全部否决项：renderAll −0.012 / qOfR LUT −0.088 / micro 重排 −0.019 / `hypot→sqrt` −0.431 但改数值）。
+- **待裁决**：O1 ②（砍 N）/ ③（E 实验）、O2（像素块 / 尘埃）；材料见 `docs/research/O1-DWELL裁决材料.md`、`docs/research/O2-像素块与尘埃裁决材料.md`。
+- **O2 路 A 已实现（作者裁决）**：像素块＝方形贴图（实心 / nearest）+ 设备像素整数对齐 + `roundPixels`，`?block=0` 回软边、`?pixel=3` 出 3 设备像素（默认仍 2px，与 `pixelBlock.size` 一致）；尘埃＝接回渲染（独立容器、`#d6d2c8`、静态 alpha 0.08–0.22、点径 1.6 CSS px）且数量改 **5% × N**（50k → 2530；`?fx=lite` → 100），`dust.n=0` 表示自动、`?dust=0` 整链关闭。证据 `painting/codex-o2a.json`；方块样式与尘埃强度待作者目检 `nf-baseline-artifacts/o2a-visual-ab.jpg`。
+- **O1② 计数档（作者裁决）**：`?n=<2000–100000>` 预览档（缺省/0 保持默认 50k，非法值告警忽略）、`?degrade=1` 应急看门狗（停留期 work.p95 连续 3 次 > 8ms → 保画降 30k，带日志）；证据 `painting/codex-o1c.json`。
+- **O1③ E 实验关档**：卷面附表第 12 行「不复申议」——WebGL 已由现网 Pixi 落地、降 count 并入应急档；`__nfRadial.render.E_petition` 同步更正为 `closed-by-volume: …`。阶段 E（驻留形态）经逐条校准：13 项 in-spec（含余韵斜坡实测 0.4@2s / 1.0@8s）、逸散 160px@32s 落在 80–160 带内。证据 `painting/calibration-audit.json`。
+- **时钟口径对齐（作者裁决）**：时间源 `ticker.elapsedMS` → **`ticker.deltaMS`**；`FRAME_CLAMP=0.25s + MAX_STEPS=2` → **`MAX_FRAME_S=0.05` + 不限步**（单帧钳制即安全边界：≤3 步 @1/60）。证据面新增 `__nfRender.clock`；A 诊断记录的三条时钟偏差就此闭合。证据 `painting/codex-o1d.json`。
+- 上述四批的改动**尚未 commit**；工作树里的 `painting/codex-*.json`、`painting/assembly-v3-d-*` 与两份申议是随改动一起待提交的产物。
 
 ---
 
