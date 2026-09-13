@@ -417,7 +417,6 @@
     var lutPsi = new Float64Array(LUT_N * LUT_N);
     var tintA = new Float64Array(n);
     var lutSlice = -1;
-    var lutFilSlice = -1;
     var acc = 0;
     var time = 0;
     var dwellT0 = 0;
@@ -545,11 +544,31 @@
       }
     }
 
-    function rebuildFilLut(tLut) {
+    /* == BATCH2-STREAK == F-05：FIL LUT 由「单帧整表重建」改为「分 4 步摊销」。
+       实测单次重建 ~0.28ms、1Hz 出现，是其周期尖峰的来源；摊销后压到 ~0.07ms/步。
+       psi 全表填完才重算梯度，避免同一张栅格里混两个时相。 */
+    var FIL_BUILD_ROWS = 16;
+    var filBuildRow = LUT_N;
+    var filBuildSlice = -1;
+    var filBuildPhase = 0;
+
+    function fillFilPsiRows(rowFrom, rowTo, tLut) {
       var gi;
       var gj;
       var px;
       var py;
+      for (gj = rowFrom; gj < rowTo; gj++) {
+        py = ((gj + 0.5) / LUT_N) * height;
+        for (gi = 0; gi < LUT_N; gi++) {
+          px = ((gi + 0.5) / LUT_N) * width;
+          lutPsi[gj * LUT_N + gi] = psiAt(px, py, tLut);
+        }
+      }
+    }
+
+    function fillFilGradients() {
+      var gi;
+      var gj;
       var o;
       var il;
       var ir;
@@ -559,13 +578,6 @@
       var dy;
       var cellX = width / LUT_N;
       var cellY = height / LUT_N;
-      for (gj = 0; gj < LUT_N; gj++) {
-        py = ((gj + 0.5) / LUT_N) * height;
-        for (gi = 0; gi < LUT_N; gi++) {
-          px = ((gi + 0.5) / LUT_N) * width;
-          lutPsi[gj * LUT_N + gi] = psiAt(px, py, tLut);
-        }
-      }
       for (gj = 0; gj < LUT_N; gj++) {
         for (gi = 0; gi < LUT_N; gi++) {
           o = gj * LUT_N + gi;
@@ -583,19 +595,33 @@
       }
     }
 
+    function advanceFilLut() {
+      var filSlice = Math.floor(time * FIL_LUT_HZ + 1e-12);
+      var to;
+      if (filSlice !== filBuildSlice) {
+        filBuildSlice = filSlice;
+        filBuildRow = 0;
+        filBuildPhase = 0;
+      }
+      if (filBuildPhase === 0) {
+        to = filBuildRow + FIL_BUILD_ROWS;
+        if (to > LUT_N) to = LUT_N;
+        fillFilPsiRows(filBuildRow, to, filBuildSlice / FIL_LUT_HZ);
+        filBuildRow = to;
+        if (filBuildRow >= LUT_N) filBuildPhase = 1;
+        return;
+      }
+      if (filBuildPhase === 1) {
+        fillFilGradients();
+        filBuildPhase = 2;
+      }
+    }
+
     function maybeRebuildLut() {
       var slice = Math.floor(time * LUT_HZ + 1e-12);
-      var filSlice;
       if (slice !== lutSlice) {
         lutSlice = slice;
         rebuildDriftLut(slice / LUT_HZ);
-      }
-      if (sw.streak) {
-        filSlice = Math.floor(time * FIL_LUT_HZ + 1e-12);
-        if (filSlice !== lutFilSlice) {
-          lutFilSlice = filSlice;
-          rebuildFilLut(filSlice / FIL_LUT_HZ);
-        }
       }
     }
 
@@ -631,25 +657,42 @@
       return a * (1 - fu) * (1 - fv) + b * fu * (1 - fv) + c * (1 - fu) * fv + d * fu * fv;
     }
 
+    /* == BATCH2-ALLOC == F-01：噪声/漂移取样不再每次返回新数组（旧实现每帧 ~10 万次小数组分配）。
+       调用方（renderXY / driftXY / snapshotRender）都是取完即刻拷贝，故共享 scratch 数值完全等价。 */
+    var NOISE_SCRATCH = [0, 0];
+
     function sampleNoise(px, py) {
       if (sw.noiseLut) {
         maybeRebuildLut();
-        return [lutSample(lutDx, px, py), lutSample(lutDy, px, py)];
+        NOISE_SCRATCH[0] = lutSample(lutDx, px, py);
+        NOISE_SCRATCH[1] = lutSample(lutDy, px, py);
+        return NOISE_SCRATCH;
       }
-      return [
-        simplex.noise3(px * FS, py * FS, time * FT),
-        simplex.noise3(px * FS + PATH_OX, py * FS + PATH_OY, time * FT + PATH_OZ)
-      ];
+      NOISE_SCRATCH[0] = simplex.noise3(px * FS, py * FS, time * FT);
+      NOISE_SCRATCH[1] = simplex.noise3(px * FS + PATH_OX, py * FS + PATH_OY, time * FT + PATH_OZ);
+      return NOISE_SCRATCH;
     }
+
+    var DRIFT_SCRATCH = [0, 0];
 
     function driftAt(px, py, rVal) {
       var amp;
       var ns;
-      if (!sw.drift || sw.reducedMotion) return [0, 0];
+      if (!sw.drift || sw.reducedMotion) {
+        DRIFT_SCRATCH[0] = 0;
+        DRIFT_SCRATCH[1] = 0;
+        return DRIFT_SCRATCH;
+      }
       amp = aOfR(rVal) * gateMul();
-      if (amp === 0) return [0, 0];
+      if (amp === 0) {
+        DRIFT_SCRATCH[0] = 0;
+        DRIFT_SCRATCH[1] = 0;
+        return DRIFT_SCRATCH;
+      }
       ns = sampleNoise(px, py);
-      return [amp * ns[0], amp * ns[1]];
+      DRIFT_SCRATCH[0] = amp * ns[0];
+      DRIFT_SCRATCH[1] = amp * ns[1];
+      return DRIFT_SCRATCH;
     }
 
     function rOfPixel(px, py) {
@@ -812,7 +855,9 @@
         a = 1;
         lifeA[idx] = 1;
       }
-      if (sw.streak && phase === PHASE.DWELL && rr[idx] >= STREAK_WE_LO) {
+      /* == BATCH2-STREAK == F-05：睡眠粒子（已锁目标、速度为 0）不再推进丝缕。
+         它们只贡献亚像素级 esc 增量（@50k 实测 escMean 0.028px / escMax 0.122px），跳过可省 ~0.85ms/帧。 */
+      if (sw.streak && !asleep[idx] && phase === PHASE.DWELL && rr[idx] >= STREAK_WE_LO) {
         ramp = rampCache > 0 ? rampCache : morphRamp();
         rx = x[idx] - cxW;
         ry = y[idx] - cyH;
@@ -867,7 +912,10 @@
       prevX.set(x);
       prevY.set(y);
       rampCache = morphRamp();
-      if (sw.streak) maybeRebuildLut();
+      if (sw.streak) {
+        maybeRebuildLut();
+        advanceFilLut();
+      }
       if (sw.lifecycle || sw.recycle || sw.streak) {
         for (idx = 0; idx < n; idx++) {
           stepParticle(idx);

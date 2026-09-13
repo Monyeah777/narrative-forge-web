@@ -969,8 +969,10 @@
       "use strict";
 
       var DT = 1 / 60;
-      var MAX_STEPS = 2;
-      var FRAME_CLAMP = 0.25;
+      /* == O1④ 时钟对齐（卷面 §7）== 时间源 deltaMS、MAX_FRAME_MS = 50ms、不限步。
+         删除旧口径：ticker.elapsedMS（未封顶）+ FRAME_CLAMP=0.25s + MAX_STEPS=2。
+         安全来自钳制本身：单帧最多 50ms → 1/60 定步最多 3 步。 */
+      var MAX_FRAME_S = 0.05;
       var SPRING_SHARP = 0.055;
       var DAMP_SHARP = 0.90;
       var VMAX_SHARP = 10;
@@ -983,8 +985,6 @@
       var V_TERM = 0.01;
       var CURL_AMP = 20;
       var CURL_K = 0.0036;
-      var WALL = 36;
-      var WALL_K = 0.01;
       var LEFT_BAND = 1;
       var LEFT_WEIGHT = 0;
       var PAINT_H = 0.70;
@@ -1002,6 +1002,8 @@
       var HANDOVER_OVERLAP_S = 1.0;
       var HANDOVER_VMAX_DEV = 4;
       var HANDOVER_CORE_R = 0.2;
+      /* == O2-A == 尘埃比例（卷面 §5.2 M2 = 5%）；DUST_N 仅作 manifest 缺省值的历史回退。 */
+      var DUST_RATIO = 0.05;
       var DUST_N = 640;
       var assembleBudgetS = ASSEMBLE_S;
       var DISPERSE_S = 1.1;
@@ -1012,21 +1014,9 @@
         { id: "B", spring: 0.60, damp: 0.955, vmax: 12, label: "STORM" },
         { id: "C", spring: 0.02, damp: 0.93, vmax: 2, label: "STILL" }
       ];
-      var TINT_MS = 200;
-      var TINT_STEPS = 12;
-      var GLYPH_N = { x0: 0.07, y0: 0.22, x1: 0.07 + 7 * 0.034, y1: 0.22 + 7 * 0.075 };
-      var GLYPH_F = { x0: 0.34, y0: 0.22, x1: 0.34 + 6 * 0.034, y1: 0.22 + 7 * 0.075 };
-      var GLYPH_SPLIT = (GLYPH_N.x1 + GLYPH_F.x0) * 0.5;
-      var STOP_N = [
-        [0, [0x5a, 0x6b, 0x72]],
-        [0.55, [0x3a, 0x4a, 0x52]],
-        [1, [0x25, 0x34, 0x3e]]
-      ];
-      var STOP_F = [
-        [0, [0xd0, 0xe3, 0xf0]],
-        [0.48, [0x8b, 0xa7, 0xc4]],
-        [1, [0x4a, 0x6b, 0x8a]]
-      ];
+      /* == BATCH4-DEAD == TINT_/STOP_/GLYPH_N/GLYPH_F 的唯一消费方（assignGlyphTint / buildTintSprites）
+         已随精灵簇物理删除；GLYPH_SPLIT 仍被现网字形分类使用，故把原式内联保留。 */
+      var GLYPH_SPLIT = (0.07 + 7 * 0.034 + 0.34) * 0.5;
       var SIZES = [2, 3, 4];
       var ATLAS_PAD = 3;
 
@@ -1067,21 +1057,21 @@
       var cssW = 1;
       var cssH = 1;
       var N = 0;
-      var x, y, vx, vy, hx, hy, tx, ty, nx, ny, nhx, nhy, ntx, nty, z, sid, gid, tid, pid;
+      /* == BATCH4-DEAD == gid / tid 随 assignGlyphTint 一起删除（旧字形染色索引，现网无消费方）。 */
+      var x, y, vx, vy, hx, hy, tx, ty, nx, ny, nhx, nhy, ntx, nty, z, sid, pid;
       var ax, ay, sx, sy, delayOut, delayIn, hs, arcSign;
       var dustX, dustY, dustVx, dustVy, dustA;
+      /* == O2-A == 传给渲染器的尘埃快照（复用对象，逐帧只改字段） */
+      var dustState = { n: 0, x: null, y: null, a: null };
+      /* == O1② == formTargets 实际收到的点集（对象形 {x,y,i}）。
+         注意：window.__nfPoints.points 被 freezeLoaded 冻成了三元组扁平数组，**不能**当对象数组用。 */
+      var currentPointsRef = null;
       var dustN = 0;
-      var lastPaintBmp = null;
-      var sprites = [];
-      var tintSprites = [];
-      var atlasGen = 0;
       var atlasBmp = null;
       var atlasCell = 0;
-      var spriteBmp = null;
-      var renderWorker = null;
-      var workerReady = false;
-      var workerPending = false;
-      var workerHasFrame = false;
+      /* == BATCH4-DEAD == B4 时代的 sprite/atlas 镜像与 worker 残链（lastPaintBmp / sprites / tintSprites /
+         spriteBmp / atlasGen / renderWorker / workerReady / workerPending / workerHasFrame）已物理删除。
+         render-worker.js 文件按 HANDOFF 仍留仓，不在本批删除面。 */
       var atlasPalN = 0;
       var palSize = null;
       var bucketCount = null;
@@ -1106,6 +1096,17 @@
       var perfArmed = false;
       var frozen = false;
       var fxLite = false;
+      /* == O1② == 计数档（卷面 §7：count 默认 50k；预览 20–30k；应急 30k（日志））。
+         机制：?n=<count> 预览档（夹取 2000–100000）；?degrade=1 开应急看门狗（停留期 work.p95 超阈即降到 30k，带日志）；
+         回退：去掉 ?n / ?degrade 即回默认 50k，也可用 ?n=50601 钉住满档。默认档位不静默改动。 */
+      var COUNT_MIN = 2000;
+      var COUNT_MAX = 100000;
+      var COUNT_EMERGENCY = 30000;
+      var countOverride = 0;
+      var degradeOn = false;
+      var nTier = { requested: 0, applied: 0, source: "default", degraded: false, degradeMs: 8, degradeChecks: 3, logs: [] };
+      /* == O1④ == 时钟口径证据（复用对象，逐帧只改字段） */
+      var clockSnap = { source: "deltaMS", maxFrameMs: 50, fixedH: 1 / 60, maxSteps: "unlimited", lastFrameMs: 0, lastSteps: 0, lastDeltaMs: 0 };
       var renderInfo = {
         n: 0,
         running: false,
@@ -1217,8 +1218,13 @@
       var glyphTintT0 = 0;
       var acc = 0;
       var lastT = 0;
-      var raf = 0;
-      var quietWait = 0;
+      /* == BATCH2-VERIFY == F-01：验证面（__nfPixiLive / __nfRadial）改为复用同一对象 + ≤4Hz 发布，
+         不再每帧新建对象树；材质变化（世界重建 / 画幅切换 / ready 翻转）时强制发布。 */
+      var PUBLISH_MIN_MS = 250;
+      var pixiSnap = { track: false, ready: false, n: 0, mode: "" };
+      var pixiSnapT = -1e9;
+      var pixiSnapReady = false;
+      var pixiSnapInit = false;
       var rafCount = 0;
       var running = false;
       var booted = false;
@@ -1235,13 +1241,48 @@
       var resizeTimer = 0;
       var gaussSpare = null;
       var curlScratch = { ux: 0, uy: 0 };
+      /* == BATCH1-QUERY == (F-03) 查询闸只解析一次，惰性缓存；闸表见卷面 §3.6。
+         保持 .get(k) 语义：解析失败时返回 null（等价旧 catch 分支的「取不到」）。 */
+      var NF_QUERY = (function () {
+        var parsed = null;
+        return {
+          get: function (key) {
+            if (parsed === null) {
+              try {
+                parsed = new URLSearchParams(window.location.search);
+              } catch (errQuery) {
+                parsed = { get: function () { return null; } };
+              }
+            }
+            return parsed.get(key);
+          }
+        };
+      })();
       var dprOverride = 0;
-      try {
-        dprOverride = parseFloat(new URLSearchParams(window.location.search).get("dpr") || "");
-        fxLite = new URLSearchParams(window.location.search).get("fx") === "lite";
-      } catch (err) {
-        dprOverride = 0;
-        fxLite = false;
+      /* == BATCH4-DEAD == NF_QUERY 内部已吞掉解析异常，这里的 try/catch 不可达，删除。 */
+      dprOverride = parseFloat(NF_QUERY.get("dpr") || "");
+      fxLite = NF_QUERY.get("fx") === "lite";
+      /* == O1② == 计数档解析（启动一次；日志与证据字段同步记账） */
+      var rawN = NF_QUERY.get("n");
+      if (rawN !== null && rawN !== "" && rawN !== "0") {
+        var reqN = parseInt(rawN, 10);
+        if (isFinite(reqN) && reqN > 0) {
+          if (reqN < COUNT_MIN) reqN = COUNT_MIN;
+          if (reqN > COUNT_MAX) reqN = COUNT_MAX;
+          countOverride = reqN | 0;
+          nTier.requested = countOverride;
+          nTier.source = "query ?n=" + countOverride;
+          nTier.logs.push({ phase: "boot", requested: countOverride, note: "预览档（卷面 §7：20–30k 预览 / 应急 30k）" });
+          console.info("[NF][count-tier] ?n=" + countOverride + " → 预览档；回退：去掉 ?n 即回默认 50k");
+        } else {
+          console.warn("[NF][count-tier] 忽略非法 ?n=" + rawN);
+          nTier.logs.push({ phase: "boot", ignored: String(rawN), note: "非法 ?n，保持默认档" });
+        }
+      }
+      degradeOn = NF_QUERY.get("degrade") === "1";
+      if (degradeOn) {
+        nTier.logs.push({ phase: "boot", note: "应急看门狗开启（停留期 work.p95 > " + nTier.degradeMs + "ms 连续 " + nTier.degradeChecks + " 次检查 → 降 " + COUNT_EMERGENCY + "）" });
+        console.info("[NF][count-tier] ?degrade=1 应急看门狗开启（阈值 work.p95 > " + nTier.degradeMs + "ms）");
       }
 
       function quantizeDpr() {
@@ -1257,9 +1298,67 @@
       function engineCount() {
         var rec;
         if (fxLite) return 2000;
+        if (countOverride > 0) return countOverride;
         rec = window.__nfPoints;
         if (rec && rec.count > 0) return rec.count | 0;
         return 12000;
+      }
+
+      /* == O1② == 应急降级：保画不重置——按新档重分配 → 重铺目标 → 重建径向世界 → 直接成画。
+         只有 ?degrade=1 时由看门狗触发；一次性，且带日志与证据字段。 */
+      function degradeCount(nextN, reason) {
+        var pts = currentPointsRef; /* 对象形点集；window.__nfPoints.points 是冻结三元组，不能用 */
+        var from = N;
+        if (!pts || !pts.length || !(nextN > 0) || nTier.degraded) return false;
+        countOverride = nextN;
+        nTier.requested = nextN;
+        nTier.source = reason;
+        nTier.logs.push({ t: Math.round(performance.now()), from: from, to: nextN, reason: reason });
+        console.info("[NF][count-tier] 应急降级 " + from + " → " + nextN + "（" + reason + "）；回退：刷新并去掉 ?degrade，或用 ?n=50601 钉住满档");
+        nTier.degraded = true; /* 先置位，防止 render → degradeWatch 重入 */
+        try {
+          alloc(nextN);
+          layoutContain();
+          formTargets(pts);
+          placeDust(); /* 尘埃按新档重铺（5% × N）；漏掉会残留旧档数量 */
+          placeNow(true); /* 先把页数组摆到成画位 */
+          rebuildRadialWorld(); /* 世界按已摆好的页数组建，避免世界留在原点导致 NaN/塌缩 */
+          syncRadialFromLive(true);
+          setMode("formed");
+          render();
+          publishRenderInfo();
+        } catch (err) {
+          nTier.degraded = false;
+          console.error("[NF][count-tier] 降级失败，保持原档：" + (err && err.message));
+          nTier.logs.push({ t: Math.round(performance.now()), failed: String(err && err.message) });
+          return false;
+        }
+        nTier.applied = N;
+        return true;
+      }
+
+      /* 看门狗：每 2s 读一次 work.p95，连续 3 次超阈才降档（避免单帧抖动误触）。 */
+      var degradeLastT = 0;
+      var degradeStrikes = 0;
+      function degradeWatch() {
+        var now;
+        var perf;
+        if (!degradeOn || nTier.degraded || N <= COUNT_EMERGENCY) return;
+        if (mode !== "formed") return;
+        now = performance.now();
+        if (now - degradeLastT < 2000) return;
+        degradeLastT = now;
+        if (typeof window.__nfGetPerf !== "function") return;
+        perf = window.__nfGetPerf();
+        if (perf && perf.work && perf.work.p95 > nTier.degradeMs) {
+          degradeStrikes++;
+          if (degradeStrikes >= nTier.degradeChecks) {
+            degradeCount(COUNT_EMERGENCY, "watchdog work.p95=" + Math.round(perf.work.p95 * 10) / 10 + "ms > " + nTier.degradeMs + "ms ×" + degradeStrikes);
+            degradeStrikes = 0;
+          }
+        } else {
+          degradeStrikes = 0;
+        }
       }
 
       function rand() {
@@ -1414,17 +1513,8 @@
           !reduced;
       }
 
-      function clearQuietWait() {
-        if (quietWait) {
-          clearTimeout(quietWait);
-          quietWait = 0;
-        }
-      }
-
-      function scheduleQuietTick() {
-        /* == RENDERER-SWAP == retired rAF/setTimeout clock. Replacement: NFPixiRenderer ticker. */
-        clearQuietWait();
-      }
+      /* == BATCH4-DEAD == quiet-wait 机制（quietWait / clearQuietWait / scheduleQuietTick）已物理删除：
+         自 RENDERER-SWAP 后没有任何路径会把 quietWait 置为非 0，startLoop 里的 !quietWait 恒为真。 */
 
       function publishB41() {
         var interval = lastRafT && b41Info._lastT ? lastRafT - b41Info._lastT : 0;
@@ -1599,8 +1689,9 @@
         renderInfo.atlasCell = atlasCell;
         renderInfo.atlasPalN = atlasPalN;
         renderInfo.fxLite = fxLite;
-        renderInfo.workerBlit = !!(workerReady && renderWorker);
-        renderInfo.workerHasFrame = !!workerHasFrame;
+        /* == BATCH4-DEAD == worker 残链删除后固定为 false（旧实现恒为 false，语义不变）。 */
+        renderInfo.workerBlit = false;
+        renderInfo.workerHasFrame = false;
         renderInfo.contain.x = fitX;
         renderInfo.contain.y = fitY;
         renderInfo.contain.w = fitW;
@@ -1617,23 +1708,43 @@
         renderInfo.imageSmoothingEnabled = ctx.imageSmoothingEnabled;
         renderInfo.pixiTrack = pixiTrack;
         renderInfo.pixiReady = pixiReady;
+        /* == O1② == 计数档证据（requested / applied / source / degraded / logs） */
+        nTier.applied = N;
+        renderInfo.nTier = nTier;
+        /* == O1④ == 时钟口径证据（卷面 §7）：deltaMS + 50ms 钳制 + 不限步 */
+        renderInfo.clock = clockSnap;
         window.__nfRender = renderInfo;
         if (pixiTrack && window.NFPixiRenderer) {
-          window.__nfPixiLive = Object.assign(window.NFPixiRenderer.info(), {
-            track: true,
-            ready: pixiReady,
-            ok: pixiReady && !window.NFPixiRenderer.info().contextLost,
-            usedSecondRaf: false,
-            workerBlit: false,
-            n: N,
-            mode: mode,
-            ticks: tickCount,
-            spring: SPRING,
-            livePhysics: true,
-            dpr: dpr
-          });
+          /* == BATCH2-VERIFY == F-01：原地复用 pixiSnap，省掉每帧 Object.assign + info() 双份分配；≤4Hz 发布。 */
+          var pixiNow = performance.now();
+          if (!pixiSnapInit || pixiSnapReady !== pixiReady || pixiNow - pixiSnapT >= PUBLISH_MIN_MS) {
+            var pixiLive = window.NFPixiRenderer.info();
+            var pk;
+            for (pk in pixiLive) {
+              if (Object.prototype.hasOwnProperty.call(pixiLive, pk)) pixiSnap[pk] = pixiLive[pk];
+            }
+            pixiSnap.track = true;
+            pixiSnap.ready = pixiReady;
+            pixiSnap.ok = pixiReady && !pixiLive.contextLost;
+            pixiSnap.usedSecondRaf = false;
+            pixiSnap.workerBlit = false;
+            pixiSnap.n = N;
+            pixiSnap.mode = mode;
+            pixiSnap.ticks = tickCount;
+            pixiSnap.spring = SPRING;
+            pixiSnap.livePhysics = true;
+            pixiSnap.dpr = dpr;
+            pixiSnapT = pixiNow;
+            pixiSnapReady = pixiReady;
+            pixiSnapInit = true;
+          }
+          window.__nfPixiLive = pixiSnap;
         } else {
-          window.__nfPixiLive = { track: pixiTrack, ready: false, n: N, mode: mode };
+          pixiSnap.track = pixiTrack;
+          pixiSnap.ready = false;
+          pixiSnap.n = N;
+          pixiSnap.mode = mode;
+          window.__nfPixiLive = pixiSnap;
         }
         publishRadial();
         window.__nfGetPerf = perfStats;
@@ -1652,6 +1763,8 @@
         animInfo.nanHeals = nanHeals;
         animInfo.reduced = reduced;
         animInfo.checksum = N > 0 ? x[0] + y[0] + x[N >> 1] + y[N >> 1] : 0;
+        animInfo.assembleRms0 = assembleRms0;
+        animInfo.assembleClose = assembleClose;
         animInfo.target = window.__nfTarget || null;
         exhibitSnap.phase = exhibit.phase;
         exhibitSnap.key = exhibitCatalogKey();
@@ -1670,25 +1783,6 @@
         window.__nfPixel = pixelSnap;
       }
 
-      function makeSprite(cssPx, pixelRatio, c0, c1) {
-        var pixel = Math.max(16, Math.round(cssPx * ATLAS_PAD * pixelRatio));
-        var off = document.createElement("canvas");
-        off.width = pixel;
-        off.height = pixel;
-        var g = off.getContext("2d");
-        var c = pixel * 0.5;
-        var radius = pixel * 0.5;
-        var grd = g.createRadialGradient(c, c, 0, c, c, radius);
-        grd.addColorStop(0, c0);
-        grd.addColorStop(0.5, c1);
-        grd.addColorStop(1, "rgba(200, 205, 215, 0)");
-        g.fillStyle = grd;
-        g.beginPath();
-        g.arc(c, c, radius, 0, Math.PI * 2);
-        g.fill();
-        return { canvas: off, css: cssPx };
-      }
-
       function pixelBlockOn() {
         return !!(exhibitManifest.pixelBlock && exhibitManifest.pixelBlock.enabled);
       }
@@ -1701,27 +1795,6 @@
 
       function dustOn() {
         return !!(exhibitManifest.dust && exhibitManifest.dust.enabled !== false);
-      }
-
-      function paintBlockDot(g, cell, rgb) {
-        g.imageSmoothingEnabled = false;
-        g.shadowBlur = 0;
-        g.fillStyle = "rgb(" + (rgb[0] | 0) + "," + (rgb[1] | 0) + "," + (rgb[2] | 0) + ")";
-        g.fillRect(0, 0, cell, cell);
-      }
-
-      function paintSoftDot(g, cell, rgb, cssPx, pixelRatio) {
-        var c = cell * 0.5;
-        var radius = Math.max(1.5, cssPx * pixelRatio * 1.55);
-        var col = (rgb[0] | 0) + "," + (rgb[1] | 0) + "," + (rgb[2] | 0);
-        var grd = g.createRadialGradient(c, c, 0, c, c, radius);
-        grd.addColorStop(0, "rgba(" + col + ",0.85)");
-        grd.addColorStop(0.5, "rgba(" + col + ",0.36)");
-        grd.addColorStop(1, "rgba(" + col + ",0)");
-        g.fillStyle = grd;
-        g.beginPath();
-        g.arc(c, c, radius, 0, Math.PI * 2);
-        g.fill();
       }
 
       function assignPaletteSizes(palette) {
@@ -1744,29 +1817,6 @@
         }
       }
 
-      function closeSprites() {
-        var i;
-        if (spriteBmp) {
-          for (i = 0; i < spriteBmp.length; i++) {
-            if (spriteBmp[i] && typeof spriteBmp[i].close === "function") spriteBmp[i].close();
-          }
-        }
-        spriteBmp = null;
-      }
-
-      function closeLastPaint() {
-        if (lastPaintBmp && typeof lastPaintBmp.close === "function") lastPaintBmp.close();
-        lastPaintBmp = null;
-      }
-
-      function closeAtlas() {
-        closeSprites();
-        if (atlasBmp && typeof atlasBmp.close === "function") {
-          atlasBmp.close();
-        }
-        atlasBmp = null;
-      }
-
       function buildPaletteAtlas() {
         var rec = window.__nfPoints;
         var palette = rec && rec.palette ? rec.palette : PLACEHOLDER_PALETTE;
@@ -1778,8 +1828,10 @@
         assignPaletteSizes(palette);
         bucketCount = new Uint16Array(palN);
         bucketPrefix = new Uint32Array(palN + 1);
-        /* == RENDERER-SWAP == Pixi tints from palette hex. Canvas atlas / worker sprites retired. */
-        closeAtlas();
+        /* == RENDERER-SWAP == Pixi tints from palette hex. Canvas atlas / worker sprites retired.
+           == BATCH4-DEAD == closeAtlas/closeSprites 已删：等价为直接释放 atlasBmp 引用。 */
+        if (atlasBmp && typeof atlasBmp.close === "function") atlasBmp.close();
+        atlasBmp = null;
         return Promise.resolve(null);
       }
 
@@ -1804,101 +1856,10 @@
         }
       }
 
-      function mixRgb(a, b, t) {
-        return [
-          a[0] + (b[0] - a[0]) * t,
-          a[1] + (b[1] - a[1]) * t,
-          a[2] + (b[2] - a[2]) * t
-        ];
-      }
-
-      function sampleStops(t, stops) {
-        var i, u;
-        if (t <= stops[0][0]) return stops[0][1];
-        for (i = 1; i < stops.length; i++) {
-          if (t <= stops[i][0]) {
-            u = (t - stops[i - 1][0]) / (stops[i][0] - stops[i - 1][0]);
-            return mixRgb(stops[i - 1][1], stops[i][1], u);
-          }
-        }
-        return stops[stops.length - 1][1];
-      }
-
-      function gradientT(u, v) {
-        if (u < 0) u = 0;
-        else if (u > 1) u = 1;
-        if (v < 0) v = 0;
-        else if (v > 1) v = 1;
-        return (u + v) * 0.5;
-      }
-
-      function tintMask(src, rgb) {
-        var off = document.createElement("canvas");
-        var g;
-        off.width = src.width;
-        off.height = src.height;
-        g = off.getContext("2d");
-        g.drawImage(src, 0, 0);
-        g.globalCompositeOperation = "source-in";
-        g.fillStyle = "rgb(" + (rgb[0] | 0) + "," + (rgb[1] | 0) + "," + (rgb[2] | 0) + ")";
-        g.fillRect(0, 0, off.width, off.height);
-        g.globalCompositeOperation = "source-over";
-        return off;
-      }
-
-      function buildTintSprites() {
-        var s, letter, step, t, rgb, stops, base, row;
-        tintSprites = [];
-        for (s = 0; s < sprites.length; s++) {
-          base = sprites[s];
-          row = [];
-          for (letter = 0; letter < 2; letter++) {
-            stops = letter === 0 ? STOP_N : STOP_F;
-            for (step = 0; step < TINT_STEPS; step++) {
-              t = TINT_STEPS === 1 ? 0 : step / (TINT_STEPS - 1);
-              rgb = sampleStops(t, stops);
-              row.push({ canvas: tintMask(base.canvas, rgb), css: base.css });
-            }
-          }
-          tintSprites.push(row);
-        }
-      }
-
-      function assignGlyphTint() {
-        var i, box, u, v, tt, letter;
-        if (!gid || !N) return;
-        for (i = 0; i < N; i++) {
-          letter = ntx[i] < GLYPH_SPLIT ? 0 : 1;
-          box = letter === 0 ? GLYPH_N : GLYPH_F;
-          u = (ntx[i] - box.x0) / (box.x1 - box.x0);
-          v = (nty[i] - box.y0) / (box.y1 - box.y0);
-          tt = gradientT(u, v);
-          gid[i] = letter;
-          tid[i] = (tt * (TINT_STEPS - 1) + 0.5) | 0;
-          if (tid[i] >= TINT_STEPS) tid[i] = TINT_STEPS - 1;
-        }
-      }
-
-      function glyphTintK(now) {
-        var elapsed;
-        if (!currentTarget || currentTarget.type !== "text") return 0;
-        if (!hasGlyph || mode !== "formed") return 0;
-        if (reduced) return 1;
-        if (!glyphTintT0) return 0;
-        elapsed = (now || performance.now()) - glyphTintT0;
-        if (elapsed >= TINT_MS) return 1;
-        if (elapsed <= 0) return 0;
-        return elapsed / TINT_MS;
-      }
-
-      function buildSprites() {
-        sprites = [
-          makeSprite(SIZES[0], dpr, "rgba(214, 210, 200, 0.78)", "rgba(214, 210, 200, 0.34)"),
-          makeSprite(SIZES[1], dpr, "rgba(200, 205, 215, 0.82)", "rgba(200, 205, 215, 0.38)"),
-          makeSprite(SIZES[2], dpr, "rgba(176, 198, 224, 0.8)", "rgba(176, 198, 224, 0.36)")
-        ];
-        buildTintSprites();
-      }
+      /* == BATCH4-DEAD == 精灵/染色簇物理删除（可达性 0：全部只在 !pixiTrack 分支被调用，而现网 pixiTrack 恒真）：
+         makeSprite / paintBlockDot / paintSoftDot / closeSprites / closeLastPaint / closeAtlas /
+         mixRgb / sampleStops / gradientT / tintMask / buildTintSprites / assignGlyphTint / glyphTintK / buildSprites。
+         现网渲染路径在 renderer.pixi.js（Pixi tint from palette hex）。 */
 
       function alloc(n) {
         N = n;
@@ -1926,8 +1887,6 @@
         arcSign = new Int8Array(n);
         z = new Float32Array(n);
         sid = new Uint8Array(n);
-        gid = new Uint8Array(n);
-        tid = new Uint8Array(n);
         pid = new Uint16Array(n);
         bucketIndex = new Uint16Array(n);
       }
@@ -1965,7 +1924,9 @@
       function dustCount() {
         var n = exhibitManifest.dust && exhibitManifest.dust.n;
         if (typeof n === "number" && n > 0) return n | 0;
-        return DUST_N;
+        /* == O2-A == 卷面 §5.2 M2：外围尘埃 5%（按当前 N 计算，fx=lite / bin=0 等口径自动跟随）。
+           manifest.dust.n > 0 时钉住绝对数量；?dust=0 仍然整链关闭。 */
+        return Math.round(N * DUST_RATIO);
       }
 
       function placeDust() {
@@ -2138,6 +2099,7 @@
 
       function formTargets(points) {
         var i, p, pal;
+        if (points && points.length) currentPointsRef = points;
         if (points && points.length) {
           for (i = 0; i < N; i++) {
             p = points[i % points.length];
@@ -2234,13 +2196,14 @@
         transition: { group: "develop", arc: "on", handover: "on" },
         seedMode: "cloud",
         pixelBlock: { enabled: true, size: 2 },
-        dust: { enabled: true, n: 640 },
+        /* == O2-A == 尘埃改按比例：n=0 表示自动（卷面 §5.2 M2 = 5% × N）；写正数可钉住绝对数量。 */
+        dust: { enabled: true, n: 0 },
         frameScale: 1.0,
         colorVersion: "v1",
         assemblyMorph: true
       };
       try {
-        var _qs = new URLSearchParams(window.location.search);
+        var _qs = NF_QUERY;
         if (_qs.get("autoplay") === "0") exhibitManifest.autoplay.enabled = false;
         if (_qs.get("dwell")) exhibitManifest.dwellMs = Math.max(1000, parseInt(_qs.get("dwell"), 10) || 10000);
         if (_qs.get("seed") === "uniform" || _qs.get("seed") === "cloud") exhibitManifest.seedMode = _qs.get("seed");
@@ -2719,31 +2682,20 @@
 
       function usesPointsBin() {
         /* == RENDERER-SWAP == INTRO + HALL + COMMUNITY default = v3 bin. ?bin=0 keeps 12k JSON. */
-        try {
-          return new URLSearchParams(window.location.search).get("bin") !== "0";
-        } catch (errBin) {
-          return true;
-        }
+        /* == BATCH4-DEAD == NF_QUERY.get 已是不可能抛的取值（详见 NF_QUERY），旧 catch 分支删除。 */
+        return NF_QUERY.get("bin") !== "0";
       }
 
       function usesRadial() {
         /* Handbook on the live site: dart-thinned 50k + §4 physics. ?radial=0 keeps 100k + 0.055. */
         if (!usesPointsBin()) return false;
-        try {
-          return new URLSearchParams(window.location.search).get("radial") !== "0";
-        } catch (errRadial) {
-          return true;
-        }
+        return NF_QUERY.get("radial") !== "0";
       }
 
       function usesAssemblyMorph() {
         if (!usesRadial()) return false;
         if (exhibitManifest && exhibitManifest.assemblyMorph === false) return false;
-        try {
-          return new URLSearchParams(window.location.search).get("morph") !== "0";
-        } catch (errMorph) {
-          return true;
-        }
+        return NF_QUERY.get("morph") !== "0";
       }
 
       function radialPaintingKey() {
@@ -2792,16 +2744,44 @@
         return { bin: "pixi-community/met-100k.bin", meta: "pixi-community/meta.json" };
       }
 
-      function publishRadial() {
+      /* == BATCH2-VERIFY == F-01：验证面对象复用（不每帧新建对象树）+ ≤4Hz 发布。
+         字段语义与旧实现逐项一致；escP95/tint 扫描只在实际发布时做。 */
+      var RADIAL_PUBLISH_MS = 250;
+      var radialSnap = {
+        on: false, wanted: false, n: 0, liveN: 0, phase: "", painting: "", scene: "", r95: 0,
+        springSharp: 0, handbookShape: false, criticalDamp: false, lifecycle: false, recycle: false,
+        boundaryQ: false, ripple: false, streak: false, morphRamp: 0, escP95: 0, tintMin: 1, tintMean: 1,
+        renderModule: false,
+        render: {
+          backend: "pixi", isolationImageData: false, A_centerBake: "sleep",
+          B_dirtyRect: "na-webgl", C_noiseLut: false, D_edgeTimeslice: "sleep-center",
+          /* == O1③ == 卷面附表第 12 行把「优化菜单 E」定为**不复申议**：
+             WebGL 由现网 PixiJS 轨落地、降 count 并入应急档（本仓 2026-09-13 完成）。
+             字段保留以免读取方断链，语义由「已建账未启用」更正为「按卷面关档」。 */
+          E_petition: "closed-by-volume: webgl-live + count-emergency-tier"
+        }
+      };
+      var radialSnapT = -1e9;
+      var radialSnapKey = "";
+      var radialSnapInit = false;
+
+      function publishRadial(force) {
         var scene = radialSceneKey();
         var sw = radialWorld ? radialWorld.switches : null;
         var escP95 = 0;
         var tintMin = 1;
         var tintMean = 1;
+        var key;
+        var now = performance.now();
         var i;
         var mag;
         var esc;
         var tints;
+        key = radialWorld ? radialWorld.n + "|" + radialWorld.phase + "|" + radialPaintKey : "off";
+        if (!force && radialSnapInit && key === radialSnapKey && now - radialSnapT < RADIAL_PUBLISH_MS) return;
+        radialSnapKey = key;
+        radialSnapT = now;
+        radialSnapInit = true;
         if (radialWorld && radialWorld.escX && radialWorld.n) {
           esc = [];
           for (i = 0; i < radialWorld.n; i += 32) {
@@ -2821,38 +2801,29 @@
           }
           tintMean = tints / Math.max(1, Math.ceil(radialWorld.n / 32));
         }
-        window.__nfRadial = {
-          on: !!radialWorld,
-          wanted: usesRadial(),
-          n: radialWorld ? radialWorld.n : 0,
-          liveN: N,
-          phase: radialWorld ? radialWorld.phase : "",
-          painting: radialPaintKey,
-          scene: scene,
-          r95: scene ? radialR95(scene) : 0,
-          springSharp: SPRING_SHARP,
-          handbookShape: !!(sw && sw.handbookShape),
-          criticalDamp: !!(sw && sw.criticalDamp),
-          lifecycle: !!(sw && sw.lifecycle),
-          recycle: !!(sw && sw.recycle),
-          boundaryQ: !!(sw && sw.boundaryQ),
-          ripple: !!(sw && sw.ripple),
-          streak: !!(sw && sw.streak),
-          morphRamp: radialWorld && radialWorld.morphRamp ? radialWorld.morphRamp() : 0,
-          escP95: escP95,
-          tintMin: tintMin,
-          tintMean: tintMean,
-          renderModule: false,
-          render: {
-            backend: "pixi",
-            isolationImageData: false,
-            A_centerBake: "sleep",
-            B_dirtyRect: "na-webgl",
-            C_noiseLut: !!(sw && sw.noiseLut),
-            D_edgeTimeslice: "sleep-center",
-            E_petition: "booked-not-enabled"
-          }
-        };
+        radialSnap.on = !!radialWorld;
+        radialSnap.wanted = usesRadial();
+        radialSnap.n = radialWorld ? radialWorld.n : 0;
+        radialSnap.liveN = N;
+        radialSnap.phase = radialWorld ? radialWorld.phase : "";
+        radialSnap.painting = radialPaintKey;
+        radialSnap.scene = scene;
+        radialSnap.r95 = scene ? radialR95(scene) : 0;
+        radialSnap.springSharp = SPRING_SHARP;
+        radialSnap.handbookShape = !!(sw && sw.handbookShape);
+        radialSnap.criticalDamp = !!(sw && sw.criticalDamp);
+        radialSnap.lifecycle = !!(sw && sw.lifecycle);
+        radialSnap.recycle = !!(sw && sw.recycle);
+        radialSnap.boundaryQ = !!(sw && sw.boundaryQ);
+        radialSnap.ripple = !!(sw && sw.ripple);
+        radialSnap.streak = !!(sw && sw.streak);
+        radialSnap.morphRamp = radialWorld && radialWorld.morphRamp ? radialWorld.morphRamp() : 0;
+        radialSnap.escP95 = escP95;
+        radialSnap.tintMin = tintMin;
+        radialSnap.tintMean = tintMean;
+        radialSnap.renderModule = false;
+        radialSnap.render.C_noiseLut = !!(sw && sw.noiseLut);
+        window.__nfRadial = radialSnap;
       }
 
       function destroyRadialWorld() {
@@ -2860,7 +2831,7 @@
         radialCssW = 0;
         radialCssH = 0;
         radialPaintKey = "";
-        publishRadial();
+        publishRadial(true);
       }
 
       function radialWanted() {
@@ -2882,10 +2853,9 @@
         layoutContain();
         nxArr = new Float64Array(N);
         nyArr = new Float64Array(N);
-        for (i = 0; i < N; i++) {
-          nxArr[i] = ntx[i];
-          nyArr[i] = nty[i];
-        }
+        /* == BATCH6-O1① == 同上：批量拷贝（Float32→Float64 无舍入），一次性路径。 */
+        nxArr.set(ntx);
+        nyArr.set(nty);
         cx = cssW > 0 ? (fitX + fitW * 0.5) / cssW : 0.5;
         cy = cssH > 0 ? (fitY + fitH * 0.5) / cssH : 0.5;
         radialWorld = api.createWorld({
@@ -2919,7 +2889,7 @@
         radialCssW = cssW;
         radialCssH = cssH;
         radialPaintKey = key;
-        publishRadial();
+        publishRadial(true);
       }
 
       function ensureRadialWorld() {
@@ -2940,16 +2910,14 @@
       }
 
       function syncRadialFromLive(wake) {
-        var i;
         if (!radialWorld || radialWorld.n !== N) return;
-        for (i = 0; i < N; i++) {
-          radialWorld.x[i] = x[i];
-          radialWorld.y[i] = y[i];
-          radialWorld.vx[i] = vx[i];
-          radialWorld.vy[i] = vy[i];
-          radialWorld.tx[i] = tx[i];
-          radialWorld.ty[i] = ty[i];
-        }
+        /* == BATCH6-O1① == 同一不变量下的批量拷贝（本函数只在装配起点/交接等低频路径调用）。 */
+        radialWorld.x.set(x);
+        radialWorld.y.set(y);
+        radialWorld.vx.set(vx);
+        radialWorld.vy.set(vy);
+        radialWorld.tx.set(tx);
+        radialWorld.ty.set(ty);
         if (wake) radialWorld.wakeAll();
       }
 
@@ -3032,11 +3000,8 @@
         var t0 = performance.now();
         var forcePh = false;
         var cached;
-        try {
-          forcePh = new URLSearchParams(window.location.search).get("nf-points") === "placeholder";
-        } catch (err) {
-          forcePh = false;
-        }
+        /* == BATCH4-DEAD == 同上：NF_QUERY 不会抛，旧 catch 删除。 */
+        forcePh = NF_QUERY.get("nf-points") === "placeholder";
         if (forcePh) {
           return Promise.resolve(finishPlaceholder(t0, "query nf-points=placeholder"));
         }
@@ -3166,10 +3131,6 @@
         return rec;
       }
 
-      function paintVoid() {
-        /* == RENDERER-SWAP == #void is hidden; Pixi owns the visible canvas. */
-      }
-
       function resizeCanvas() {
         var rect = canvas.getBoundingClientRect();
         /* == RENDERER-SWAP == hidden #void reports 0×0; CSS canvas is 100vw×100vh. */
@@ -3180,7 +3141,9 @@
         var nextH = Math.max(1, Math.round(rect.height));
         var nextDpr = quantizeDpr();
         var dprChanged = nextDpr !== dpr;
-        var firstSprites = sprites.length === 0;
+        /* == BATCH4-DEAD == 原 `sprites.length === 0` 恒为真（sprites 只在已删的 buildSprites 里被填），
+           故等价为 true：每次 resize 都重建调色板桶并把 atlas 引用放空。 */
+        var firstSprites = true;
         if (N) toNorm();
         cssW = nextW;
         cssH = nextH;
@@ -3189,7 +3152,6 @@
         if (window.NFPixiRenderer && window.NFPixiRenderer.ready) {
           window.NFPixiRenderer.resize(cssW, cssH, dpr);
         }
-        if (firstSprites && !pixiTrack) buildSprites();
         if ((firstSprites || dprChanged) && window.__nfPoints) {
           buildPaletteAtlas().then(function () {
             if (N) render();
@@ -3205,7 +3167,6 @@
           }
           rebuildRadialWorld();
         }
-        paintVoid();
         if (booted) placeDust();
       }
 
@@ -3267,16 +3228,53 @@
         vy[i] = 0;
       }
 
-      function snapAllToTargets() {
+      /* == BATCH4-DEAD == snapAllToTargets 已物理删除：批次 3 把装配结算改为完成度门控后它已无调用方；
+         handoverSnapCalls 计数器保留为证据字段（结构上恒为 0 → handoverInfo.no_snap 恒真）。 */
+
+      /* == BATCH3-G123 == 卷面 §5.1（F1–F4/F6）：生成序列不再「到点写终态」。
+         完成度 p = 1 − rms/rms0 由固定步长驱动（phaseElapsed 只随物理步推进，禁帧计数）；
+         切 DWELL 需同时满足「到预算时长 / 早停条件」与「p ≥ 0.995 且 rms ≤ 3px」，不再直接写终态位置。 */
+      var ASSEMBLE_CLOSE_RMS = 3.0;
+      var ASSEMBLE_CLOSE_CAP_S = 1.5;
+      var assembleRms0 = 0;
+      var assembleClose = { t: 0, rms0: 0, rms: 0, p: 0, settled: 0, capHit: 0, verdict: "" };
+
+      function assembleRms() {
         var i;
-        if (handoverLive || mode === "handover") {
-          handoverSnapCalls++;
-          return;
+        var s = 0;
+        var dx;
+        var dy;
+        for (i = 0; i < N; i++) {
+          dx = tx[i] - x[i];
+          dy = ty[i] - y[i];
+          s += dx * dx + dy * dy;
         }
-        for (i = 0; i < N; i++) lockTo(i, tx[i], ty[i]);
-        toNorm();
-        activeCount = 0;
-        syncRadialFromLive(true);
+        return N > 0 ? Math.sqrt(s / N) : 0;
+      }
+
+      function assembleCloseReady(elapsed, settledCount) {
+        var rms;
+        var p;
+        if (assembleRms0 <= 1) {
+          assembleClose.verdict = "trivial";
+          return true;
+        }
+        if (elapsed >= assembleBudgetS + ASSEMBLE_CLOSE_CAP_S) {
+          /* 安全阀：完成度长时间不过阈才放行，并记账（不静默）。 */
+          assembleClose.capHit++;
+          assembleClose.t = elapsed;
+          assembleClose.verdict = "cap";
+          return true;
+        }
+        rms = assembleRms();
+        p = 1 - rms / Math.max(assembleRms0, 1e-9);
+        assembleClose.t = elapsed;
+        assembleClose.rms0 = assembleRms0;
+        assembleClose.rms = rms;
+        assembleClose.p = p;
+        assembleClose.settled = N > 0 ? settledCount / N : 0;
+        assembleClose.verdict = "check";
+        return p >= 0.995 && rms <= ASSEMBLE_CLOSE_RMS;
       }
 
       function handoverEnabled() {
@@ -3703,37 +3701,38 @@
         else if (assembling || dispersing) phase = "INTRO";
         else phase = "DWELL";
         radialWorld.setPhase(phase);
-        for (i = 0; i < N; i++) {
-          if (useHomes) {
-            radialWorld.tx[i] = hx[i];
-            radialWorld.ty[i] = hy[i];
-          } else {
-            radialWorld.tx[i] = tx[i];
-            radialWorld.ty[i] = ty[i];
-          }
-          x[i] = radialWorld.x[i];
-          y[i] = radialWorld.y[i];
-          vx[i] = radialWorld.vx[i];
-          vy[i] = radialWorld.vy[i];
+        /* == BATCH6-O1① == 批量拷贝（无损）：世界与页数组长度同为 N（与 syncRadialFromLive 同一不变量）。
+           1) tx/ty 一次 .set（Float32→Float64 无舍入）；
+           2) 世界→页的 x/y/vx/vy 只在 live（指针驱离）时需要——非 live 路径随后会被渲染回填覆盖，属冗余拷贝，删。
+           实测：6 个逐元素循环换 .set 省 1.82ms/帧，再去掉冗余预拷贝省 0.21ms。 */
+        if (useHomes) {
+          radialWorld.tx.set(hx);
+          radialWorld.ty.set(hy);
+        } else {
+          radialWorld.tx.set(tx);
+          radialWorld.ty.set(ty);
         }
         if (live) {
+          x.set(radialWorld.x);
+          y.set(radialWorld.y);
+          vx.set(radialWorld.vx);
+          vy.set(radialWorld.vy);
           for (i = 0; i < N; i++) applyRepel(i, true);
-          for (i = 0; i < N; i++) {
-            radialWorld.x[i] = x[i];
-            radialWorld.y[i] = y[i];
-            radialWorld.vx[i] = vx[i];
-            radialWorld.vy[i] = vy[i];
-          }
+          radialWorld.x.set(x);
+          radialWorld.y.set(y);
+          radialWorld.vx.set(vx);
+          radialWorld.vy.set(vy);
           radialWorld.wakeAll();
         }
         radialWorld.drain(DT);
         activeCount = 0;
+        /* vx/vy 在 drain 后即为终值，渲染循环不再改它们 → 提前批量回填（healParticle 仍读到最新值）。 */
+        vx.set(radialWorld.vx);
+        vy.set(radialWorld.vy);
         for (i = 0; i < N; i++) {
           radialWorld.renderXY(i, radialTmp);
           x[i] = radialTmp[0];
           y[i] = radialTmp[1];
-          vx[i] = radialWorld.vx[i];
-          vy[i] = radialWorld.vy[i];
           healParticle(i);
           unlocked = true;
           if (assembling && !live) {
@@ -3752,8 +3751,11 @@
         if (formed) activeCount = N;
         phaseElapsed += DT;
         if (assembling && N > 0) {
-          if (phaseElapsed >= assembleBudgetS || (phaseElapsed >= Math.min(ASSEMBLE_MIN_S, assembleBudgetS) && settled / N >= 0.97)) {
-            snapAllToTargets();
+          /* == BATCH3-G123 == F3：径向轨到点不再 snapAllToTargets 写终态，改完成度门控。 */
+          if (
+            (phaseElapsed >= assembleBudgetS || (phaseElapsed >= Math.min(ASSEMBLE_MIN_S, assembleBudgetS) && settled / N >= 0.97)) &&
+            assembleCloseReady(phaseElapsed, settled)
+          ) {
             setMode("formed");
           }
         } else if (dispersing && phaseElapsed >= DISPERSE_S) {
@@ -3784,7 +3786,10 @@
         dispersing = mode === "disperse";
         mx += (mxT - mx) * POINTER_LERP;
         my += (myT - my) * POINTER_LERP;
-        refreshCurlGrid(lastT * 0.001);
+        /* == BATCH2-CURL == F-02：curl 网格只在 legacy 混沌路径真正消费时刷新。
+           径向路径（applyRadialPhysics 返回 true）与弹簧路径都不读 curlAt，逐帧重算属空转。
+           网格值只依赖 t 与网格尺寸，故「消费时才刷新」与旧行为逐位等价。 */
+        if (!assembling && !formed && !dispersing && !live && !pointerEver) refreshCurlGrid(lastT * 0.001);
         if (applyRadialPhysics(live, assembling, formed, dispersing, dispersing || mode === "chaos" || (!live && pointerEver && !assembling && !formed))) {
           return;
         }
@@ -3811,8 +3816,11 @@
         }
         phaseElapsed += DT;
         if (assembling && N > 0) {
-          if (phaseElapsed >= assembleBudgetS || (phaseElapsed >= Math.min(ASSEMBLE_MIN_S, assembleBudgetS) && settled / N >= 0.97)) {
-            snapAllToTargets();
+          /* == BATCH3-G123 == F3：legacy 弹簧轨同样改为完成度门控（逐粒 nearStop 锁位保留，位移 ≤0.6px）。 */
+          if (
+            (phaseElapsed >= assembleBudgetS || (phaseElapsed >= Math.min(ASSEMBLE_MIN_S, assembleBudgetS) && settled / N >= 0.97)) &&
+            assembleCloseReady(phaseElapsed, settled)
+          ) {
             setMode("formed");
           }
         } else if (dispersing && phaseElapsed >= DISPERSE_S) {
@@ -3823,8 +3831,22 @@
 
       function render(now) {
         tickCount++;
+        /* == O1② == 应急看门狗（只在 ?degrade=1 且尚未降档时工作） */
+        degradeWatch();
         /* == RENDERER-SWAP == exhibit draw is Pixi only. Canvas2D particle blit retired. */
         if (window.NFPixiRenderer && window.NFPixiRenderer.ready) {
+          /* == O2-A == 像素块与尘埃上屏参数：dustState 复用同一对象，避免每帧分配。 */
+          if (dustOn() && dustN > 0 && dustX) {
+            dustState.n = dustN;
+            dustState.x = dustX;
+            dustState.y = dustY;
+            dustState.a = dustA;
+          } else {
+            dustState.n = 0;
+            dustState.x = null;
+            dustState.y = null;
+            dustState.a = null;
+          }
           window.NFPixiRenderer.draw({
             n: N,
             x: x,
@@ -3832,7 +3854,10 @@
             a: radialWorld && radialWorld.tintA,
             pid: pid,
             palette: window.__nfPoints && window.__nfPoints.palette,
-            pointsId: window.__nfPoints && window.__nfPoints.id
+            pointsId: window.__nfPoints && window.__nfPoints.id,
+            block: pixelBlockOn(),
+            blockSize: pixelBlockSize(),
+            dust: dustState
           });
         }
         publishRenderInfo();
@@ -3892,15 +3917,16 @@
             stopLoop();
             return;
           }
-          scheduleQuietTick();
           return;
         }
+        /* == O1④ == 唯一合法时间源：deltaMS（钳到 MAX_FRAME_S=50ms）；不设每帧步数上限。 */
         ft = elapsedS != null ? elapsedS : (now - lastT) / 1000;
+        if (!(ft > 0)) ft = 0;
         lastT = now;
-        if (ft > FRAME_CLAMP) ft = FRAME_CLAMP;
+        if (ft > MAX_FRAME_S) ft = MAX_FRAME_S;
         acc += ft;
         steps = 0;
-        while (acc >= DT && steps < MAX_STEPS) {
+        while (acc >= DT) {
           tPhys = performance.now();
           physics();
           phys = performance.now() - tPhys;
@@ -3908,6 +3934,9 @@
           acc -= DT;
           steps++;
         }
+        clockSnap.lastFrameMs = Math.round(ft * 10000) / 10;
+        clockSnap.lastSteps = steps;
+        clockSnap.lastDeltaMs = Math.round(ft * 100000) / 100;
         integrateDust();
         tDraw = performance.now();
         render(now);
@@ -3930,42 +3959,25 @@
 
       function startLoop() {
         if (reduced || !booted || frozen) return;
-        if (running && !quietWait) return;
-        clearQuietWait();
+        if (running) return;
         lastT = performance.now();
         acc = 0;
         running = true;
         syncCrtIdleHint();
-        if (raf) cancelAnimationFrame(raf);
-        raf = 0;
         /* == RENDERER-SWAP == replacement clock: NFPixiRenderer.start() */
         if (window.NFPixiRenderer) window.NFPixiRenderer.start();
         renderInfo.running = true;
         window.__nfRender = renderInfo;
       }
 
+      /* == BATCH1-LOOP == (F-08) wakeLoop 曾与 startLoop 逐字重复；保留两个入口名，wakeLoop 只转发。 */
       function wakeLoop() {
-        if (reduced || !booted || frozen) return;
-        if (running && !quietWait) return;
-        clearQuietWait();
-        lastT = performance.now();
-        acc = 0;
-        running = true;
-        syncCrtIdleHint();
-        if (raf) cancelAnimationFrame(raf);
-        raf = 0;
-        /* == RENDERER-SWAP == replacement clock: NFPixiRenderer.start() */
-        if (window.NFPixiRenderer) window.NFPixiRenderer.start();
-        renderInfo.running = true;
-        window.__nfRender = renderInfo;
+        startLoop();
       }
 
       function stopLoop() {
         running = false;
         acc = 0;
-        clearQuietWait();
-        if (raf) cancelAnimationFrame(raf);
-        raf = 0;
         /* == RENDERER-SWAP == */
         if (pixiTrack && window.NFPixiRenderer) window.NFPixiRenderer.stop();
         syncCrtIdleHint();
@@ -4118,6 +4130,11 @@
         }
         setFrozen(false);
         pointerEver = false;
+        /* == BATCH3-G123 == F1：序列起点的完成度基准，只在 assemble 起点取一次。 */
+        assembleRms0 = assembleRms();
+        assembleClose.rms0 = assembleRms0;
+        assembleClose.capHit = 0;
+        assembleClose.verdict = "";
         setMode("assemble");
         if (reduced) {
           placeNow(true);
@@ -4346,7 +4363,8 @@
             canvas.hidden = true;
             canvas.setAttribute("aria-hidden", "true");
             window.NFPixiRenderer.onTick(function (ticker) {
-              tick(performance.now(), ticker.elapsedMS / 1000);
+              /* == O1④ == 卷面时间源：Pixi ticker.deltaMS（毫秒）；钳制在 tick() 内统一做。 */
+              tick(performance.now(), ticker.deltaMS / 1000);
             });
             pixiReady = true;
             publishRenderInfo();
@@ -4358,7 +4376,6 @@
         hasGlyph = !!(points && points.length);
         layoutContain();
         alloc(engineCount());
-        if (!pixiTrack && !sprites.length) buildSprites();
         scatterHomes();
         formTargets(points);
         placeStart();
@@ -4455,7 +4472,6 @@
 
       reduced = reduceMq.matches;
       resizeCanvas();
-      paintVoid();
 
       loadTargetRecord(TARGETS.INTRO).then(function (rec) {
         var coerced = coerceTargetRecord(rec, TARGETS.INTRO);
