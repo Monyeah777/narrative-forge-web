@@ -2508,14 +2508,25 @@
                 p3d.handle = window.NF3D.mount(cv, {
                   mode: "relief",
                   count: qn >= 1000 && qn <= 400000 ? qn : 120000,
-                  depth: isFinite(qd) && qd >= 0 && qd <= 1.5 ? qd : 0.42,
-                  pointSize: isFinite(qs2) && qs2 >= 0.5 && qs2 <= 12 ? qs2 : 3.2
+                  depth: isFinite(qd) && qd >= 0 && qd <= 1.5 ? qd : 0.95,
+                  pointSize: isFinite(qs2) && qs2 >= 0.5 && qs2 <= 12 ? qs2 : 3.6
                 });
                 /* 把当前画作（粒子 + 原调色板）交给 3D：同一批粒子立体化 */
                 if (window.__nfPoints) {
                   p3d.handle.setPainting(window.__nfPoints);
                   p3d.paintingId = window.__nfPoints.id;
                 }
+                /* 验收/调参把手：__nfP3dHandle.setDepth()/setSize()/setPainting()/state() */
+                window.__nfP3dHandle = p3d.handle;
+                window.nf3d = function (o) {
+                  if (!p3d.handle) return null;
+                  if (o && typeof o.depth === "number") p3d.handle.setDepth(o.depth);
+                  if (o && typeof o.size === "number") p3d.handle.setSize(o.size);
+                  if (o && typeof o.paused === "boolean") p3d.handle.setPaused(o.paused);
+                  if (o && o.repaint && window.__nfPoints) p3d.handle.setPainting(window.__nfPoints);
+                  p3dPublish();
+                  return p3d.handle.state();
+                };
               }
               cv.style.display = "block";
               p3d.on = true;
@@ -2535,6 +2546,7 @@
               if (window.console) console.warn("[nf-3d] 释放失败：" + err);
             }
             p3d.handle = null;
+            window.__nfP3dHandle = null;
           }
           p3d.on = false;
           p3dPaintBtn();

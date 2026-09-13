@@ -84,8 +84,11 @@
     "  vec4 clip = uVP * vec4(p, 1.0);\n" +
     "  gl_Position = clip;\n" +
     "  float w = max(clip.w, 0.001);\n" +
-    "  gl_PointSize = clamp(uSize * uPR / w, 0.6, 5.0 * uPR);\n" +
-    "  vColor = aCol.rgb;\n" +
+    /* 浮雕明暗 + 尺寸：凸起（z 大）更亮、点也更大 —— 加强立体读感 */
+    "  float lumN = clamp(aPos.z / max(uDepth, 0.001) + 0.5, 0.0, 1.0);\n" +
+    /* 凸起处点更大一点：进一步强化立体读感 */
+    "  gl_PointSize = clamp(uSize * uPR * (0.85 + 0.5 * lumN) / w, 0.6, 5.0 * uPR);\n" +
+    "  vColor = aCol.rgb * (0.62 + 0.62 * lumN);\n" +
     "  vAlpha = aCol.a * (0.42 + 0.58 * smoothstep(4.2, 1.5, w));\n" +
     "}\n";
 
@@ -124,6 +127,7 @@
     var disposed = false;
     var mode = opts.mode === "abstract" ? "abstract" : "relief";
     var painting = null;          /* {points(flat), palette, w, h, id, count} */
+    var lastRecord = null;        /* 最近一次喂入的画作（改深度时按新幅度重传缓冲） */
     var nAbs = Math.max(1000, Math.min(400000, opts.count || 120000));
     var nRelief = 0;
 
@@ -235,7 +239,11 @@
       var pts = rec.points;
       var pal = rec.palette || [];
       var cnt = rec.count || pts.length;
-      var flat = pts.length && typeof pts[0] === "number"; /* 扁平三元组（window.__nfPoints.points） */
+      /* 三种载体都要认：① [x,y,i] 三元组数组（window.__nfPoints.points 就是这种）② 扁平数字数组
+         ③ {x,y,i} 对象数组。★ 之前只按扁平解析 → pts[k].x 全 undefined → 坐标/z 变 NaN、浮雕是平的。 */
+      var first = pts[0];
+      var flat = typeof first === "number";
+      var packed = !flat && first != null && typeof first.length === "number";
       var n = flat ? Math.floor(pts.length / 3) : pts.length;
       var ar = rec.w > 0 && rec.h > 0 ? rec.w / rec.h : 0.78;
       var P = new Float32Array(n * 3);
@@ -251,6 +259,10 @@
           x = pts[k * 3];
           y = pts[k * 3 + 1];
           pi = pts[k * 3 + 2] | 0;
+        } else if (packed) {
+          x = pts[k][0];
+          y = pts[k][1];
+          pi = pts[k][2] | 0;
         } else {
           x = pts[k].x;
           y = pts[k].y;
@@ -261,14 +273,16 @@
         /* 世界坐标：高 1 单位、宽按画作纵横比；z 由亮度给出（-0.5→+0.5 归一，实际深度由 uDepth 缩放） */
         P[k * 3] = (x - 0.5) * ar;
         P[k * 3 + 1] = (0.5 - y);
-        P[k * 3 + 2] = lum - 0.5;
+        /* 浮雕高度：明处凸起 / 暗处凹陷；幅度由 depth 缩放（?p3ddepth= 可调） */
+        P[k * 3 + 2] = (lum - 0.5) * depth;
         C[k * 4] = rgb[0];
         C[k * 4 + 1] = rgb[1];
         C[k * 4 + 2] = rgb[2];
         /* 加法混合：单点 alpha 压低（粒子多、叠加快），亮度靠密度堆 */
-        C[k * 4 + 3] = 0.22;
+        C[k * 4 + 3] = 0.30;
       }
       painting = { id: rec.id, w: rec.w, h: rec.h, count: cnt, points: n };
+      lastRecord = rec;
       pos = P;
       col = C;
       nRelief = n;
@@ -282,10 +296,11 @@
       return n;
     }
 
-    var cam = { yaw: 0, pitch: 0.12, dist: 2.35, autoYaw: 0.0 };
+    /* 默认就是 3/4 侧视 + 慢自转：一眼能看出浮雕起伏（正面视角下浮雕≈平面，实测会被当成「没变 3D」） */
+    var cam = { yaw: 0.62, pitch: 0.34, dist: 2.45, autoYaw: 0.05 };
     var paused = 0;
-    var depth = opts.depth == null ? 0.42 : opts.depth;
-    var pointSize = opts.pointSize == null ? 3.2 : opts.pointSize;
+    var depth = opts.depth == null ? 0.95 : opts.depth;
+    var pointSize = opts.pointSize == null ? 3.6 : opts.pointSize;
     var dragging = false;
     var lastX = 0;
     var lastY = 0;
@@ -454,10 +469,10 @@
       },
       setMode: function (m) {
         mode = m === "abstract" ? "abstract" : "relief";
-        cam.yaw = mode === "relief" ? 0 : 0.6;
-        cam.pitch = mode === "relief" ? 0.12 : 0.34;
-        cam.dist = mode === "relief" ? 2.35 : 5.2;
-        cam.autoYaw = mode === "relief" ? 0 : 0.045;
+        cam.yaw = mode === "relief" ? 0.62 : 0.6;
+        cam.pitch = mode === "relief" ? 0.34 : 0.34;
+        cam.dist = mode === "relief" ? 2.45 : 5.2;
+        cam.autoYaw = mode === "relief" ? 0.05 : 0.045;
         return mode;
       },
       setPaused: function (p) {
@@ -465,6 +480,8 @@
       },
       setDepth: function (d) {
         depth = Math.max(0, Math.min(1.5, +d || 0));
+        /* 浮雕高度是烘进顶点缓冲的 → 改幅度要重传（50k×3 float ≈ 2ms） */
+        if (lastRecord) setPainting(lastRecord);
         return depth;
       },
       setSize: function (s) {

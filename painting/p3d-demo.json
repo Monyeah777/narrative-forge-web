@@ -43,5 +43,24 @@
       "abstract_demo_still_ok": "particles3d.html 仍走抽象模式，check-particles3d.js 7/7（120,000 粒、60fps、无 GL 错误、拖拽可见变化）",
       "shots": ["nf-baseline-artifacts/3d-on.png", "3d-off.png"]
     }
+    ,
+    "bugfix_2026-09-13_flat_relief": {
+      "report": "作者：「没变出来 3d 呀」",
+      "root_cause": "★ 数据格式不匹配：`window.__nfPoints.points` 是 **[[x,y,i], …] 三元组数组**（triplesOf 的产物），而 setPainting 只按「扁平数字数组」解析 → `pts[k].x` 全为 undefined → 位置与浮雕高度（z）统统变 NaN → 画面上呈现的就是「平的」/残缺的浮雕。",
+      "second_factor": "默认相机是**正面**（yaw=0,pitch=0.12）+ 仅 ±12° 摆动 → 即使 z 正确，正面看也几乎读不出起伏。",
+      "fix": [
+        "setPainting 同时认三种载体：[[x,y,i],…]（真实）、扁平数字数组、{x,y,i} 对象数组",
+        "默认改为 3/4 侧视（yaw 0.62 / pitch 0.34）+ 慢自转 0.05rad/s → 一开就能看出浮雕",
+        "浮雕幅度由 depth 统一缩放（默认 0.95，?p3ddepth= 可调），并加「凸起更亮 + 点更大」的深度明暗",
+        "setDepth 会按新幅度**重传顶点缓冲**（此前只改 uniform，基础 z 不变 → 调深度没有效果）"
+      ],
+      "evidence": {
+        "script": "check-3d-relief.js（?p3d=1 开机，逐项读数 + 深度 A/B）",
+        "checks": "5/5：浮雕模式 50,601 粒｜**深度生效：浮雕帧 vs 平面帧 平均亮度差 3.13、变化像素 6.99%**（修复前 0.06 / 0.03%，即完全无变化）｜画面 13.09% 亮点（修复前 5.55%）｜depth=0.95｜0 页面错误",
+        "toggle_recheck": "check-3d-toggle.js 9/9 仍全绿（3D 帧 14.37% 亮点 vs 2D 30.35%、平均亮度差 25.32；paintingId === pointsId）",
+        "shots": ["nf-baseline-artifacts/3d-relief-deep.png", "3d-relief-flat.png（depth=0 对照）", "3d-on.png", "3d-off.png"]
+      },
+      "screenshots": ["nf-baseline-artifacts/3d-relief-deep.png", "3d-relief-flat.png（depth=0 对照）", "3d-on.png", "3d-off.png"]
+    }
   }
 }
