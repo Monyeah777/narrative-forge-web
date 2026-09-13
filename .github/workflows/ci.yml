@@ -19,3 +19,15 @@ jobs:
       - run: npm run build
       - name: Check static export
         run: test -d out && test -f out/index.html
+
+  goldens:
+    # 轻量守卫：只跑守门哈希（C2 / NFPT / S3 dual / vendor），不依赖 npm。
+    # 覆盖范围见 scripts/check-goldens.mjs 与卷面 §1 守门哈希表。
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Gate hashes
+        run: node scripts/check-goldens.mjs
