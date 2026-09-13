@@ -26,4 +26,22 @@
     "tuning_note": "初版点径 26px、单点 alpha 0.16–1.0 → 12 万点加法叠加把画面刷成白（整帧平均亮度 119、99% 像素超阈值）。改为点径 14px、alpha 0.03–0.15 后：平均亮度 19.5、13.8% 亮点、环状轮廓清晰。"
   },
   "screenshots": ["nf-baseline-artifacts/particles3d-1.png", "particles3d-2.png（拖拽后）", "p3d-profile.png"]
+  ,
+  "relief_mode_2026-09-13": {
+    "request": "作者澄清：「是把原来的平面粒子转换成 3d」+「把这个立体的与原本的结合，弄一个按钮切换 3d」",
+    "design": "不是另放一个独立演示，而是**同一批画作粒子立体化**：x/y = 画作归一坐标（按画作纵横比等比，不拉伸）、**z = 该粒子调色板颜色的亮度**（明处凸起、暗处凹陷）→ 平面画作变成浮雕；配色沿用画作自身 256 色调色板；动态 = z 方向呼吸 + ±12° 轻微摆动（保持可读、不眩晕），用户可拖拽自由环绕、滚轮缩放。",
+    "wiring": {
+      "engine": "nf-particles3d.js 增浮雕模式（VS_RELIEF + setPainting(record)）：接受 {points, palette, w, h}，points 支持对象数组与扁平三元组（window.__nfPoints.points 是后者）",
+      "toggle": "放映条新增「3D 粒子 / 回到画作」键（aria-pressed）：开 → 惰性载入引擎并挂到叠加层、把**当前画作**喂进去、停 2D 渲染循环；关 → dispose（释放 WebGL 上下文）、唤醒 2D",
+      "follow": "500ms 轮询 __nfPoints.id：放映换作品时自动把新画作喂给 3D（浮雕跟着当前作品）",
+      "layering_bug": "★ 实测踩到并修复：叠加层最初 position:fixed + z-index:35 会**盖住放映条**，导致「回到画作」点不到（探针复现：切回后 __nf3d.on 仍为 true）。改为插到 .stage 内 .paper 之前、不设 z-index —— 同层按 DOM 顺序叠放：盖住粒子画布、仍在 .paper(z-index:1) 之下，UI 始终可点。",
+      "knobs": "?p3d=1 开机即 3D、?p3d=0 隐藏键、?p3dn= 抽象模式粒子数、?p3ddepth=0–1.5（浮雕深度，默认 0.42）、?p3dsize=0.5–12（点径，默认 3.2）；window.nfToggle3D(bool)"
+    },
+    "acceptance": {
+      "script": "check-3d-toggle.js（headless Edge）",
+      "checks": "9/9：放映条有键｜点键后 3D 打开且叠加层显示｜3D 帧与 2D 帧明显不同（平均亮度差 27.35）｜3D 期间 2D 循环停（running=false）｜按钮文案切为「回到画作」｜切回：3D 关 + 叠加层隐藏 + 2D 复活｜?p3d=1 开机即 3D｜**3D = 同一批画作粒子：relief 模式、50,601 粒、paintingId === pointsId（poplars-dallas-radial-50k）**｜0 页面错误",
+      "abstract_demo_still_ok": "particles3d.html 仍走抽象模式，check-particles3d.js 7/7（120,000 粒、60fps、无 GL 错误、拖拽可见变化）",
+      "shots": ["nf-baseline-artifacts/3d-on.png", "3d-off.png"]
+    }
+  }
 }

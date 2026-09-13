@@ -900,6 +900,7 @@
       <p class="exhibit-bar" id="exhibit-bar">
         <button type="button" class="exhibit-pause" id="btn-exhibit-pause">放映暂停</button>
         <button type="button" class="exhibit-pause" id="btn-upload-show" hidden>自定义放映 ▶</button>
+        <button type="button" class="exhibit-pause" id="btn-3d" aria-pressed="false">3D 粒子</button>
         <span class="exhibit-caption" id="exhibit-caption" aria-live="off"></span>
       </p>
       <header class="mast">
@@ -2439,6 +2440,124 @@
         }
       }
 
+      /* == 3D 粒子模式（作者 2026-09-13「将这个立体的与原本的结合，弄一个按钮切换 3d」）==
+         与 2D 画作叠加互切：开 → 惰性载入 nf-particles3d.js，挂到固定叠加层 canvas（不透明，盖住 Pixi 层）
+         并停掉 2D 渲染循环；关 → dispose（释放 WebGL 上下文）+ 唤醒 2D。
+         ?p3d=1 开机即 3D；window.nfToggle3D() 同效；证据读 __nf3d。 */
+      var p3d = { on: false, handle: null, canvas: null };
+      var btn3D = document.getElementById("btn-3d");
+
+      function p3dPublish() {
+        var s = p3d.handle ? p3d.handle.state() : null;
+        window.__nf3d = {
+          on: p3d.on,
+          mode: s ? s.mode : "",
+          paintingId: s ? s.paintingId : "",
+          reliefN: s ? s.reliefN : 0,
+          absN: s ? s.absN : 0,
+          depth: s ? s.depth : 0,
+          fps: s ? s.fps : 0,
+          lost: s ? s.lost : 0,
+          restored: s ? s.restored : 0
+        };
+        /* 放映换画时同步 3D 的画作（浮雕跟着当前作品走） */
+        if (p3d.on && p3d.handle && window.__nfPoints && window.__nfPoints.id !== p3d.paintingId) {
+          try {
+            p3d.handle.setPainting(window.__nfPoints);
+            p3d.paintingId = window.__nfPoints.id;
+          } catch (err) {
+            if (window.console) console.warn("[nf-3d] 同步画作失败：" + err);
+          }
+        }
+      }
+
+      function p3dPaintBtn() {
+        if (!btn3D) return;
+        btn3D.textContent = p3d.on ? "回到画作" : "3D 粒子";
+        btn3D.setAttribute("aria-pressed", p3d.on ? "true" : "false");
+        p3dPublish();
+      }
+
+      function ensure3DCanvas() {
+        if (p3d.canvas) return p3d.canvas;
+        var cv = document.createElement("canvas");
+        cv.id = "nf3d";
+        cv.setAttribute("aria-label", "立体动态粒子视图");
+        /* 关键：插入到 .paper 之前、且**不设 z-index** —— 同层里按 DOM 顺序叠放：
+           盖住粒子画布，但仍在 .paper（z-index:1，含放映条/导航/控制台）之下 → 「3D」键始终可点。 */
+        cv.style.cssText = "position:absolute;left:0;top:0;width:100%;height:100%;display:none;touch-action:none";
+        var paper = stage.querySelector(".paper");
+        if (paper) stage.insertBefore(cv, paper);
+        else stage.appendChild(cv);
+        p3d.canvas = cv;
+        return cv;
+      }
+
+      function set3D(on) {
+        var want = !!on;
+        if (want === p3d.on) return p3d.on;
+        if (want) {
+          var cv = ensure3DCanvas();
+          loadScriptOnce("nf-particles3d.js")
+            .then(function () {
+              if (!window.NF3D) throw new Error("NF3D missing");
+              if (!p3d.handle) {
+                var qn = parseInt(NF_QUERY.get("p3dn") || "", 10);
+                var qd = parseFloat(NF_QUERY.get("p3ddepth") || "");
+                var qs2 = parseFloat(NF_QUERY.get("p3dsize") || "");
+                p3d.handle = window.NF3D.mount(cv, {
+                  mode: "relief",
+                  count: qn >= 1000 && qn <= 400000 ? qn : 120000,
+                  depth: isFinite(qd) && qd >= 0 && qd <= 1.5 ? qd : 0.42,
+                  pointSize: isFinite(qs2) && qs2 >= 0.5 && qs2 <= 12 ? qs2 : 3.2
+                });
+                /* 把当前画作（粒子 + 原调色板）交给 3D：同一批粒子立体化 */
+                if (window.__nfPoints) {
+                  p3d.handle.setPainting(window.__nfPoints);
+                  p3d.paintingId = window.__nfPoints.id;
+                }
+              }
+              cv.style.display = "block";
+              p3d.on = true;
+              p3dPaintBtn();
+              stopLoop();
+              window.setInterval(p3dPublish, 500);
+            })
+            .catch(function (err) {
+              if (window.console) console.warn("[nf-3d] 载入失败：" + err);
+            });
+        } else {
+          if (p3d.canvas) p3d.canvas.style.display = "none";
+          if (p3d.handle) {
+            try {
+              p3d.handle.dispose();
+            } catch (err) {
+              if (window.console) console.warn("[nf-3d] 释放失败：" + err);
+            }
+            p3d.handle = null;
+          }
+          p3d.on = false;
+          p3dPaintBtn();
+          wakeLoop();
+        }
+        return p3d.on;
+      }
+
+      function init3DModule() {
+        if (NF_QUERY.get("p3d") === "0") {
+          if (btn3D) btn3D.hidden = true;
+          return;
+        }
+        if (btn3D) {
+          btn3D.addEventListener("click", function () {
+            set3D(!p3d.on);
+          });
+        }
+        window.nfToggle3D = set3D;
+        p3dPaintBtn();
+        if (NF_QUERY.get("p3d") === "1") set3D(true);
+      }
+
       function initUploadModule() {
         if (NF_QUERY.get("upload") === "0") return;
         loadScriptOnce("nf-upload.js")
@@ -2489,7 +2608,7 @@
             }
           })
           .catch(function (err) {
-            if (root) console.warn("[nf-upload] 模块加载失败：" + err);
+            if (window.console) console.warn("[nf-upload] 模块加载失败：" + err);
           });
       }
 
@@ -4998,6 +5117,8 @@
           boot(coerced.points);
           /* == 上传采样（规格 v1）== 惰性加载；?upload=0 不加载、不挂钩 */
           initUploadModule();
+          /* == 3D 粒子模式 == 放映条「3D 粒子」键；?p3d=0 隐藏、?p3d=1 直接开 */
+          init3DModule();
         }).catch(function (err) {
           if (pixiTrack) {
             window.__nfPixiLive = { track: true, ready: false, ok: false, error: String(err && err.stack ? err.stack : err) };
