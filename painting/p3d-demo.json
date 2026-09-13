@@ -73,5 +73,24 @@
         "shots": ["nf-baseline-artifacts/3d-orbit-a.png", "3d-orbit-b.png（4 秒后）"]
       }
     }
+    ,
+    "flip_2026-09-13": {
+      "request": "作者：「还是不环绕了吧，但你这个明凸暗凹可以交叠运动 明凹暗凸」",
+      "change": {
+        "orbit_off": "浮雕默认不再自动环绕（autoYaw=0）：可拖拽自由转；`?p3dorbit=<rad/s>` 可再开（负值反向）",
+        "polarity_flip": "浮雕极性**周期性交叠**：顶点着色器 `p.z *= uFlip`，`uFlip = cos(2πt/T)`，默认 **T=18s**（9s 明凸暗凹 → 9s 明凹暗凸，中间自然过零成平面）；深度明暗 `lumN` 同步跟随极性，所以凸起始终更亮",
+        "kept": "z 方向呼吸 + ±12° 轻摆保留（不环绕也有生命感）",
+        "knobs": "`?p3dflip=<0–120s>`（0 = 固定明凸暗凹）、`nf3d({flip: 24})`、`painting3d.html?flip=`"
+      },
+      "evidence": {
+        "script": "check-3d-flip.js（painting3d.html?flip=12&orbit=0，取 flip≈+1 / −1 两个时刻）",
+        "checks": "6/6：取到两个极性极值（flipNow 0.992 / −0.991）｜**两极值帧差异明显：corr(+1,−1)=0.22**（仅粒子像素；1=完全相同）｜正极帧与平面帧同向（corr 0.388，明凸暗凹基线正确）｜默认不环绕 orbit=0｜周期可调（12s 生效）｜0 GL/JS 错误",
+        "shots": ["nf-baseline-artifacts/3d-flip-positive.png（明凸暗凹）", "3d-flip-negative.png（明凹暗凸）"]
+      },
+      "regressions": {
+        "painting3d": "check-painting3d.js 6/6（orbit=0 · flipPeriod=18s · 50,601 粒 · 可切画作 · 0 错误）",
+        "main_site": "check-3d-toggle.js 9/9（relief · paintingId===pointsId · 切回 2D 正常）"
+      }
+    }
   }
 }

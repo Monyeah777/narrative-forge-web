@@ -42,6 +42,7 @@
   var qs = new URLSearchParams(location.search);
   var qd = parseFloat(qs.get("depth") || "");
   var qo = parseFloat(qs.get("orbit") || "");
+  var qf = parseFloat(qs.get("flip") || "");
   var canvas = document.getElementById("c");
   var hud = document.getElementById("hud");
   var bar = document.getElementById("bar");
@@ -50,7 +51,9 @@
     mode: "relief",
     depth: isFinite(qd) && qd >= 0 && qd <= 1.5 ? qd : 0.95,
     pointSize: 3.6,
-    orbit: isFinite(qo) && qo >= -2 && qo <= 2 ? qo : 0.28,
+    /* 不自动环绕（可拖拽）；动态交给浮雕极性交叠 */
+    orbit: isFinite(qo) && qo >= -2 && qo <= 2 ? qo : 0,
+    flipSeconds: isFinite(qf) && qf >= 0 && qf <= 120 ? qf : 18,
     captureWheel: true
   });
   var cache = {};
@@ -103,9 +106,9 @@
     var s = handle.state();
     hud.innerHTML =
       "<b>" + w.title + "</b> · " + w.artist + " · " + w.year + "<br>" +
-      w.museum + " ｜ " + (n || s.reliefN).toLocaleString("en-US") + " 粒 ｜ 浮雕深度 " + s.depth +
-      " ｜ 环绕 " + (2 * Math.PI / Math.max(1e-6, Math.abs(s.orbit))).toFixed(0) + "s/圈<br>" +
-      "同一批画作粒子立体化：z = 该粒子颜色的亮度（明凸暗凹）｜拖拽可自由环绕 · 滚轮缩放";
+      w.museum + " ｜ " + (n || s.reliefN).toLocaleString("en-US") + " 粒 ｜ 浮雕深度 " + s.depth + "<br>" +
+      "同一批画作粒子立体化：z = 该粒子颜色的亮度，**每 " + s.flipPeriod + "s 交叠一次**（明凸暗凹 ⇄ 明凹暗凸）" +
+      "｜不自动环绕 · 拖拽可自由转 · 滚轮缩放 · 空格暂停";
   }
 
   WORKS.forEach(function (w) {

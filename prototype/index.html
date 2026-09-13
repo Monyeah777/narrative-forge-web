@@ -2506,13 +2506,16 @@
                 var qd = parseFloat(NF_QUERY.get("p3ddepth") || "");
                 var qs2 = parseFloat(NF_QUERY.get("p3dsize") || "");
                 var qo = parseFloat(NF_QUERY.get("p3dorbit") || "");
+                var qf = parseFloat(NF_QUERY.get("p3dflip") || "");
                 p3d.handle = window.NF3D.mount(cv, {
                   mode: "relief",
                   count: qn >= 1000 && qn <= 400000 ? qn : 120000,
                   depth: isFinite(qd) && qd >= 0 && qd <= 1.5 ? qd : 0.95,
                   pointSize: isFinite(qs2) && qs2 >= 0.5 && qs2 <= 12 ? qs2 : 3.6,
-                  /* 环绕速度：默认 0.28rad/s（一圈≈22s）；?p3dorbit=0 静止、单位 rad/s */
-                  orbit: isFinite(qo) && qo >= -2 && qo <= 2 ? qo : 0.28
+                  /* 不自动环绕（作者 2026-09-13「还是不环绕了吧」）；?p3dorbit= 可再开（rad/s） */
+                  orbit: isFinite(qo) && qo >= -2 && qo <= 2 ? qo : 0,
+                  /* 浮雕极性交叠周期：默认 18s（明凸暗凹 ⇄ 明凹暗凸）；?p3dflip=0 固定 */
+                  flipSeconds: isFinite(qf) && qf >= 0 && qf <= 120 ? qf : 18
                 });
                 /* 把当前画作（粒子 + 原调色板）交给 3D：同一批粒子立体化 */
                 if (window.__nfPoints) {
@@ -2526,6 +2529,7 @@
                   if (o && typeof o.depth === "number") p3d.handle.setDepth(o.depth);
                   if (o && typeof o.size === "number") p3d.handle.setSize(o.size);
                   if (o && typeof o.orbit === "number") p3d.handle.setOrbit(o.orbit);
+                  if (o && typeof o.flip === "number") p3d.handle.setFlip(o.flip);
                   if (o && typeof o.paused === "boolean") p3d.handle.setPaused(o.paused);
                   if (o && o.repaint && window.__nfPoints) p3d.handle.setPainting(window.__nfPoints);
                   p3dPublish();

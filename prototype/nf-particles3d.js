@@ -71,11 +71,13 @@
     "uniform float uPR;\n" +
     "uniform float uPaused;\n" +
     "uniform float uDepth;\n" +
+    "uniform float uFlip;\n" +   /* 浮雕极性：+1 = 明凸暗凹，-1 = 明凹暗凸（周期性交叠） */
     "out vec3 vColor;\n" +
     "out float vAlpha;\n" +
     "void main() {\n" +
     "  float t = uTime * (1.0 - uPaused);\n" +
     "  vec3 p = aPos;\n" +
+    "  p.z *= uFlip;\n" +                       /* 极性交叠：明凸暗凹 ⇄ 明凹暗凸 */
     "  p.z += uDepth * 0.22 * sin(t * 0.55 + aPos.x * 3.1 + aPos.y * 2.3);\n" +
     "  float swing = 0.22 * sin(t * 0.18);\n" +
     "  float cs = cos(swing);\n" +
@@ -85,7 +87,7 @@
     "  gl_Position = clip;\n" +
     "  float w = max(clip.w, 0.001);\n" +
     /* 浮雕明暗 + 尺寸：凸起（z 大）更亮、点也更大 —— 加强立体读感 */
-    "  float lumN = clamp(aPos.z / max(uDepth, 0.001) + 0.5, 0.0, 1.0);\n" +
+    "  float lumN = clamp(aPos.z * uFlip / max(uDepth, 0.001) + 0.5, 0.0, 1.0);\n" +
     /* 凸起处点更大一点：进一步强化立体读感 */
     "  gl_PointSize = clamp(uSize * uPR * (0.85 + 0.5 * lumN) / w, 0.6, 5.0 * uPR);\n" +
     "  vColor = aCol.rgb * (0.62 + 0.62 * lumN);\n" +
@@ -207,7 +209,8 @@
         size: gl.getUniformLocation(progRelief, "uSize"),
         pr: gl.getUniformLocation(progRelief, "uPR"),
         paused: gl.getUniformLocation(progRelief, "uPaused"),
-        depth: gl.getUniformLocation(progRelief, "uDepth")
+        depth: gl.getUniformLocation(progRelief, "uDepth"),
+        flip: gl.getUniformLocation(progRelief, "uFlip")
       };
       gl.disable(gl.DEPTH_TEST);
       gl.enable(gl.BLEND);
@@ -296,13 +299,15 @@
       return n;
     }
 
-    /* 默认 3/4 侧视 + **持续环绕**：作者 2026-09-13「我希望可以变成环绕的」
-       —— 原来 0.05rad/s（一圈 126s）几乎看不出在转；现默认 0.28rad/s ≈ 16°/s（一圈 ≈ 22s）。
-       拖拽时接管（autoYaw 暂停），松手后继续环绕。 */
-    var cam = { yaw: 0.62, pitch: 0.34, dist: 2.45, autoYaw: opts.orbit == null ? 0.28 : opts.orbit };
+    /* 视角：作者 2026-09-13 先要环绕、随后「还是不环绕了吧」→ 默认 autoYaw=0（不自己转，可拖拽），
+       动态交给浮雕极性交叠（明凸暗凹 ⇄ 明凹暗凸）+ 呼吸/轻摆。?p3dorbit= 可再开环绕。 */
+    var cam = { yaw: 0.62, pitch: 0.34, dist: 2.45, autoYaw: opts.orbit == null ? 0 : opts.orbit };
     var paused = 0;
     var depth = opts.depth == null ? 0.95 : opts.depth;
     var pointSize = opts.pointSize == null ? 3.6 : opts.pointSize;
+    /* 浮雕极性交叠周期（秒）：默认 18s（9s 正向 / 9s 反向）；0 = 固定明凸暗凹 */
+    var flipPeriod = opts.flipSeconds == null ? 18 : opts.flipSeconds;
+    var flipNow = 1;
     var dragging = false;
     var lastX = 0;
     var lastY = 0;
@@ -431,6 +436,8 @@
         gl.uniform1f(UR.pr, dpr);
         gl.uniform1f(UR.paused, paused);
         gl.uniform1f(UR.depth, depth);
+        flipNow = flipPeriod > 0 ? Math.cos((2 * Math.PI * t) / flipPeriod) : 1;
+        gl.uniform1f(UR.flip, flipNow);
         gl.drawArrays(gl.POINTS, 0, nRelief);
       } else {
         gl.useProgram(progAbs);
@@ -474,7 +481,8 @@
         cam.yaw = mode === "relief" ? 0.62 : 0.6;
         cam.pitch = mode === "relief" ? 0.34 : 0.34;
         cam.dist = mode === "relief" ? 2.45 : 5.2;
-        cam.autoYaw = mode === "relief" ? 0.28 : 0.045;
+        /* 浮雕默认不自动环绕（作者 2026-09-13「还是不环绕了吧」）；抽象模式仍慢转 */
+        cam.autoYaw = mode === "relief" ? 0 : 0.045;
         return mode;
       },
       setPaused: function (p) {
@@ -495,6 +503,11 @@
         cam.autoYaw = Math.max(-2, Math.min(2, +radPerSec || 0));
         return cam.autoYaw;
       },
+      /* 浮雕极性交叠周期（秒）：0 = 固定明凸暗凹；?p3dflip=<s> 同效 */
+      setFlip: function (sec) {
+        flipPeriod = Math.max(0, +sec || 0);
+        return flipPeriod;
+      },
       state: function () {
         return {
           mode: mode,
@@ -506,6 +519,8 @@
           depth: depth,
           yaw: cam.yaw,
           orbit: cam.autoYaw,
+          flipPeriod: flipPeriod,
+          flipNow: +flipNow.toFixed(3),
           dist: cam.dist,
           lost: handle.lost,
           restored: handle.restored,
