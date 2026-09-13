@@ -1,0 +1,62 @@
+{
+  "task": "codex-o1c-count-tiers",
+  "volume": "NF · Codex 交接总卷 v1.0 · §2 O1 ②（砍 N，需日志 + 回退开关）＋ 卷面 §7 采样档",
+  "timestamp": "2026-09-13T07:05:00.000Z",
+  "tip": "d33fb8c71759b7d1e112d3dfe5261806e2eefd84",
+  "branch": "codex/batch0-confirm",
+  "volume_rule": "§7 采样：count 默认 50k；预览 20–30k；应急 30k（日志）",
+  "changes": {
+    "tiers": [
+      "?n=<count> 预览档：夹取 2000–100000；非法值忽略并告警；缺省/0 保持数据源默认（50k，不静默改档）",
+      "?degrade=1 应急看门狗：停留期每 2s 读 work.p95，连续 3 次超阈（默认 8ms）→ 降到 30000，保画不重置",
+      "回退：去掉 ?n / ?degrade 即回默认 50k；?n=50601 可钉住满档"
+    ],
+    "logging": [
+      "启动/触发均写 console（[NF][count-tier] …）",
+      "证据面：__nfRender.nTier = { requested, applied, source, degraded, degradeMs, degradeChecks, logs[] }"
+    ],
+    "degrade_sequence": "alloc(nextN) → layoutContain → formTargets(pts) → placeDust（5%×N 重铺）→ placeNow(true) → rebuildRadialWorld → syncRadialFromLive(true) → setMode(\"formed\") → render → publishRenderInfo",
+    "bug_found_and_fixed": {
+      "symptom": "首版应急降级后页面 x/y 全为 NaN，nanHeals 每帧新增 30 万",
+      "localized_by": "逐步探针（逐步骤统计 NaN 数）→ 定位在 formTargets：ntx 全 NaN",
+      "root_cause": "误用 window.__nfPoints.points —— 它被 freezeLoaded 冻成 triplesOf() 的三元组扁平数组，不是 {x,y,i} 对象数组",
+      "fix": "新增 currentPointsRef，在 formTargets 收到点集时记住它，降级复用它（boot 当初传的就是这个对象数组）",
+      "post_fix_probe": "各步骤 badPage=0 / badWorld=0；降级后 checksum 1600.53（与 ?n=30000 冷启动同带）、nanHeals 保持 0"
+    }
+  },
+  "gate_behavior": {
+    "default": { "n": 50601, "dust": 2530, "tier.source": "default", "logs": 0 },
+    "?n=30000": { "n": 30000, "dust": 1500, "tier.source": "query ?n=30000", "logs": 1 },
+    "?n=20000": { "n": 20000, "dust": 1000, "tier.source": "query ?n=20000", "logs": 1 },
+    "?n=15000": { "n": 15000, "dust": 750, "tier.source": "query ?n=15000", "logs": 1 },
+    "?n=abc": { "n": 50601, "tier.source": "default", "logs": 1, "console": "warn 忽略非法 ?n" },
+    "?n=10": { "n": 2000, "note": "夹到下限 COUNT_MIN=2000" }
+  },
+  "watchdog_test": {
+    "context": "headless SwiftShader（work.p95 本来就 ~20ms，必然触发）",
+    "timeline": [
+      { "tSec": 1.5, "n": 50601, "dust": 2530, "degraded": false, "p95": 22.7 },
+      { "tSec": 3, "n": 30000, "dust": 1500, "degraded": true, "p95": 22.1 },
+      { "tSec": 6, "n": 30000, "dust": 1500, "degraded": true, "p95": 17.4 },
+      { "tSec": 12, "n": 30000, "dust": 1500, "degraded": true, "p95": 11.5 }
+    ],
+    "logs": [
+      "[NF][count-tier] ?degrade=1 应急看门狗开启（阈值 work.p95 > 8ms）",
+      "[NF][count-tier] 应急降级 50601 → 30000（watchdog work.p95=22.1ms > 8ms ×3）；回退：刷新并去掉 ?degrade，或用 ?n=50601 钉住满档"
+    ],
+    "readings": "降级后 mode 保持 formed（保画不重置）、pixiOk true、checksum 有限、nanHeals 0、p95 由 ~22ms 降到 ~11.5ms"
+  },
+  "verification": {
+    "goldens": { "allPass": true, "entry": "scripts/check-goldens.mjs" },
+    "gate_matrix": { "gates": 24, "sharedWithBaseline": 21, "comparedFields": 2268, "expectedDiffs": 210, "unexpectedDiffs": 0, "expectedKeys": ["nTier.requested", "nTier.applied", "nTier.source", "nTier.degraded", "nTier.logCount"], "newGates": ["n=30000", "n=20000", "n=abc"] },
+    "seven_steps": { "pass": true, "autoplay": { "introFormedMs": 3045, "HALL_ms": 10031, "COMMUNITY_ms": 10126, "INTRO_ms": 10042 }, "manual": "全过；verdict 全 check、capHit 0", "pageErrors": [] },
+    "default_path_perf": { "p50": 17.9, "p95": 20.5, "tier": "default", "degraded": false, "note": "看门狗只在 ?degrade=1 时工作，默认路径每帧只多一次早退判断" }
+  },
+  "deviations": [
+    "看门狗阈值 8ms 与连续 3 次是我定的（卷面只写「应急 30k（日志）」没给阈值）：定 8ms 是因为停留脚本预算是 2ms/帧、帧预算 18ms，取中间偏保守；要改就是 nTier.degradeMs 一个数字",
+    "应急档数值 30000 按卷面「应急 30k」；预览档不限 20–30k（?n 任意值都接受，只是文档推荐 20–30k）",
+    "默认档位按卷面保持 50k 不动——本项是机制 + 日志 + 回退，不是静默改默认"
+  ],
+  "open_items": ["O1 ③（E 实验）未动", "O2 方块样式与尘埃强度仍待作者目检", "未 commit"],
+  "pass": true
+}

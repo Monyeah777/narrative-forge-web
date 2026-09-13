@@ -1,0 +1,45 @@
+{
+  "task": "codex-batch5-trackB-prep",
+  "volume": "NF · Codex 交接总卷 v1.0 · §6 批次 5（轨道 B 准备，只出文档）",
+  "timestamp": "2026-09-13T04:34:00.000Z",
+  "tip": "d33fb8c71759b7d1e112d3dfe5261806e2eefd84",
+  "branch": "codex/batch0-confirm",
+  "src_untouched": true,
+  "deliverables": {
+    "T5.1_split_map": "docs/NF_轨道B_拆分映射表_v1_2026-09-13.md",
+    "T5.2_interface_freeze": "docs/NF_轨道B_接口冻结草案_v1_2026-09-13.md"
+  },
+  "split_map": {
+    "scope": "18 个源头分区（含批次 4 后的真实行号）→ 14 个轨道 B 目标单元（B1–B14）",
+    "naming": "沿用仓库 Next 约定 src/components/<页>/M<序>_<名>/{contract.ts,X.tsx} + load<页>文案.ts",
+    "assets": "bin/JSON/字体/vendor 四类数据映射到 public/ 与 npm pixi",
+    "risks": ["单文件作用域改模块状态", "时钟纪律不得换 rAF", "事件接管顺序", "守门哈希可复算", "视觉锁死清单", "轨道 A 保持唯一活引擎"]
+  },
+  "interface_freeze": {
+    "sections": 9,
+    "covered": ["全局入口 assemble/disperse/TARGETS", "DOM 与可访问性 ID/aria 契约", "状态机三张表", "exhibit manifest 全字段与覆盖闸", "时钟与事件架构四条", "物理/渲染模块接口", "可观测面清单", "守门哈希", "冻结纪律"],
+    "grounded_on": "prototype/index.html sha16 b47cef81a708fbfb + 两个模块文件"
+  },
+  "doc_vs_live_check": {
+    "method": "浏览器加载现网原型，枚举 window 全局、TARGETS、manifest 字段、DOM ID、证据键",
+    "raw": "C:/Users/mon_7/Downloads/nf-baseline-artifacts/batch5-surface-check.json",
+    "findings": [
+      "初稿误写不存在的 __nfRaw 并漏记 __nfB41 → 已按实测清单改正",
+      "确认 __nfHandover 初始为 null、__nfGetPerf/__nfResetPerf 在 armPerf 后才存在、__nfSeedStats 随相位波动（已写进冻结注意事项）"
+    ],
+    "globals_found": 19,
+    "domIds_all_present": true,
+    "pageErrors": []
+  },
+  "no_code_change": {
+    "index_html_sha16": "b47cef81a708fbfb",
+    "note": "本批未改原型与 src；索引文件 sha 与批次 4 结束时一致"
+  },
+  "open_items": [
+    "两份文档待作者评审（本批验收即文档评审）",
+    "轨道 B 开工需作者点名；开工前 src/ 不动",
+    "O1（DWELL 增量）/ O2（像素块与尘埃）裁决仍挂账；T3.1/T3.2/T3.4 未做",
+    "未 commit；工作树待提交：6 个改动文件 + 2 个脚本 + 5 份文档 + 6 份证据"
+  ],
+  "pass": true
+}

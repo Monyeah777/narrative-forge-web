@@ -1,0 +1,112 @@
+{
+  "task": "codex-batch2-perf",
+  "volume": "NF · Codex 交接总卷 v1.0 · §6 批次 2（性能 / DWELL 预算收口）",
+  "timestamp": "2026-09-13T03:20:00.000Z",
+  "tip": "d33fb8c71759b7d1e112d3dfe5261806e2eefd84",
+  "branch": "codex/batch0-confirm",
+  "scope_note": "参数一律不动（SPRING_SHARP / DAMP / VMAX / 停止阈值 / 驱离 / 径向 K·C / morph 常数全部原值）；只做无损优化。",
+  "files": {
+    "prototype/index.html": { "pre_sha256_16": "5fca0eb5f86762df", "post_sha256_16": "6fd78995e3d81f27", "lines_pre": 4493, "lines_post": 4545 },
+    "prototype/pixi-physics/nf-radial-physics.js": { "pre_sha256_16": "fd58ccc3c6814e8a", "post_sha256_16": "b68f7ad0e5924b84", "lines_pre": 1089, "lines_post": 1138 },
+    "prototype/renderer.pixi.js": { "pre_sha256_16": "76720e751110492d", "post_sha256_16": "19c717e23740563a", "lines_pre": 233, "lines_post": 298 },
+    "git_numstat": { "files": 4, "added": 289, "deleted": 122 }
+  },
+  "changes": {
+    "T2.1_verify_surface": {
+      "finding": "F-01",
+      "what": "publishRadial 改为复用同一对象树（不再每帧新建含嵌套 render 的对象）+ ≤4Hz 发布（250ms 节流，材质变化 force）；publishRenderInfo 里的 __nfPixiLive 由「每帧 Object.assign + info() 双份分配」改为原地复用 + 同频发布",
+      "semantics": "字段逐项与旧实现一致；世界重建 / 画幅切换 / ready 翻转时强制发布，__nfRadial 与 __nfPixiLive 语义不变",
+      "measured": "publishRadial 单次成本 0.6407ms（新 0.6544ms，工作内容相同）；旧版每帧固定 2 次 = 1.2814ms/帧，新版 4Hz 摊销 = 0.0436ms/帧，省 1.2377ms/帧"
+    },
+    "T2.2_curl_gate": {
+      "finding": "F-02",
+      "what": "refreshCurlGrid 从「physics 每帧无条件重算」改为「只在 legacy 混沌真正消费 curlAt 时刷新」",
+      "equivalence": "网格值只依赖 t 与网格尺寸，消费帧与旧行为逐位相同；径向路径 / 弹簧路径本来不读 curlAt",
+      "measured": "1440×900 / CURL_CELL=48 → 32×20=640 格，0.1066ms/帧（6.4ms/s）不再空转"
+    },
+    "T2.3_streak_lut_alloc": {
+      "finding": "F-05 + F-01（渲染侧分配）",
+      "what_a": "睡眠粒子不再推进丝缕（asleep 门槛），@50k 睡眠占比 0.788、其 esc 仅 escMean 0.028px / escMax 0.122px",
+      "what_b": "FIL LUT 由「单帧整表重建」改为「分 4 步摊销」（psi 分片填完再统一算梯度，避免混时相），消掉 1Hz 上的 0.28ms 周期尖峰",
+      "what_c": "sampleNoise / driftAt 不再每次返回新数组（旧实现每帧约 10 万次小数组分配），改为共享 scratch；调用方都是取完即拷贝，数值等价",
+      "what_not": "drift LUT（30Hz）摊销经实测无收益（−0.02ms），故不做，避免无谓风险"
+    },
+    "T2.4_pixi_rebuild": {
+      "finding": "F-04",
+      "what_a": "重建判定由「palette 引用比较」改为内容键（n + pointsId + 调色板指纹），修掉同画往返的误重建",
+      "what_b": "必须重建时分帧摊销，片大小按上一片实测耗时自适应（目标 ≤6ms/片，1500–8000 粒），容器首帧 alpha=0.35、收尾回满",
+      "what_c": "stop()（冻结 / reduced-motion 停表）前把未完成重建一次性收尾，避免留下半柱降透明画面"
+    }
+  },
+  "measurements": {
+    "physics_ab_same_process": {
+      "method": "同进程交错 A/B：旧模块（git HEAD）与新模块，N=50601、LIVE 开关、drain(1/60)+全量 renderXY",
+      "old_total_ms": 7.053, "new_total_ms": 5.633, "delta_ms": -1.42,
+      "render_diff_px": { "max": 0.0948, "mean": 0.007 },
+      "physics_sequence_identical": true,
+      "note": "physics 逐位相同（snapshotPhysics 哈希一致）；渲染位移最大 0.095px，属次像素"
+    },
+    "dwell_increment_ab_same_process": {
+      "method": "同进程两轮 A/B：每轮都测 morph 关 / 开 的整帧，取增量",
+      "old_delta_mean_ms": 4.208, "new_delta_mean_ms": 3.319, "improvement_ms": 0.889,
+      "old_on_ms": [6.98, 7.186], "new_on_ms": [5.376, 5.702],
+      "old_off_ms": [2.406, 3.343], "new_off_ms": [1.787, 2.654],
+      "cap_ms": 1.0,
+      "rounds": "第 1 轮 old 增量 4.574 / new 3.589；第 2 轮 old 3.843 / new 3.048（机时噪声约 ±0.4ms）"
+    },
+    "dwell_tiers": {
+      "note": "整帧 = drain(1/60) + 全量 renderXY；同一会话内 measured",
+      "live_50k": { "off": 1.566, "on": 5.54, "delta": 3.974 },
+      "cut_30k": { "off": 1.53, "on": 3.394, "delta": 1.864 },
+      "cut_20k": { "off": 1.067, "on": 2.38, "delta": 1.313 }
+    },
+    "rebuild_ab": {
+      "method": "同一脚本、旧渲染器（git HEAD 内存供给）与新渲染器各跑一次；记录 draw() 单帧耗时与 longtask",
+      "old": { "initial_rebuild_ms": 168.3, "same_painting_roundtrip_ms": 162.3, "hall_swap_ms": 174.3, "egg_swap_ms": 154.3, "longtask_max_ms": [254, 213, 216, 212] },
+      "new": { "initial_rebuild_ms": 14.0, "same_painting_roundtrip_ms": 2.4, "hall_swap_ms": 25.6, "egg_swap_ms": 13.7, "longtask_max_ms": [78, 0, 61, 72] },
+      "verdict": "误重建已消除（162.3 → 2.4ms）；真换画由单帧 150ms+ 摊到多帧（首片 ~14ms）"
+    },
+    "residual_spike_note": "【2026-09-13 更正 · 见 painting/decision-materials-o1-o2.json】原记「停留期每 6 帧一次的 alpha/tint 上传帧 20–25ms」系误判：该观测取自 chaos 相位窗口，含启动/重建一次性成本。停留稳态复测（formed + dwell 9s，195 帧）：alpha 帧 1.46ms 对 普通帧 0.80ms，即 +0.66ms、每 6.09 帧一次；alphaFrameMax 2.6ms。该候选从 O1① 撤销。",
+    "environment": "Windows / Node v24.19.0 / Edge 152 headless + SwiftShader（软件光栅）。绝对值不可与人机 GPU 60fps 直接对齐；同进程 A/B 与同会话对照才可比。"
+  },
+  "verification": {
+    "goldens": {
+      "c2": { "sha256": "dc1f16092d775ee1462c94eb964bb95523470bd7fd7770b1efab02c6940f320a", "pass": true },
+      "vendor": { "sha256": "9948591083793305468d73915a3ea85032dcf8e32eee7a1328585050d7a14d53", "bytes": 818871, "pass": true },
+      "pointsBin": { "headOK": true, "dallas": 50601, "scotland": 50441, "met": 50471, "pass": true },
+      "s3dual": { "sha256": "cdff787751379eca069c205dbeb730f7b34a13e85c9902dee0959acee143aa19", "twice": true, "pass": true },
+      "allPass": true
+    },
+    "gate_matrix": { "gates": 21, "phases": 2, "comparedKeys": 2016, "diffCount": 0, "errors": 0, "baseline": "批次 1 后快照 gate-snapshot-post.json" },
+    "seven_steps": {
+      "pass": true,
+      "autoplay": { "introFormedMs": 3291, "HALL_ms": 10119, "COMMUNITY_ms": 10093, "INTRO_ms": 10085, "caption_nav_target_ok": true },
+      "manual": "首页 chaos / 介绍 formed / 大厅 / 社区 / 回首页 / 彩蛋（导航不动、介绍句不出）/ hover 0.7→1 + 白下划线 全部通过",
+      "formed_checksums": { "intro": 1742.7300567626953, "hall": 2069.1650390625, "community": 1902.1929626464844 },
+      "checksum_note": "与批次 2 之前逐位相同，物理未受影响",
+      "repel": { "controlMaxDev": 0.028, "probeMaxDev": 7.191 },
+      "pageErrors": []
+    }
+  },
+  "petition": {
+    "id": "O1-DWELL",
+    "trigger": "穷尽本批无损手段后，DWELL 增量仍超 +1.0ms 上限",
+    "three_tiers": {
+      "现状（批次 0 基线）": "+4.97ms（off 2.474 / on 7.443）",
+      "本批优化后": "+3.32 ~ +3.97ms（同进程 A/B 增量 4.208 → 3.319；同会话 tiers 口径 3.974）",
+      "砍 N 到 30k": "+1.86ms",
+      "砍 N 到 20k": "+1.31ms"
+    },
+    "observation": "即便砍到 20k 仍高于 +1.0ms；要贴上限需 ≈15k 量级，或改协议口径",
+    "options": ["继续无损（下一候选：alpha 上传帧摊销 / drift LUT 与丝缕进一步合并 / Pixi 侧每帧写入减量）", "砍 N（需日志 + 回退开关，属 O1 ②）", "启用 E 实验（属 O1 ③，未开）"],
+    "silent_param_change": "none"
+  },
+  "open_items": [
+    "O1 三档数字已备，等作者/用户裁决（本批未砍参、未启用 E）",
+    "alpha 上传帧 20–25ms（每 6 帧一次）待下一批评估",
+    "drift LUT（30Hz）摊销实测无收益，已否决并记账，避免后续重复尝试",
+    "未 commit；工作区待提交：.gitignore、3 个源码文件、docs 死链归档、painting/codex-*.json",
+    "录屏仍缺（会话不能出视频）"
+  ],
+  "pass": true
+}

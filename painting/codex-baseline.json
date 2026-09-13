@@ -1,0 +1,190 @@
+{
+  "task": "codex-batch0-confirm",
+  "volume": "NF · Codex 交接总卷 v1.0 · §6 批次 0（确认）",
+  "handbook": "HANDOFF.md（仓库根）",
+  "timestamp": "2026-09-13T02:35:05.818Z",
+  "tip": "d33fb8c71759b7d1e112d3dfe5261806e2eefd84",
+  "branch": "codex/batch0-confirm",
+  "worktree": "C:/Users/mon_7/Downloads/nf-web-batch0",
+  "code_changes": "none（批次 0 不改代码；本文件为新增证据）",
+  "environment": {
+    "os": "Windows",
+    "node": "v24.19.0",
+    "nodeZlib": "1.3.2.1-motley-3246f1b",
+    "python": "3.11.9",
+    "pythonZlib": "1.3.1",
+    "browser": "Microsoft Edge 152.0.4191.66 (headless, --use-angle=swiftshader)",
+    "note": "浏览器数字为软件光栅（SwiftShader）环境，帧率与长任务不可与人机 GPU 60fps 直接对齐；Node 侧数字为纯 CPU 参考。"
+  },
+  "goldens": {
+    "c2golden": {
+      "frozenConstant": "dc1f16092d775ee1462c94eb964bb95523470bd7fd7770b1efab02c6940f320a",
+      "frozenFileSha256": "dc1f16092d775ee1462c94eb964bb95523470bd7fd7770b1efab02c6940f320a",
+      "run1000StepsSha256": "dc1f16092d775ee1462c94eb964bb95523470bd7fd7770b1efab02c6940f320a",
+      "bytes": 48000,
+      "sameBytes": true,
+      "lockedToTarget": true,
+      "spring": 0.055,
+      "damp": 0.9,
+      "vmax": 10,
+      "stopPx": 0.6,
+      "stopV": 0.06,
+      "pass": true
+    },
+    "vendor": {
+      "frozen": "9948591083793305468d73915a3ea85032dcf8e32eee7a1328585050d7a14d53",
+      "sha256": "9948591083793305468d73915a3ea85032dcf8e32eee7a1328585050d7a14d53",
+      "bytes": 818871,
+      "versionString": "8.20.1",
+      "recordedSha256File": "9948591083793305468d73915a3ea85032dcf8e32eee7a1328585050d7a14d53",
+      "gzip9Local_node": 231657,
+      "gzip9Local_python": 230745,
+      "gzip9Volume": 230584,
+      "pass": true
+    },
+    "pointsBinContract": [
+      {
+        "file": "prototype/pixi-cloud/dallas-radial-50k.bin",
+        "magic": "NFPT",
+        "versionByte": 3,
+        "count": 50601,
+        "bytes": 253014,
+        "expectedBytes": 253014,
+        "sha256": "2f891e9cad64bf3a4fa24af07b85d202f22ae53c690dd40a9a15e04abd1a8e9d",
+        "pass": true
+      },
+      {
+        "file": "prototype/pixi-hall/scotland-radial-50k.bin",
+        "magic": "NFPT",
+        "versionByte": 3,
+        "count": 50441,
+        "bytes": 252214,
+        "expectedBytes": 252214,
+        "sha256": "b981908b660dbcc6da95c6938a1a05afa49f87b184469d7798e190465b6dfcd1",
+        "pass": true
+      },
+      {
+        "file": "prototype/pixi-community/met-radial-50k.bin",
+        "magic": "NFPT",
+        "versionByte": 3,
+        "count": 50471,
+        "bytes": 252364,
+        "expectedBytes": 252364,
+        "sha256": "87291116edfc25a73dd3a20ef99b15a0b98a92305248135cadac5e208c326c4b",
+        "pass": true
+      }
+    ],
+    "s3dual": {
+      "frozen": "cdff787751379eca069c205dbeb730f7b34a13e85c9902dee0959acee143aa19",
+      "runA": "cdff787751379eca069c205dbeb730f7b34a13e85c9902dee0959acee143aa19",
+      "runB": "cdff787751379eca069c205dbeb730f7b34a13e85c9902dee0959acee143aa19",
+      "deterministic": true,
+      "pass": true
+    },
+    "allPass": true
+  },
+  "observed_defaults": {
+    "manifest": {
+      "id": "exhibit-v1",
+      "dwellMs": 10000,
+      "transitionMs": 3000,
+      "introRevealMs": 2400,
+      "idleResumeMs": 30000,
+      "hoverResumeMs": 1500,
+      "catalog": ["INTRO", "HALL", "COMMUNITY"],
+      "seedMode": "cloud",
+      "pixelBlock": { "enabled": true, "size": 2 },
+      "dust": { "enabled": true, "n": 640 },
+      "frameScale": 1,
+      "colorVersion": "v1",
+      "assemblyMorph": true
+    },
+    "live_n": 50601,
+    "live_n_note": "介绍/大厅/社区共用同一个 live N（cap 取模），换幅不改 N；仅解码源不同",
+    "radial_on": true,
+    "pixi": { "version": "8.20.1", "rendererName": "webgl", "priority": "HIGH", "ok": true },
+    "pointer": { "sightElement": false, "bodyCursor": "auto" }
+  },
+  "visual7step": {
+    "pass": true,
+    "step1_home": "chaos / nav=btn-home / #sight 无 / cursor=auto / .lead opacity=0 且 visibility=hidden",
+    "step2_intro": "formed 6.9s / dossier data-view=intro / 主句『把叙事，变成工程。』渐显（读数 0.408）/ target=points_poplars.json",
+    "step3_autoplay": "INTRO 成画 2.98s；轮换 HALL(+9.72s) → COMMUNITY(+9.65s) → INTRO(+26.7s)；图注与 nav 随幅更新；无二次装配异常",
+    "step4_sources": "hall→points_artwork_b.json/painting=scotland；community→points_artwork_c.json/painting=met",
+    "step5_home": "点首页 5.12s 回 chaos / dossier aria-hidden=true / .lead 隐藏",
+    "step6_egg": "停在首页点页脚 NF → formed 13.2s / target=points_nf.json(type=text) / painting=glyph / nav 保持 btn-home / dossier aria-hidden=true（介绍句不出现）",
+    "step7_hover_repel": {
+      "hover_before": { "opacity": "0.7", "borderBottom": "1px solid rgba(0, 0, 0, 0)" },
+      "hover_after": { "opacity": "1", "borderBottom": "1px solid rgb(255, 255, 255)" },
+      "repel_checksum_control_dev": 0.0396,
+      "repel_checksum_pointer_dev": 10.914,
+      "repel_pixel_diff_pointer_box_640_450": 52.15,
+      "repel_pixel_diff_control_box_200_800": 3.031,
+      "repel_pixel_diff_corner_60_60": 0.004
+    }
+  },
+  "autoplay_takeover": {
+    "phase_after_nav_click": "manual",
+    "key_held_12s": "INTRO（未轮换）",
+    "resume_after_idle": "约 29s 静置后回到 dwell（manifest idleResumeMs=30000）",
+    "pass": true
+  },
+  "pixel_stats_headless": {
+    "method": "截图在浏览器内解码后按 4px 步长统计（饱和度>0.10 记为彩色）",
+    "intro_dallas": { "coloredFrac": 0.0195, "meanHueOfColored": 96.9 },
+    "hall_scotland": { "coloredFrac": 0.0429, "meanHueOfColored": 58.7 },
+    "community_met": { "coloredFrac": 0.0477, "meanHueOfColored": 184.4 },
+    "egg_nf": { "coloredFrac": 0.0039, "meanHueOfColored": 193.5 }
+  },
+  "dwell_readings": {
+    "node_fullN": {
+      "N": 50601,
+      "method": "createWorld(DWELL) + drain(1/60) + renderXY 全量，60 帧/组，先热身 5 帧",
+      "switchesOff": { "handbookShape": true },
+      "switchesOn": { "handbookShape": true, "lifecycle": true, "recycle": true, "boundaryQ": true, "ripple": true, "streak": true, "noiseLut": true },
+      "off": { "mean": 2.474, "p50": 2.449, "p95": 2.886, "max": 3.817 },
+      "on": { "mean": 7.443, "p50": 7.334, "p95": 8.412, "max": 9.632 },
+      "deltaMeanMs": 4.969,
+      "deltaP50Ms": 4.885,
+      "capMs": 1.0,
+      "note": "卷面 CE 证据按 benchN 缩放外推（估 +3.9ms）；本行是真实 50601 点整帧实测，超 +1.0ms 上限约 4ms。O1 维持未决，未做任何砍参。"
+    },
+    "browser_headless_reference": {
+      "dwell_window_6s": { "workN": 45, "workMeanMs": 21.87, "workP50Ms": 19.0, "workP95Ms": 24.6, "hzHint": 7.6, "longtaskCount": 13 },
+      "handover_window_3s": { "workN": 16, "workMeanMs": 85.24, "workP50Ms": 25.6, "workP95Ms": 963.6, "longtaskMaxMs": 1095 },
+      "note": "软件 WebGL 环境下的现值，仅供本机对照；不作为预算判定依据。"
+    }
+  },
+  "findings": [
+    {
+      "id": "B0-F1",
+      "level": "note",
+      "about": "vendor gzip -9 字节数不可在本机复现",
+      "detail": "卷面与 painting/pixi-h1-1-vendor.json 记 230584（Linux /workspace 下 gzip CLI）。本机 node zlib 1.3.2.1-motley=231657，python zlib 1.3.1=230745。sha256、字节数 818871、版本串 8.20.1 三项完全一致，判定为压缩器实现差异，非文件差异；不作失败处理，仅记账。"
+    },
+    {
+      "id": "B0-F2",
+      "level": "observation",
+      "about": "DWELL 预算在真实 N 下超限",
+      "detail": "全量 50601 点整帧：morph 关闭 2.474ms/帧（已略超卷面停留 ≤2ms），全开 7.443ms/帧，增量 +4.97ms，超 +1.0ms 上限。与 O1（DWELL 增量超 +3.9ms）方向一致，量级更高；批次 2 的无损优化空间以此为新基线对照。"
+    },
+    {
+      "id": "B0-F3",
+      "level": "observation",
+      "about": "像素块与尘埃默认值",
+      "detail": "现网 pixelBlock.enabled=true / size=2 设备像素、dust.enabled=true / n=640（约 1.27%）。卷面记 3px / 5% 尘埃，偏差仍属 O2 未决项，本批未动。"
+    },
+    {
+      "id": "B0-F4",
+      "level": "note",
+      "about": "7 步验证方式",
+      "detail": "本次以 DOM/计算样式/状态机/物理状态 + 浏览器内像素统计四项交叉取证，并保留 14 张截图；像素级人工目检由作者复核（本会话不能直接阅图）。"
+    }
+  ],
+  "artifacts": {
+    "screenshots": "C:/Users/mon_7/Downloads/nf-baseline-artifacts/*.png（v2-* 为最终版 14 张）",
+    "visual_json": "C:/Users/mon_7/Downloads/nf-baseline-artifacts/visual-7step-v2.json",
+    "pageErrors": [],
+    "consoleErrors": []
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "task": "codex-o1b-lossless-exhausted",
+  "volume": "NF · Codex 交接总卷 v1.0 · §2 O1 ①（继续无损优化，收口判定）",
+  "timestamp": "2026-09-13T05:34:00.000Z",
+  "tip": "d33fb8c71759b7d1e112d3dfe5261806e2eefd84",
+  "branch": "codex/batch0-confirm",
+  "index_html_sha16": "1c5423692a1cbf04",
+  "nature": "判定轮：不新增改动，用内存变体把 O1① 剩余候选逐项量掉（只留实测有效者；本轮全部否决）",
+  "attribution_disable_one_block": {
+    "method": "同进程、内存变体（字符串替换逐块禁用）、N=50601、LIVE 开关、DWELL、交错 4 轮 × 40 样本取中位；基线 4.514ms",
+    "rows": [
+      { "disabled": "boundaryQ 块", "delta": -0.873 },
+      { "disabled": "streak 块", "delta": -0.83 },
+      { "disabled": "ripple（tint + 位移）", "delta": -0.453 },
+      { "disabled": "recycle 块", "delta": -0.349 },
+      { "disabled": "lifecycle 块", "delta": -0.129 },
+      { "disabled": "refreshTint 整环（提前返回）", "delta": -0.02 }
+    ],
+    "reading": "真正花钱的是 boundaryQ 与 streak 两块（合计 1.7ms），但两块内部只剩「比较 + 少量乘加」，没有可直接省掉的冗余；refreshTint 整环几乎免费（−0.02），说明批次 2 的 10Hz 节流已经到位"
+  },
+  "rejected_candidates": [
+    { "candidate": "模块内 renderAllInto 批量渲染（去 5 万次跨模块调用）", "measured": -0.012, "verdict": "无收益（V8 已内联/调用开销可忽略），不做" },
+    { "candidate": "qOfR 查表化", "measured": -0.088, "verdict": "无收益且改活体数值，不做" },
+    { "candidate": "streak 重排 + qOfR 内联（micro 变体）", "measured": -0.019, "verdict": "无收益；且已证物理逐位一致、渲染位移差 0，但收益不值改动面，不做" },
+    { "candidate": "Math.hypot → Math.sqrt（3 处）", "measured": -0.431, "verdict": "有收益但**改数值**（hypot 精度更高；anisotropy 属积分器，会动 S3 dual 哈希），属行为改动，不做" },
+    { "candidate": "边界块/生命周期对睡眠粒子跳过", "measured": "未单独测", "verdict": "会改动力学与视觉（边界推力是唤醒来源、寿命推进影响渐入渐出），属行为改动，不做" },
+    { "candidate": "drift LUT（30Hz）摊销", "measured": "+0.03（批次 2）", "verdict": "已否决" },
+    { "candidate": "alpha/tint 上传帧摊销", "measured": "+0.66ms/6 帧（批次 O1 材料复测）", "verdict": "原判据作废，已撤销" }
+  ],
+  "micro_variant_equivalence": {
+    "method": "对 micro 变体做 120 步后比对 snapshotPhysics 与 snapshotRender",
+    "physicsBitIdentical": true,
+    "renderMaxAbsDiffPx": 0,
+    "renderMeanAbsDiffPx": 0,
+    "note": "即使证明等价，收益 −0.019ms 也不值得进代码（改动面/收益不成比例）"
+  },
+  "o1_conclusion": {
+    "lossless_space": "已穷尽：本批累计无损优化 = 验证面发布 1.24 + curl 门控 0.107 + 物理侧 1.42（批次 2）+ TypedArray 拷贝 1.4~2.0（O1①）≈ 4.2~4.8ms/帧（绝对停留帧口径）",
+    "budget_note": "卷面两个口径：绝对「停留 ≤2ms/帧」与增量「≤+1.0ms」。本批把绝对值显著压低，但**增量几乎不动**（50k：4.19 → 4.05）——因为无损项主要省的是与 morph 开关无关的共同成本",
+    "next": "再往前走必须动行为/参数：② 砍 N（30k +2.0 / 20k +1.35，仍高于 +1.0；贴上限约需 15k）或 ③ 启用 E 实验。二者按卷面均需作者裁决"
+  },
+  "artifacts": ["C:/Users/mon_7/Downloads/nf-baseline-artifacts/（本轮原始输出见终端记录，未单独落盘）"],
+  "open_items": ["O1 ②③ 待裁决", "O2 三选一待裁决", "未 commit"],
+  "pass": true
+}

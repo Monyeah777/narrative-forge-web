@@ -1,0 +1,93 @@
+{
+  "task": "codex-batch3-t33-sequence",
+  "volume": "NF · Codex 交接总卷 v1.0 · §6 批次 3 / T3.3（生成序列修复，F-07）",
+  "timestamp": "2026-09-13T03:52:00.000Z",
+  "tip": "d33fb8c71759b7d1e112d3dfe5261806e2eefd84",
+  "branch": "codex/batch0-confirm",
+  "scope": "只做 T3.3（生成序列）。T3.1/T3.2 依赖 O2 裁决、T3.4 依赖点名，本批不动。",
+  "files": {
+    "prototype/index.html": {
+      "pre_sha256_16": "6fd78995e3d81f27",
+      "post_sha256_16": "dda53d8ab11b732b",
+      "lines_pre": 4545,
+      "lines_post": 4606
+    },
+    "scripts/assembly-v3-d-g123.mjs": "新增（phase D 的 G1–G3 复跑闸；phase A 的 assembly-v3-a-audit.mjs 保留为历史件不动）",
+    "git_numstat_total_repo": { "files": 4, "added": 355, "deleted": 126 }
+  },
+  "rule_change": {
+    "old": "phaseElapsed 到预算（introRevealMs 2400ms）或早停条件 → snapAllToTargets() 单帧把 x/y 写成终态 → setMode(formed)",
+    "new": "同一触发时机 + 完成度门控：p = 1 − rms/rms0 ≥ 0.995 且 rms ≤ 3px 才 setMode(formed)；不写终态（F2/F3）",
+    "f1": "完成度由固定步长推进（phaseElapsed 随物理步走，无帧计数）",
+    "f2": "切换 DWELL = p ≥ 0.995 且完成度校验过阈（实测切换点 p 0.99502–0.99516）",
+    "f3": "装配路径不再调用 snapAllToTargets（函数留壳、标批次 4 物理删）；legacy 轨逐粒 nearStop 锁位保留（位移 ≤0.6px）",
+    "f4": "单帧位移 P99 门限（切换帧 0.138px，旧 snap 帧 3.377px）",
+    "f5": "复核：recycle respawn 出生点仍在目标径向内侧 8%（BIRTH_IN=0.08，属径向装配上游），本批未改",
+    "f6": "尾部自动满足（p≥0.6 段占全程 95.2% ≥ 35%）；未引入合成 S 形包络，见申议",
+    "guard": "安全阀 = 预算 + 1.5s 仍不过阈才放行并 capHit++ 记账；本轮 7 步与自动放映全部 capHit=0"
+  },
+  "g123": {
+    "harness": "scripts/assembly-v3-d-g123.mjs（4000 点 trace、Dallas S2b u16、cloud seed、60/120Hz 双帧率）",
+    "G1": { "pass": true, "rms_monotonic": true, "rms_monotonic_until_switch": true, "tail_pct": 95.2, "want_tail_pct": 35 },
+    "G2": {
+      "pass": true,
+      "new_switch_p99_px_60": 0.138,
+      "new_switch_prev1s_ratio_60": 0.3,
+      "new_switch_prev1s_ratio_120": 1.9,
+      "old_snap_p99_px_60": 3.377,
+      "old_snap_prev1s_ratio_60": 7.2,
+      "spike_60": false,
+      "spike_120": false
+    },
+    "G3": {
+      "pass": true,
+      "live_rule_present": true,
+      "snap_call_removed_from_assemble": true,
+      "switch_t_60": 2.417,
+      "switch_t_120": 2.417,
+      "switch_t_delta_s": 0
+    }
+  },
+  "live_verification": {
+    "sequence_frame_diff": {
+      "method": "真实页面逐 ~150ms 截图 26 张，浏览器内解码求相邻帧平均亮度差",
+      "max_diff": 12.95,
+      "median_diff": 1.213,
+      "ratio": 10.68,
+      "reading": "最大帧差出现在约 1.0s 的正常飞行段（云团收拢），切换帧（约 2.9s wall / 2.4s 物理）帧差 4.11，低于前几帧 5.59/6.58/7.14 → 切换处无冲线"
+    },
+    "formed_convergence": {
+      "intro_checksum_at_switch": 1745.8082580566406,
+      "intro_checksum_after_700ms": 1743.2129974365234,
+      "old_snapped_checksum_batch2": 1742.7300567626953,
+      "reading": "禁用 snap 后成形态继续收敛，0.7s 内逼近旧 snap 值（差 ≤2.5 个 checksum 单位 = 4 点坐标之和，约 0.1–0.6px/点）"
+    },
+    "gate_matrix": { "gates": 21, "comparedFields": 1848, "diffCount": 0, "errors": 0, "baseline": "批次 2 后快照 gate-snapshot-b2post.json" },
+    "seven_steps": {
+      "pass": true,
+      "autoplay": { "introFormedMs": 3146, "HALL_ms": 10018, "COMMUNITY_ms": 13572, "INTRO_ms": 10064, "caption_nav_target_ok": true },
+      "manual": "首页/介绍/大厅/社区/回首页/彩蛋/hover 全通过；彩蛋导航不动、介绍句不出",
+      "close_verdicts": "全部 check（capHit 0）",
+      "pageErrors": []
+    },
+    "goldens": { "c2": true, "vendor": true, "s3dual": true, "pointsBin": true, "allPass": true }
+  },
+  "artifacts": {
+    "g123_json": "painting/assembly-v3-d-g123.json",
+    "g123_svg": "painting/assembly-v3-d-rms.svg",
+    "raw": [
+      "C:/Users/mon_7/Downloads/nf-baseline-artifacts/batch3-sequence-frames.json",
+      "C:/Users/mon_7/Downloads/nf-baseline-artifacts/batch3-verify.json",
+      "C:/Users/mon_7/Downloads/nf-baseline-artifacts/gate-snapshot-b3post.json",
+      "C:/Users/mon_7/Downloads/nf-baseline-artifacts/gate-diff-b2post-b3post.json"
+    ]
+  },
+  "open_items": [
+    "T3.1 像素块 / T3.2 尘埃：等 O2 裁决（现状仍 pixel=2、dust=640≈1.27%）",
+    "T3.4 计数档（20–30k 预览 / 30k 应急降级日志）：等点名",
+    "F6 严格意义的 S 形缓动包络未引入（现序列缓动来自临界阻尼 + sleep，实测单调且尾部 95.2%）；如需显式包络另立",
+    "safe valve 上限 1.5s：本轮未触发，若在低端机触发会 capHit++ 并写入 __nfAnim.assembleClose",
+    "未 commit；工作区待提交：3 个源码文件 + .gitignore + 2 份文档 + 5 份证据 + 1 个脚本"
+  ],
+  "pass": true
+}

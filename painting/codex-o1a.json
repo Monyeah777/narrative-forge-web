@@ -1,0 +1,76 @@
+{
+  "task": "codex-o1a-typedarray-batch",
+  "volume": "NF · Codex 交接总卷 v1.0 · §2 O1 ①（继续无损优化，卷面默认档）",
+  "timestamp": "2026-09-13T05:12:00.000Z",
+  "tip": "d33fb8c71759b7d1e112d3dfe5261806e2eefd84",
+  "branch": "codex/batch0-confirm",
+  "preconditions": "仅动 index.html 的拷贝路径；`nf-radial-physics.js` 未改（S3 dual 哈希口径不受影响）",
+  "changes": {
+    "applyRadialPhysics": [
+      "tx/ty 写入：逐元素 50k 循环 → `radialWorld.tx.set(tx)` / `.set(ty)`（useHomes 分支同理）",
+      "非 live 路径的世界→页 x/y/vx/vy 预拷贝删除：该拷贝随后被渲染回填覆盖，属冗余（live 路径保留，applyRepel 需要）",
+      "live 路径的页→世界回写改 `.set()`",
+      "drain 后的 vx/vy 回填提前为 `.set()`（drain 后即为终值；healParticle 仍读到最新值）"
+    ],
+    "syncRadialFromLive": "6 个逐元素循环 → 6 次 `.set()`（低频路径）",
+    "rebuildRadialWorld": "nxArr/nyArr 的逐元素拷贝 → `.set()`（一次性路径）",
+    "not_done": [
+      "模块内 renderAllInto 批量渲染：实测无收益（−0.012ms，噪声内），为减小改动面不做",
+      "qOfR 查表化：实测 −0.088ms（噪声内）且会改动活体数值，不做",
+      "drift LUT 摊销：批次 2 已实测否决"
+    ]
+  },
+  "measurements": {
+    "ab_same_process": {
+      "method": "同进程交错 5 轮 × 每配置 50 样本取中位；整帧复刻 applyRadialPhysics 的页内循环（N=50601、LIVE 开关、DWELL）",
+      "baseline_loop_ms": 6.004,
+      "set_same_shape_ms": 4.185,
+      "prune_set_ms": 3.976,
+      "prune_set_no_renderAll_ms": 3.988,
+      "delta_set_only_ms": -1.819,
+      "delta_prune_extra_ms": -0.209,
+      "delta_total_ms": -2.028
+    },
+    "copy_equivalence": {
+      "method": "20 万个 Float64 → Float32 两种写法比对（含 NaN / ±Inf / ±0 / denormal / 极大极小）",
+      "valueMismatches": 0,
+      "bitMismatches": 0,
+      "conclusion": "`.set()` 与逐元素赋值在 IEEE754 最近偶舍入下逐位一致 → 判为无损"
+    },
+    "page_level_observation": {
+      "context": "formed + dwell 8s（headless SwiftShader）",
+      "workP50_ms": 16.1,
+      "workP95_ms": 18.1,
+      "hzHint": 31.06,
+      "note": "页内 work 环含 Pixi draw 与软件光栅开销；跨会话不可比，只作现状记录"
+    }
+  },
+  "verification": {
+    "goldens": { "allPass": true, "entry": "scripts/check-goldens.mjs" },
+    "gate_matrix": { "gates": 21, "comparedFields": 1890, "diffCount": 0, "errors": 0, "excluded": ["mode（时相）", "seedStatsCfg.*（配置同值，探针口径）", "handover（本轮探针漏采字段）"] },
+    "seven_steps": {
+      "pass": true,
+      "autoplay": { "introFormedMs": 2653, "HALL_ms": 10049, "COMMUNITY_ms": 10013, "INTRO_ms": 13579, "caption_nav_target_ok": true },
+      "manual": "首页/介绍/大厅/社区/回首页/彩蛋/hover 全过；closeVerdict 全 check、capHit 0",
+      "pageErrors": []
+    }
+  },
+  "effect_on_o1": {
+    "same_harness_ab_tiers": {
+      "method": "同进程、同口径（old = 逐元素循环含非 live 冗余预拷贝；new = .set 批量 + 去冗余），整帧 = 拷贝 + drain(1/60) + renderXY 回填，30 帧/配置",
+      "N_50601": { "old_off": 3.462, "new_off": 2.217, "old_on": 7.655, "new_on": 6.264, "old_delta": 4.193, "new_delta": 4.047, "abs_saving_on": -1.391, "abs_saving_off": -1.245 },
+      "N_30000": { "old_off": 2.849, "new_off": 1.79, "old_on": 4.89, "new_on": 3.794, "old_delta": 2.041, "new_delta": 2.004, "abs_saving_on": -1.096, "abs_saving_off": -1.059 },
+      "N_20000": { "old_off": 1.958, "new_off": 1.247, "old_on": 3.308, "new_on": 2.597, "old_delta": 1.35, "new_delta": 1.35, "abs_saving_on": -0.711, "abs_saving_off": -0.711 }
+    },
+    "measurement_spread": "同一对形状在两次独立同进程 A/B 里分别测得 50k 停留帧 −1.391ms 与 −2.028ms（后者含 renderAll 变体），故本项收益报**区间 −1.4 ~ −2.0ms/帧**",
+    "budget_framing": "本项省的是与 morph 开关无关的拷贝成本 → 主要改善**绝对停留帧成本**；预算里的「增量」几乎不动（50k：4.193 → 4.047）。卷面 §3.4 同时有绝对项（停留 ≤2ms/帧）与增量项（+1.0ms），本项只推进绝对值",
+    "o1_status": "① 已做掉一项（本轮）；其余候选（合单遍、ripple 合并、stepLife 平台期跳过）未做；② 砍 N 与 ③ E 实验仍待裁决"
+  },
+  "artifacts": [
+    "C:/Users/mon_7/Downloads/nf-baseline-artifacts/gate-snapshot-o1a.json",
+    "C:/Users/mon_7/Downloads/nf-baseline-artifacts/gate-diff-b4post-o1a.json",
+    "C:/Users/mon_7/Downloads/nf-baseline-artifacts/o1a-verify.json"
+  ],
+  "open_items": ["O1 ②③ 仍待裁决", "未 commit"],
+  "pass": true
+}

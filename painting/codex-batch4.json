@@ -1,0 +1,72 @@
+{
+  "task": "codex-batch4-structure",
+  "volume": "NF · Codex 交接总卷 v1.0 · §6 批次 4（结构治理）",
+  "timestamp": "2026-09-13T04:16:00.000Z",
+  "tip": "d33fb8c71759b7d1e112d3dfe5261806e2eefd84",
+  "branch": "codex/batch0-confirm",
+  "T4.1_dead_deletion": {
+    "method": "先 grep 全仓核验引用数 → 分批删 → 每批 node --check + 浏览器冒烟；批次末跑金测 + 全闸 + 7 步",
+    "deleted": [
+      "精灵/染色簇 14 个函数：makeSprite / paintBlockDot / paintSoftDot / closeSprites / closeLastPaint / closeAtlas / mixRgb / sampleStops / gradientT / tintMask / buildTintSprites / assignGlyphTint / glyphTintK / buildSprites",
+      "quiet-wait 机制：quietWait / clearQuietWait / scheduleQuietTick（含 tick 内调用点与 startLoop 的 !quietWait 守卫）",
+      "worker 残链：renderWorker / workerReady / workerPending / workerHasFrame（证据字段改为固定 false，语义不变）",
+      "sprite/atlas 镜像：lastPaintBmp / sprites / tintSprites / spriteBmp / atlasGen；字形索引 gid / tid",
+      "snapAllToTargets（批次 3 后已无调用方；handoverSnapCalls 计数保留为证据字段）",
+      "死常数：WALL / WALL_K / TINT_MS / TINT_STEPS / STOP_N / STOP_F / GLYPH_N / GLYPH_F（GLYPH_SPLIT 原式内联保留）",
+      "不可达 try/catch：usesPointsBin / usesRadial / usesAssemblyMorph / loadTargetRecord / dpr+fx 的 5 处 catch 分支",
+      "跨文件：nf-radial-physics.js 的 lutFilSlice（批次 2 后无消费）；renderer.pixi.js 的 lastPalette / lastPointsId（已被内容键取代）"
+    ],
+    "kept_on_purpose": [
+      "buildPaletteAtlas / assignPaletteSizes / rebuildBuckets / bucketCount / bucketPrefix / bucketIndex / palSize / atlasBmp / atlasCell / atlasPalN：仍被 resizeCanvas / 目标装载 / publishRenderInfo 使用",
+      "GLYPH_SPLIT：仍被字形分类使用",
+      "prototype/render-worker.js 文件：按 HANDOFF 留仓，不属本批删除面"
+    ],
+    "size": {
+      "index_html_lines": { "batch3_post": 4606, "batch4_post": 4376, "delta": -230 },
+      "index_html_cumulative_vs_tip": { "added": 207, "deleted": 324, "net_lines": -117 },
+      "other_files_cumulative_vs_tip": {
+        "prototype/pixi-physics/nf-radial-physics.js": { "added": 75, "deleted": 27 },
+        "prototype/renderer.pixi.js": { "added": 82, "deleted": 20 }
+      }
+    },
+    "verification": {
+      "syntax": "node --check 通过（两个模块）",
+      "residual_refs": "grep 全仓：所有被删名字只剩注释里的说明，无代码引用",
+      "browser_smoke": "boot + intro 成画：mode=formed、p=0.99509、rms=2.74px、capHit=0、workerBlit/workerHasFrame=false、0 pageerror"
+    }
+  },
+  "T4.2_docs": {
+    "handoff": "HANDOFF.md：成画条目补完成度门控与安全阀；新增『查询闸表（现网 · 2026-09-13 并入仓库文档）』整表；新增『Codex 批次 0–4 现状』段",
+    "archive": "docs/NF_死链归档_批次1_2026-09-13.md 追加批次 4 的删除执行记录",
+    "petitions": ["docs/research/批次2-DWELL申议.md", "docs/research/批次3-生成序列申议.md"]
+  },
+  "T4.3_ci_guard": {
+    "script": "scripts/check-goldens.mjs（C2 golden / NFPT 契约 / S3 dual / vendor pixi；无外部依赖、不写文件）",
+    "workflow": ".github/workflows/ci.yml 新增 goldens 作业（actions/checkout + setup-node 20 + node scripts/check-goldens.mjs）；原 lint-build 作业未改",
+    "local_run": { "pass": true, "failures": [] }
+  },
+  "verification": {
+    "goldens": { "c2": true, "vendor": true, "s3dual": true, "pointsBin": true, "allPass": true },
+    "gate_matrix": { "gates": 21, "comparedFields": 1848, "diffCount": 0, "errors": 0, "baseline": "批次 3 后快照 gate-snapshot-b3post.json" },
+    "seven_steps": {
+      "pass": true,
+      "autoplay": { "introFormedMs": 3269, "HALL_ms": 10061, "COMMUNITY_ms": 10116, "INTRO_ms": 10068, "caption_nav_target_ok": true },
+      "manual": "首页/介绍/大厅/社区/回首页/彩蛋/hover 全过；closeVerdict 全 check、capHit 0",
+      "pageErrors": []
+    }
+  },
+  "artifacts": {
+    "raw": [
+      "C:/Users/mon_7/Downloads/nf-baseline-artifacts/batch4-verify.json",
+      "C:/Users/mon_7/Downloads/nf-baseline-artifacts/gate-snapshot-b4post.json",
+      "C:/Users/mon_7/Downloads/nf-baseline-artifacts/gate-diff-b3post-b4post.json"
+    ]
+  },
+  "open_items": [
+    "O1（DWELL 增量）/ O2（像素块与尘埃）仍待裁决；T3.1/T3.2/T3.4 未做",
+    "未 commit；工作树待提交：6 个改动文件 + 2 个新增脚本 + 3 份文档 + 5 份证据（含 assembly-v3-d-*）",
+    "CI 守卫只在本地跑过；GitHub Actions 侧尚未运行（需 push 后见）",
+    "录屏仍缺（会话不能出视频）"
+  ],
+  "pass": true
+}

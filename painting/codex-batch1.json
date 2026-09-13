@@ -1,0 +1,105 @@
+{
+  "task": "codex-batch1-cleanup",
+  "volume": "NF · Codex 交接总卷 v1.0 · §6 批次 1（无损清理）",
+  "timestamp": "2026-09-13T02:51:16.835Z",
+  "tip": "d33fb8c71759b7d1e112d3dfe5261806e2eefd84",
+  "branch": "codex/batch0-confirm",
+  "index_html": {
+    "pre": { "sha256": "5fca0eb5f86762df22f8b4605be176e616cedcccde1346e1095df29d4fd651f1", "lines": 4493, "bytes": 142168 },
+    "post": { "sha256": "f61a7fbc3894bd6fd751706e16dba48807e46792fbdab18c8cc6d7eec7421a45", "lines": 4504, "bytes": 143175 },
+    "git_numstat": { "added": 38, "deleted": 27 }
+  },
+  "changes": {
+    "T1.1_query_cache": {
+      "finding": "F-03",
+      "what": "新增 NF_QUERY（一次解析 + 惰性缓存；解析失败回退为恒 null 的 getter），替换 7 处 new URLSearchParams(window.location.search)",
+      "sites": ["dpr", "fx", "manifest 查询段即 _qs", "usesPointsBin 的 bin", "usesRadial 的 radial", "usesAssemblyMorph 的 morph", "loadTargetRecord 的 nf-points"],
+      "semantics": "与原 catch 分支等价：取不到即 null，布尔比较结果不变；旧 try/catch 保留未删（批次 4 物理删）"
+    },
+    "T1.2_loop_merge": {
+      "finding": "F-08",
+      "what": "wakeLoop 改为 startLoop 的薄包装（两个入口名均保留）；删除残留变量 var raf 与 3 处 cancelAnimationFrame 残调用（startLoop / wakeLoop / stopLoop）",
+      "untouched": "startLoop 守卫、NFPixiRenderer.start/stop、__nfRender.running 语义均未改"
+    },
+    "T1.3_shells": {
+      "what": "paintVoid 与 scheduleQuietTick 保留调用点，加 BATCH1-SHELL 注释",
+      "what_not": "不物理删（批次 4）"
+    },
+    "T1.4_dead_mark": {
+      "what": "在常量区 / 状态区 / 精灵簇首加 BATCH1-DEAD 标记，并落 docs 死链归档",
+      "what_not": "本批不物理删任何死链"
+    }
+  },
+  "goldens": {
+    "c2": { "sha256": "dc1f16092d775ee1462c94eb964bb95523470bd7fd7770b1efab02c6940f320a", "sameBytes": true, "locked": true, "pass": true },
+    "vendor": { "sha256": "9948591083793305468d73915a3ea85032dcf8e32eee7a1328585050d7a14d53", "bytes": 818871, "pass": true },
+    "pointsBin": { "dallas": 50601, "scotland": 50441, "met": 50471, "headOK": true, "pass": true },
+    "s3dual": { "sha256": "cdff787751379eca069c205dbeb730f7b34a13e85c9902dee0959acee143aa19", "twice": true, "pass": true },
+    "allPass": true
+  },
+  "gate_matrix": {
+    "gates": 21,
+    "list": ["(default)", "dpr=2", "fx=lite", "bin=0", "radial=0", "morph=0", "autoplay=0", "dwell=6000", "seed=uniform", "seed=cloud", "handover=0", "arc=off", "group=sharp", "block=0", "pixel=2", "pixel=3", "dust=0", "discipline=classic", "frame=0.9", "frame=1.1", "nf-points=placeholder"],
+    "phases": ["chaos", "afterIntro 5s"],
+    "configFieldDiffs": 0,
+    "errorCount": { "pre": 0, "post": 0 },
+    "excludedVolatile": ["seedStats.median_px", "seedStats.p95_px", "seedStats.mean_px", "seedStats.inside_frac"],
+    "excludedReason": "取当前活体坐标统计，随动画相位变化；同构建内 8 次采样 median 从 246.257 漂到 502.459、inside_frac 从 0.893 漂到 0.247，而 mode/n/sigma/contain 全程稳定，属噪声非行为量",
+    "spotChecks": {
+      "default": "radial on, 50601, dallas, block size 2, dust 640, v2, frame 1",
+      "dpr=2": "dpr 2",
+      "fx=lite": "n 2000, fxLite true",
+      "bin=0": "12000, radial off, source fetch",
+      "radial=0": "100000, radial off",
+      "morph=0": "radial.lifecycle false",
+      "handover=0": "transition.handover off",
+      "block=0": "pixel.block false",
+      "pixel=3": "size 3",
+      "dust=0": "dust false, dustN 0",
+      "discipline=classic": "classic",
+      "frame=0.9 / frame=1.1": "frameScale 0.9 / 1.1",
+      "seed=uniform": "seedMode uniform",
+      "nf-points=placeholder": "12000 placeholder"
+    }
+  },
+  "visual7step": {
+    "pass": true,
+    "autoplay": { "introFormedMs": 2967, "rotate": [{ "key": "HALL", "waitedMs": 10069 }, { "key": "COMMUNITY", "waitedMs": 10059 }, { "key": "INTRO", "waitedMs": 13625 }], "caption_nav_target_all_correct": true },
+    "step1_home": "chaos, nav home, 无 #sight, cursor auto, lead hidden",
+    "step2_intro": "formed, view intro, 主句渐显, points_poplars.json, painting dallas",
+    "step4_sources": "hall 到 points_artwork_b.json 且 scotland；community 到 points_artwork_c.json 且 met",
+    "step5_home": "1604ms 回 chaos，dossier 隐藏",
+    "step6_egg": "formed, target points_nf.json, painting glyph, nav 保持 btn-home, dossier 隐藏",
+    "step7_hover": "opacity 0.7 到 1；border-bottom 由透明变 1px solid rgb(255, 255, 255)",
+    "pageErrors": []
+  },
+  "loop_ab": {
+    "method": "同一脚本，改动前版本由 git 内存供给，改动后取工作区文件，各跑一次完整冻结与解冻循环",
+    "pre": { "runningAtBoot": true, "tickDeltaWhileFrozen": 0, "tickDeltaAfterResume1s": 22 },
+    "post": { "runningAtBoot": true, "tickDeltaWhileFrozen": 0, "tickDeltaAfterResume1s": 22 },
+    "verdict": "无差异；解冻走合并后的 wakeLoop 转 startLoop，running 由 false 回 true 且 tick 恢复推进"
+  },
+  "repel_recheck": { "controlMaxDev": 0.033, "probeMaxDev": 3.544, "pass": true },
+  "files_touched": [
+    "prototype/index.html（+38/-27）",
+    ".gitignore（新增反忽视行）",
+    "docs/NF_死链归档_批次1_2026-09-13.md（新增）",
+    "painting/codex-baseline.json（批次 0 证据）",
+    "painting/codex-batch1.json（本文件）"
+  ],
+  "verification_artifacts": [
+    "C:/Users/mon_7/Downloads/nf-baseline-artifacts/gate-snapshot-pre.json",
+    "C:/Users/mon_7/Downloads/nf-baseline-artifacts/gate-snapshot-post.json",
+    "C:/Users/mon_7/Downloads/nf-baseline-artifacts/gate-diff-pre-post.json",
+    "C:/Users/mon_7/Downloads/nf-baseline-artifacts/batch1-verify.json",
+    "C:/Users/mon_7/Downloads/nf-baseline-artifacts/batch1-loop-check.json",
+    "C:/Users/mon_7/Downloads/nf-baseline-artifacts/batch1-ab-loopcheck.json"
+  ],
+  "open_items": [
+    "block 与 pixel 开关半失效（F-06 与卷面 O2）本批未动，等裁决",
+    "旧 try/catch 死分支与死链本体留下，批次 4 物理删",
+    "未 commit；工作区待提交：.gitignore、prototype/index.html、docs 死链归档、painting/codex-*.json",
+    "录屏仍缺（会话不能出视频）；本批以全闸快照与 7 步状态与 A/B 读数为证"
+  ],
+  "pass": true
+}

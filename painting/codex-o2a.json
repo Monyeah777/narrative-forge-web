@@ -1,0 +1,84 @@
+{
+  "task": "codex-o2a-implement-pixel-dust",
+  "volume": "NF · Codex 交接总卷 v1.0 · §2 O2 裁决 = 实现（路 A）",
+  "timestamp": "2026-09-13T06:05:00.000Z",
+  "tip": "d33fb8c71759b7d1e112d3dfe5261806e2eefd84",
+  "branch": "codex/batch0-confirm",
+  "decision": "作者裁决：O2 走路 A「实现」（像素块与尘埃都实现）。O1 ②③ 未裁决，本批不动。",
+  "changes": {
+    "pixel_block": [
+      "renderer.pixi.js 新增 makeSquareDot（实心白填充、无渐变）+ ensureBlockTexture（32px 规范贴图，source.scaleMode='nearest'）",
+      "容器改用方块贴图：ParticleContainer({ roundPixels: true })；粒子 scale = blockSize / 32",
+      "draw() 在方块模式下按设备像素整数对齐：x = round(x * resolution) / resolution",
+      "内容键并入 block/blockSize → ?block / ?pixel 现在是真闸（切换会重建）",
+      "info() 新增 blockMode / blockTex / dustN / dustDot（证据面）"
+    ],
+    "dust": [
+      "renderer.pixi.js 新增尘埃独立容器（ensureDust / updateDust / clearDust）：软边贴图、tint 0xd6d2c8、alpha 取 placeDust 的静态 dustA、点径 1.6 CSS px",
+      "index.html：dustCount() 改为按比例（DUST_RATIO=0.05，卷面 §5.2 M2 = 5% × N）；manifest.dust.n=0 表示自动，写正数可钉住绝对数量",
+      "render() 把 {block, blockSize, dust} 传给渲染器；dustState 复用同一对象（不每帧分配）"
+    ],
+    "defaults": { "pixelBlock": { "enabled": true, "size": 2 }, "dust": { "enabled": true, "n": 0 }, "note": "卷面记 3 设备像素；本实现按 O2 材料口径保留默认 2px，?pixel=3 出 3px（改默认只需改 manifest 一个数字）" }
+  },
+  "gate_behavior": {
+    "default_50k": { "blockMode": true, "dustRendered": 2530, "manifestDustN": 0, "evidenceDustN": 2530 },
+    "?block=0": { "blockMode": false, "dustRendered": 2530 },
+    "?pixel=3": { "blockMode": true, "pixelSize": 3, "dustRendered": 2530 },
+    "?dust=0": { "blockMode": true, "dustRendered": 0 },
+    "?fx=lite": { "blockMode": true, "dustRendered": 100, "note": "5% × 2000，比例跟随 N" }
+  },
+  "visual_evidence": {
+    "method": "同页面、同画、同相机；A/B 截图 + 局部放大并排图 + 像素统计",
+    "block_vs_soft": { "mean_abs_lum_diff": 10.685, "max": 213.9, "changed_pixel_share": 0.2177, "reading": "方块与软边是可见的质感变化（21.8% 像素改变）" },
+    "dust_on_vs_off": { "mean_abs_lum_diff": 2.372, "changed_pixel_share": 0.0594, "reading": "尘埃为低 alpha 的细弱存在（5.9% 像素受影响），符合「低 alpha、无装配职责」" },
+    "artifacts": [
+      "C:/Users/mon_7/Downloads/nf-baseline-artifacts/o2a-visual-ab.jpg（左：方块 ×2.2；右：软边 ×2.2；下：尘埃关 / 尘埃开）",
+      "C:/Users/mon_7/Downloads/nf-baseline-artifacts/o2a-autoplay_0.jpg（默认：方块+尘埃）",
+      "C:/Users/mon_7/Downloads/nf-baseline-artifacts/o2a-autoplay_0_block_0.jpg（软边对照）",
+      "C:/Users/mon_7/Downloads/nf-baseline-artifacts/o2a-autoplay_0_pixel_3.jpg（3px 对照）",
+      "C:/Users/mon_7/Downloads/nf-baseline-artifacts/o2a-autoplay_0_dust_0.jpg（尘埃关对照）",
+      "C:/Users/mon_7/Downloads/nf-baseline-artifacts/o2a-sparse-*.png（?fx=lite 稀疏对照）"
+    ],
+    "limitation": "会话内无法直接阅图；形状（平顶 vs 径向渐变）未能用程序化指标在真实场景里可靠区分（2000 点稀疏口径下两版 flatness 均 ~0.92，被画作本身亮部与纸面文字淹没）。方块样式最终以作者目检 o2a-visual-ab.jpg 为准。",
+    "code_level_proof": "方块路径：实心 fillRect + scaleMode nearest + roundPixels + JS 整数对齐；软边路径：createRadialGradient 贴图。两条路径由 contentKey 的 block 位区分，切换必然重建。"
+  },
+  "perf_impact": {
+    "method": "页内 work 环，同会话连续四组，各 8s（formed + dwell）",
+    "default_block_dust": { "p50": 17.1, "p95": 19.2 },
+    "block_0": { "p50": 17.1, "p95": 19.2 },
+    "dust_0": { "p50": 17.1, "p95": 19.3 },
+    "block_0_dust_0": { "p50": 16.9, "p95": 19.2 },
+    "reading": "四组差异在噪声内 → 整数对齐与 2530 粒尘埃**没有把停留帧成本顶起来**（headless 下 work 环被 Pixi draw / 软件光栅主导）"
+  },
+  "verification": {
+    "goldens": { "allPass": true, "entry": "scripts/check-goldens.mjs" },
+    "gate_matrix": { "gates": 21, "comparedFields": 2058, "expectedDiffs": 250, "unexpectedDiffs": 0, "expectedKeys": ["pixel.dustN", "manifest.dustN", "o2a.blockMode", "o2a.blockTex", "o2a.dustN", "o2a.dustDot"] },
+    "seven_steps": {
+      "pass": true,
+      "autoplay": { "introFormedMs": 2967, "HALL_ms": 10018, "COMMUNITY_ms": 10061, "INTRO_ms": 13509, "caption_nav_target_ok": true, "dustRendered": 2530 },
+      "manual": "全过；closeVerdict 全 check、capHit 0",
+      "pageErrors": []
+    }
+  },
+  "open_items": [
+    "方块样式与尘埃强度需作者目检（o2a-visual-ab.jpg）",
+    "卷面 3px vs 现网默认 2px：若要默认 3px，改 manifest pixelBlock.size 一个数字即可",
+    "O1 ②③ 仍未裁决",
+    "未 commit"
+  ],
+  "edge_states": {
+    "method": "同会话逐场景；每场景记录 mode/running/frozen/reduced/tick/blockMode/dustRendered/pixiOk 与 pageerror",
+    "dpr2": { "dpr": 2, "resolution": 2, "blockMode": true, "dustRendered": 2530, "pixiOk": true, "errors": 0 },
+    "dpr3": { "dpr": 3, "resolution": 3, "blockMode": true, "dustRendered": 2530, "pixiOk": true, "errors": 0 },
+    "legacy_radial0": { "n": 100000, "radialOn": false, "blockMode": true, "dustRendered": 5000, "note": "5% × 100k，比例在旧轨/回退轨同样跟随", "errors": 0 },
+    "reduced_motion": { "mode": "formed", "running": false, "tickerOn": false, "blockMode": true, "dustRendered": 2530, "runs": 2, "note": "静态成画路径同样带方块与尘埃", "errors": 0 },
+    "freeze_save": { "frozen": { "running": false, "tick": 85, "blockMode": true, "dustRendered": 2530 }, "unfrozen": { "running": true, "tickResumed": true, "blockMode": true, "dustRendered": 2530 }, "errors": 0 },
+    "hidden_visibility": { "before": { "running": true, "tick": 62 }, "hidden": { "running": false, "tick": 62 }, "visible": { "running": true, "tick": 143 }, "dustKeptRendered": true, "errors": 0 },
+    "measurement_corrections": [
+      "首轮边界态脚本里 prefers-reduced-motion 模拟残留到了后续两个场景（冻结/隐藏页被误测在静态路径上）→ 已复位媒体特性后重跑，结论以第二轮为准",
+      "首轮 reduced-motion 读数（blockMode=false / dustRendered=0）是「尚无任何 draw 调用」的启动前状态，不是实现缺陷；用 draw 实参探针确认该路径收到 {block:true, blockSize:2, dust.n:2530}，且独立复跑两次结果一致"
+    ],
+    "raw": ["C:/Users/mon_7/Downloads/nf-baseline-artifacts/o2a-edge-states.json", "C:/Users/mon_7/Downloads/nf-baseline-artifacts/o2a-edge-freeze-visibility.json", "C:/Users/mon_7/Downloads/nf-baseline-artifacts/o2a-edge-dpr2.jpg", "C:/Users/mon_7/Downloads/nf-baseline-artifacts/o2a-edge-legacy.jpg"]
+  },
+  "pass": true
+}

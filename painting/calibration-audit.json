@@ -1,0 +1,54 @@
+{
+  "task": "o1c3-e-closure + morph calibration audit",
+  "volume": "NF · Codex 交接总卷 v1.0 · §2 O1 ③（E 实验）｜docs/NF_粒子装配模块_整合总卷_v3.0.md §3 阶段 E / §5.2 / §7 / 附表第 12 行",
+  "timestamp": "2026-09-13T07:35:00.000Z",
+  "tip": "d33fb8c71759b7d1e112d3dfe5261806e2eefd84",
+  "branch": "codex/batch0-confirm",
+  "verdict": "O1③「启用 E 实验」在卷面已关档：两条路线都已交付，无需启用；阶段 E 的实质内容（驻留形态 M0–M3 校准）经逐条对照**已在现网合规**，仅剩两条已知时钟偏差（A 诊断已记）与像素块默认值（O2 已定）。",
+  "s4_menu_E_closure": {
+    "citation": "docs/NF_粒子装配模块_整合总卷_v3.0.md 附表第 12 行：优化菜单 E ｜ WebGL 已由 PixiJS 落地；「降 count」并入 9-6 应急档 ｜ 不复申议",
+    "route_1_webgl": "已交付：现网默认 PixiJS/WebGL 轨（renderer.pixi.js，vendor pixi 8.20.1，守门 sha 994859…4d53）",
+    "route_2_cut_count": "已交付：2026-09-13 O1② 计数档（?n= 预览 2000–100000；?degrade=1 应急降到 30000，带日志与回退）",
+    "field_update": "__nfRadial.render.E_petition 由 \"booked-not-enabled\" 更正为 \"closed-by-volume: webgl-live + count-emergency-tier\"（字段保留，读取方不断链）"
+  },
+  "calibration_table": {
+    "method": "现网常量逐条对照卷面 §5.2/§7；可实测项（余韵斜坡、逸散）在 Node 里跑物理世界取数",
+    "rows": [
+      { "param": "FIXED_H", "volume": "1/60 s（硬性）", "live": "H = 1/60", "verdict": "in-spec" },
+      { "param": "时间源", "volume": "deltaMS", "live": "ticker.elapsedMS", "verdict": "deviation（A 诊断已记；改名/换源会动时钟口径）" },
+      { "param": "MAX_FRAME_MS", "volume": "50 ms", "live": "FRAME_CLAMP = 0.25s + MAX_STEPS = 2", "verdict": "deviation（A 诊断已记：每帧最多推进 33ms 物理）" },
+      { "param": "生命周期 τ", "volume": "[40,120]s", "live": "LIFE_TAU0=40 + rng×LIFE_TAU1(80)", "verdict": "in-spec" },
+      { "param": "渐入 / 末段渐出", "volume": "0.6s / 末 20%", "live": "LIFE_IN=0.6 / LIFE_OUT=0.2", "verdict": "in-spec" },
+      { "param": "回收门限", "volume": "α≤0.01 或 >1.25·R95", "live": "RECYCLE_A=0.01 / RECYCLE_R=1.25", "verdict": "in-spec" },
+      { "param": "Q(r)", "volume": "smoothstep(0.82,0.98)", "live": "Q_LO=0.82 / Q_HI=0.98", "verdict": "in-spec" },
+      { "param": "β_max", "volume": "8 px/s", "live": "BETA_MAX = 8", "verdict": "in-spec" },
+      { "param": "M0 涟漪 λ/T/A", "volume": "56px / 8s / 0.5%（0.3–0.9）", "live": "RIPPLE_L=56 / RIPPLE_T=8 / RIPPLE_A=0.005", "verdict": "in-spec" },
+      { "param": "M0 中心保护窗 W_b", "volume": "smoothstep(0.10,0.35,r)", "live": "WB_LO=0.1 / WB_HI=0.35", "verdict": "in-spec" },
+      { "param": "M3 逸散 U₀", "volume": "5 px/s（3–8）", "live": "STREAK_U0 = 5", "verdict": "in-spec" },
+      { "param": "M3 丝缕长度", "volume": "80–160px（时间尺度 >10s）", "live": "U₀×t → 50px@10s / 100px@20s / 160px@32s；带宽 r∈[0.72,1.05]≈518–755px", "verdict": "in-spec（落在带内）" },
+      { "param": "M2 尘埃占比", "volume": "5%", "live": "DUST_RATIO = 0.05（2026-09-13 实现）", "verdict": "in-spec" },
+      { "param": "余韵斜坡", "volume": "0→40%@2s→100%@8s", "live": "dwellRamp(RAMP_A=2, RAMP_B=8)；实测 0.2@1s / 0.4@2s / 0.6@4s / 1.0@8s", "verdict": "in-spec" },
+      { "param": "像素块尺寸", "volume": "3 设备像素（回退 2）", "live": "默认 2（?pixel=3 可切，2026-09-13 实现方块贴图）", "verdict": "author-decided（O2 路 A 按 2px 落地；改默认＝改 manifest 一个数字）" },
+      { "param": "画区占比", "volume": "1.0（±10% 预留）", "live": "frameScale=1（?frame=0.9/1.1）", "verdict": "in-spec" },
+      { "param": "径向密度", "volume": "p(r) ∝ r·W(r)", "live": "S2b dart-thinning（50601/50441/50471）", "verdict": "in-spec（S2b/S2c 证据）" },
+      { "param": "curl 上限 / LUT", "volume": "6px/s；LUT 64×64 @30Hz", "live": "LUT_N=64 / LUT_HZ=30 ✓；径向世界位移为 simplex drift，curl 力项只在旧弹簧轨", "verdict": "partial（A 诊断已记：属机制差异，非参数漂移）" }
+    ],
+    "summary": { "in_spec": 13, "author_decided": 1, "deviation_known": 2, "partial_known": 1 }
+  },
+  "empirical": {
+    "dwellRamp_measured": [{ "t": 0, "ramp": 0 }, { "t": 1, "ramp": 0.2 }, { "t": 2, "ramp": 0.4 }, { "t": 4, "ramp": 0.6 }, { "t": 6, "ramp": 0.8 }, { "t": 8, "ramp": 1 }, { "t": 10, "ramp": 1 }],
+    "streak_escape_px": { "at10s": 50, "at20s": 100, "at32s": 160 },
+    "streak_band_px": { "lo": 517.6, "hi": 754.8 }
+  },
+  "verification": {
+    "goldens": "pass（scripts/check-goldens.mjs；本轮只改一个证据字符串与新增证据文件，物理未动）",
+    "note": "本轮不改渲染/物理行为：E_petition 是证据字段，取值不在任何判定分支里"
+  },
+  "open_items": [
+    "两条时钟偏差（deltaMS / MAX_FRAME_MS=50ms）若要按卷面改，会动 MAX_STEPS/FRAME_CLAMP 口径 → 需作者单独裁决（会改 S3 dual 之外的时序，需重跑 G1–G3）",
+    "像素块默认 2px vs 卷面 3px：要改默认说一声",
+    "O2 方块样式与尘埃强度仍待作者目检",
+    "未 commit"
+  ],
+  "pass": true
+}

@@ -1,0 +1,45 @@
+{
+  "task": "codex-o1d-clock-alignment",
+  "volume": "NF · Codex 交接总卷 v1.0 · 时钟口径对齐（卷面 §7：时间源 deltaMS / MAX_FRAME_MS=50ms / FIXED_H=1/60 硬性）",
+  "timestamp": "2026-09-13T08:05:00.000Z",
+  "tip": "d33fb8c71759b7d1e112d3dfe5261806e2eefd84",
+  "branch": "codex/batch0-confirm",
+  "decision": "作者裁定：按卷面对齐时钟口径",
+  "before": { "source": "ticker.elapsedMS", "frame_clamp_s": 0.25, "max_steps": 2, "effect": "单帧最多推进 33ms 物理；时间源未封顶" },
+  "after": { "source": "ticker.deltaMS", "max_frame_s": 0.05, "max_steps": "unlimited", "safety": "单帧钳到 50ms → 1/60 定步最多 3 步；acc 在 freeze / stop 路径清零" },
+  "changes": [
+    "常量：删 MAX_STEPS、FRAME_CLAMP=0.25s → MAX_FRAME_S=0.05（卷面 MAX_FRAME_MS=50ms）",
+    "tick()：ft 取自 deltaMS（tick 内统一钳制）、删每帧步数上限、非正 ft 归零",
+    "ticker 钩子：ticker.elapsedMS/1000 → ticker.deltaMS/1000",
+    "证据面：新增 __nfRender.clock = { source, maxFrameMs, fixedH, maxSteps, lastFrameMs, lastSteps, lastDeltaMs }",
+    "复跑闸同步：scripts/assembly-v3-d-g123.mjs 的时钟模型改为同口径（50ms 钳 + 不限步）"
+  ],
+  "verification": {
+    "g1_g3_harness": { "pass": true, "gate60_switch_t": 2.417, "gate120_switch_t": 2.417, "gate_switch_p99": 0.138, "snap_p99": 3.377, "tail_pct": 95.2, "note": "60/120Hz 下 50ms 钳制不触发，故与对齐前逐项相同" },
+    "goldens": { "allPass": true, "entry": "scripts/check-goldens.mjs" },
+    "gate_matrix": { "gates": 24, "comparedFields": 2784, "expectedDiffs": 240, "unexpectedDiffs": 0, "expectedKeys": ["clock.source", "clock.maxFrameMs", "clock.fixedH", "clock.maxSteps", "radial.E"] },
+    "seven_steps": {
+      "pass": true,
+      "autoplay": { "introFormedMs": 2581, "HALL_ms": 10069, "COMMUNITY_ms": 10014, "INTRO_ms": 13657, "caption_nav_target_ok": true, "n": 50601, "dust": 2530 },
+      "manual": "全过；verdict 全 check、capHit 0、clock=deltaMS、maxSteps=unlimited",
+      "pageErrors": []
+    },
+    "dwell_perf": { "p50": 17.3, "p95": 19.5, "steps_per_frame": 3, "frame_ms": 49.9, "note": "headless 帧长 ~130ms，钳制绑定在 50ms；与对齐前（17.9/20.5）同级" }
+  },
+  "behavioral_notes": [
+    "慢机上物理推进由「每帧 ≤33ms」变为「每帧 ≤50ms」→ 墙钟时间上序列更早完成（实测 headless：首幅成画 3.0s → 2.58s）；60fps 机器不受影响（16.7ms < 50ms，仍 1 步/帧）",
+    "不可见/冻结路径仍在停表时清 acc，故不存在「恢复追赶」",
+    "与 A 诊断记录的三条偏差就此闭合：时间源 deltaMS ✓、MAX_FRAME_MS=50ms ✓、不限步 ✓"
+  ],
+  "open_items": [
+    "scripts/assembly-v3-a-audit.mjs 仍按 A 期旧时钟建模（历史记录，不改）；现行规则的镜像闸是 assembly-v3-d-g123.mjs",
+    "O2 方块样式与尘埃强度仍待作者目检",
+    "未 commit"
+  ],
+  "artifacts": [
+    "C:/Users/mon_7/Downloads/nf-baseline-artifacts/gate-snapshot-o1d.json",
+    "C:/Users/mon_7/Downloads/nf-baseline-artifacts/gate-diff-o1c-o1d.json",
+    "C:/Users/mon_7/Downloads/nf-baseline-artifacts/o1d-verify.json"
+  ],
+  "pass": true
+}
